@@ -117,3 +117,60 @@ create table cart_items(
 	product_id int references products(id),
 	quantity int not null
 );
+
+create table orders(
+	id SERIAL primary key,
+	user_id int references users(id),
+	status varchar(50) default 'pending',
+	total numeric(10, 2),
+	created_at timestamptz default CURRENT_TIMESTAMP
+);
+
+create table order_items(
+	id SERIAL primary key,
+	order_id int references orders(id) on delete cascade,
+	product_id int references products(id),
+	price numeric(10, 2),
+	quantity int
+);
+
+create table articles (
+	id SERIAL primary key,
+	title varchar(255),
+	content text,
+	author_id int references admins(id),
+	created_at timestamptz default CURRENT_TIMESTAMP
+);
+
+create table jobs (
+	id SERIAL primary key,
+	title varchar(255),
+	description text,
+	is_active boolean default true,
+	created_at timestamptz default CURRENT_TIMESTAMP
+);
+
+create table job_applications (
+	id SERIAL primary key,
+	job_id int references jobs(id),
+	user_id int references users(id),
+	resume_url text,
+	status varchar(50) default 'pending'
+);
+
+create table coupons (
+	id SERIAL primary key,
+	code varchar(50) unique,
+	discount_percent int,
+	expires_at timestamptz
+);
+
+create table user_coupons (
+	user_id int references users(id),
+	coupon_id int references coupons(id),
+	is_used boolean default false,
+	primary key (user_id, coupon_id)	
+);
+
+create index idx_products_name on products(name);
+create index idx_orders_user_id on orders(user_id);
