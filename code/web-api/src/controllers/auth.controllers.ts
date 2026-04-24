@@ -1,4 +1,3 @@
-import { compareSync } from "bcryptjs";
 import {
   signAccessToken,
   signRefreshToken,
@@ -9,7 +8,6 @@ import { asyncHandler } from "../utils/async-handler";
 import { AppError } from "../utils/http-error";
 import { sendSuccess } from "../utils/response";
 import { type Request, type Response } from "express";
-import { Sequelize } from "sequelize";
 import User from "../models/User";
 
 interface LoginBody {
@@ -21,21 +19,7 @@ interface RefreshBody {
   refreshToken?: string;
 }
 
-function getDemoUserConfig(): {
-  email: string;
-  password: string;
-  role: string;
-  userId: string;
-} {
-  return {
-    email: process.env.AUTH_DEMO_EMAIL ?? "admin@declay.local",
-    password: process.env.AUTH_DEMO_PASSWORD ?? "changeme",
-    role: process.env.AUTH_DEMO_ROLE ?? "admin",
-    userId: process.env.AUTH_DEMO_USER_ID ?? "demo-user",
-  };
-}
-
-function validateLoginCredentials(body: LoginBody): AuthenticatedUser {
+async function validateLoginCredentials(body: LoginBody): Promise<AuthenticatedUser> {
   if (!body.email || !body.password) {
     throw new AppError("Email and password are required", {
       statusCode: 400,
@@ -43,24 +27,24 @@ function validateLoginCredentials(body: LoginBody): AuthenticatedUser {
     });
   }
 
-  const demoUser = getDemoUserConfig();
-  const hash = process.env.AUTH_DEMO_PASSWORD_HASH;
-
-  const isValidPassword = hash
-    ? compareSync(body.password, hash)
-    : body.password === demoUser.password;
-
-  if (body.email !== demoUser.email || !isValidPassword) {
+  const user = await User.unscoped().findOne({ where: { email: body.email } });
+  if (!user || !user.verifyPassword(body.password)) {
     throw new AppError("Invalid email or password", {
       statusCode: 401,
       code: "UNAUTHORIZED",
     });
   }
 
+  if (!user.isActive) {
+    throw new AppError("User account is inactive", {
+      statusCode: 403,
+      code: "FORBIDDEN",
+    });
+  }
+
   return {
-    userId: demoUser.userId,
-    email: demoUser.email,
-    role: demoUser.role,
+    userId: user.id,
+    email: user.email,
   };
 }
 
@@ -103,11 +87,16 @@ class AuthController {
       fullName: full_name,
     });
 
-    sendSuccess(response, createTokenResponse(newUser), "User registered successfully");
+    const authUser = {
+      userId: newUser.id,
+      email: newUser.email,
+    };
+
+    sendSuccess(response, createTokenResponse(authUser), "User registered successfully");
   });
 
   static login = asyncHandler(async (request: Request, response: Response) => {
-    const user = validateLoginCredentials(request.body as LoginBody);
+    const user = await validateLoginCredentials(request.body as LoginBody);
 
     sendSuccess(response, createTokenResponse(user), "Login successful");
   });
@@ -138,7 +127,7 @@ class AuthController {
     },
   );
 
-  static me = asyncHandler(async (request: Request, response: Response) => {
+  static currentUser = asyncHandler(async (request: Request, response: Response) => {
     if (!request.auth) {
       throw new AppError("Unauthorized", {
         statusCode: 401,
@@ -146,7 +135,16 @@ class AuthController {
       });
     }
 
-    sendSuccess(response, request.auth, "Authenticated user profile");
+    const {userId} = request.auth;
+    const user = await User.findByPk(userId);
+    if (!user) {
+      throw new AppError("User not found", {
+        statusCode: 404,
+        code: "NOT_FOUND",
+      });
+    }
+
+    sendSuccess(response, user, "Authenticated user profile");
   });
 }
 

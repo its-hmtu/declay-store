@@ -4,14 +4,12 @@ import { AppError } from './http-error';
 export interface AuthTokenPayload {
   sub: string;
   email: string;
-  role: string;
   tokenType: 'access' | 'refresh';
 }
 
 export interface AuthenticatedUser {
-  userId: string;
+  userId: number;
   email: string;
-  role: string;
 }
 
 function getRequiredEnv(name: string): string {
@@ -56,7 +54,6 @@ function verifyToken(token: string, secret: string, expectedType: 'access' | 're
   if (
     typeof decoded.sub !== 'string' ||
     typeof decoded.email !== 'string' ||
-    typeof decoded.role !== 'string' ||
     decoded.tokenType !== expectedType
   ) {
     throw new AppError('Invalid token payload', {
@@ -65,19 +62,25 @@ function verifyToken(token: string, secret: string, expectedType: 'access' | 're
     });
   }
 
+  const userId = Number(decoded.sub);
+  if (!Number.isInteger(userId) || userId <= 0) {
+    throw new AppError('Invalid token payload', {
+      statusCode: 401,
+      code: 'UNAUTHORIZED',
+    });
+  }
+
   return {
-    userId: decoded.sub,
+    userId,
     email: decoded.email,
-    role: decoded.role,
   };
 }
 
 export function signAccessToken(user: AuthenticatedUser): string {
   return signToken(
     {
-      sub: user.userId,
+      sub: String(user.userId),
       email: user.email,
-      role: user.role,
       tokenType: 'access',
     },
     getRequiredEnv('JWT_ACCESS_SECRET'),
@@ -88,9 +91,8 @@ export function signAccessToken(user: AuthenticatedUser): string {
 export function signRefreshToken(user: AuthenticatedUser): string {
   return signToken(
     {
-      sub: user.userId,
+      sub: String(user.userId),
       email: user.email,
-      role: user.role,
       tokenType: 'refresh',
     },
     getRequiredEnv('JWT_REFRESH_SECRET'),

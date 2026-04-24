@@ -5,8 +5,9 @@ import AuthController from "../controllers/auth.controllers";
 export function createAuthRouter(): Router {
   const router = Router();
 
+  router.post("/register", AuthController.register);
   router.post("/login", AuthController.login);
   router.post("/refresh", AuthController.refresh);
-  router.get("/me", authMiddleware, AuthController.me);
+  router.get("/me", authMiddleware, AuthController.currentUser);
   return router;
 }

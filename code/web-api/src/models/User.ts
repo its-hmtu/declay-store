@@ -13,13 +13,14 @@ export type UserRole = 'user' | 'admin';
 const SALT_ROUNDS = Number(process.env.AUTH_SALT_ROUNDS ?? 10);
 
 class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
-  declare id: CreationOptional<string>;
+  declare id: CreationOptional<number>;
   declare email: string;
   declare username: CreationOptional<string | null>;
   declare fullName: CreationOptional<string | null>;
+  declare phoneNumber: CreationOptional<string | null>;
   declare passwordHash: string;
-  declare role: CreationOptional<UserRole>;
   declare isActive: CreationOptional<boolean>;
+  declare isEmailVerified: CreationOptional<boolean>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
@@ -28,12 +29,13 @@ class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   }
 
   toSafeJSON(): {
-    id: string;
+    id: number;
     email: string;
     username: string | null;
     fullName: string | null;
-    role: UserRole;
+    phoneNumber: string | null;
     isActive: boolean;
+    isEmailVerified: boolean;
     createdAt: Date;
     updatedAt: Date;
   } {
@@ -42,8 +44,9 @@ class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
       email: this.email,
       username: this.username,
       fullName: this.fullName,
-      role: this.role,
+      phoneNumber: this.phoneNumber,
       isActive: this.isActive,
+      isEmailVerified: this.isEmailVerified,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };
@@ -53,8 +56,8 @@ class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
 User.init(
   {
     id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
       primaryKey: true,
     },
     email: {
@@ -87,16 +90,22 @@ User.init(
         notEmpty: true,
       },
     },
-    role: {
-      type: DataTypes.ENUM('user', 'admin'),
-      allowNull: false,
-      defaultValue: 'user',
+    phoneNumber: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      field: 'phone_number',
     },
     isActive: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: true,
       field: 'is_active',
+    },
+    isEmailVerified: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'is_email_verified',
     },
     createdAt: {
       type: DataTypes.DATE,

@@ -11,15 +11,19 @@ import { sendSuccess } from './utils/response';
 
 export function createApp(): Express {
   const app = express();
+  const apiPrefix = '/api/v1';
+  const apiRouter = express.Router();
 
   app.use(helmet());
   app.use(cors());
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(morgan('dev'));
-  app.use('/auth', createAuthRouter());
+  app.use(express.static('public'));
+  // versioned API routes
+  apiRouter.use('/auth', createAuthRouter());
 
-  app.get('/health', async (_request: Request, response: Response) => {
+  apiRouter.get('/health', async (_request: Request, response: Response) => {
     let postgres: 'up' | 'down' = 'up';
     let redis: 'up' | 'down' = 'up';
 
@@ -46,6 +50,8 @@ export function createApp(): Express {
       'Health check completed',
     );
   });
+
+  app.use(apiPrefix, apiRouter);
 
   app.use(notFoundMiddleware);
   app.use(errorHandlerMiddleware);
