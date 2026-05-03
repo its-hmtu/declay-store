@@ -6,7 +6,7 @@ import {
   InferCreationAttributes,
   Model,
 } from 'sequelize';
-import { sequelize } from '../lib/sequelize';
+import { sequelize } from '@/config/database';
 
 export type UserRole = 'user' | 'admin';
 
@@ -18,15 +18,15 @@ class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   declare username: CreationOptional<string | null>;
   declare fullName: CreationOptional<string | null>;
   declare phoneNumber: CreationOptional<string | null>;
-  declare passwordHash: string;
+  declare password: string;
   declare isActive: CreationOptional<boolean>;
   declare isEmailVerified: CreationOptional<boolean>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
   verifyPassword(password: string): boolean {
-    return compareSync(password, this.passwordHash);
-  }
+    return compareSync(password, this.password);
+  };
 
   toSafeJSON(): {
     id: number;
@@ -82,10 +82,10 @@ User.init(
       allowNull: true,
       field: 'full_name',
     },
-    passwordHash: {
+    password: {
       type: DataTypes.STRING(255),
       allowNull: false,
-      field: 'password_hash',
+      field: 'password',
       validate: {
         notEmpty: true,
       },
@@ -127,17 +127,17 @@ User.init(
     timestamps: true,
     underscored: true,
     defaultScope: {
-      attributes: { exclude: ['passwordHash'] },
+      attributes: { exclude: ['password', 'isActive'] },
     },
     hooks: {
       beforeCreate: (user: User) => {
-        if (user.passwordHash) {
-          user.passwordHash = hashSync(user.passwordHash, SALT_ROUNDS);
+        if (user.password) {
+          user.password = hashSync(user.password, SALT_ROUNDS);
         }
       },
       beforeUpdate: (user: User) => {
-        if (user.changed('passwordHash') && user.passwordHash) {
-          user.passwordHash = hashSync(user.passwordHash, SALT_ROUNDS);
+        if (user.changed('password') && user.password) {
+          user.password = hashSync(user.password, SALT_ROUNDS);
         }
       },
     },

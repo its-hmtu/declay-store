@@ -1,5 +1,4 @@
 import type { Response } from 'express';
-
 export interface ApiResponse<T> {
   success: boolean;
   message: string;

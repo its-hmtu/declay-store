@@ -1,9 +1,13 @@
-import type { AuthenticatedUser } from '../utils/jwt';
+import type { Request } from 'express';
 
-declare module 'express-serve-static-core' {
-  interface Request {
-    auth?: AuthenticatedUser;
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        userId: number;
+        email: string;
+        [key: string]: any;
+      };
+    }
   }
 }
-
-export {};

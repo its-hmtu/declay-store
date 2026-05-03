@@ -2,9 +2,11 @@ create table users(
 	id SERIAL primary key,
 	username varchar(255) unique not null,
 	email varchar(255) unique not null,
+  password varchar(255) not null,
 	full_name varchar(255),
 	phone_number varchar(255),
-	is_email_verified boolean,
+	is_email_verified boolean default false,s
+  is_active boolean default true,
 	created_at timestamp default CURRENT_TIMESTAMP,
 	updated_at timestamp default CURRENT_TIMESTAMP
 );

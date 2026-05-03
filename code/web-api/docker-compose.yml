@@ -1,0 +1,27 @@
+services:
+  redis: 
+    image: redis:7-alpine
+    container_name: declay_store_redis
+    restart: always
+    ports:
+      - "6378:6379"
+    volumes:
+      - data_redis:/data
+  database:
+    image: postgres:15-alpine
+    container_name: declay_store_db
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=declay_admin
+      - POSTGRES_PASSWORD=hoang20039
+      - POSTGRES_DB=declay_store
+      - TZ=Asia/Ho_Chi_Minh
+      - PGTZ=Asia/Ho_Chi_Minh
+    volumes:
+      - data_db:/var/lib/postgresql/data
+
+volumes:
+  data_db:
+  data_redis:
