@@ -1,5 +1,5 @@
 import User from "@/user/user.entity";
-import type { Request, Response, RequestHandler } from "express";
+import type { RequestHandler } from "express";
 
 export interface IUserData {
   email: string;
@@ -16,6 +16,9 @@ export interface IAuthService {
   generateAccessToken(user: any): Promise<string>;
   generateRefreshToken(user: any): Promise<string>;
   userInfo(userId: number | undefined): Promise<User>;
+  handleOAuthCallback(user: User): Promise<{ access_token: string; refresh_token: string; user: any }>;
+  forgotPassword(email: string): Promise<void>;
+  resetPassword(token: string, newPassword: string): Promise<void>;
 }
 
 export interface IAuthController {
@@ -24,4 +27,7 @@ export interface IAuthController {
   refreshToken: RequestHandler;
   logout: RequestHandler;
   getUserInfo: RequestHandler;
+  googleAuthCallback: RequestHandler;
+  forgotPassword: RequestHandler;
+  resetPassword: RequestHandler;
 }

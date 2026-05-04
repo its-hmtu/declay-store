@@ -76,4 +76,31 @@ export default class AuthService implements IAuthService {
 
     return user;
   }
+
+  async handleOAuthCallback(user: User): Promise<{ access_token: string; refresh_token: string; user: any }> {
+    // Generate tokens for OAuth user
+    const access_token = await this.generateAccessToken(user);
+    const refresh_token = await this.generateRefreshToken(user);
+
+    return {
+      access_token,
+      refresh_token,
+      user: user.toSafeJSON(),
+    };
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    // Implementation for forgot password
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      throw httpError(404, 'User not found');
+    }
+
+    // Generate reset token and send email (not implemented here)
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    // Implementation for reset password
+    // Verify token and update user's password (not implemented here)
+  }
 }

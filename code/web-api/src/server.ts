@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { createApp } from './app';
-import { initializeDatabase, disconnectDatabase } from './config/database';
+import { initializeDatabase, disconnectDatabase } from './lib/database';
 import { connectRedis, disconnectRedis } from './lib/redis';
 
 const port = Number(process.env.PORT ?? 3000);

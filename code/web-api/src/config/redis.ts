@@ -16,4 +16,16 @@ export const redisConfig = {
   enableOfflineQueue: true,
 };
 
+export const redisConfigKeys = {
+  DEFAULT_CACHE_TTL: 3600,
+  CACHE_5_MINUTES: 300,
+  CACHE_10_MINUTES: 600,
+  CACHE_30_MINUTES: 1800,
+  CACHE_1_HOUR: 3600,
+}
+
+export const cacheKey = {
+  USER_INFO: 'user_info',
+}
+
 export default redisConfig;

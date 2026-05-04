@@ -20,6 +20,12 @@ const config = {
     secret: process.env.JWT_SECRET,
     refreshSecret: process.env.JWT_REFRESH_SECRET,
   },
+  oauth: {
+    googleClientId: process.env.GOOGLE_CLIENT_ID,
+    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL,
+    sessionSecret: process.env.SESSION_SECRET || 'your-secret-key',
+  },
   server: {
     env: process.env.NODE_ENV || 'development',
     port: Number(process.env.PORT) || 3000,

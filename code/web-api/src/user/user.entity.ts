@@ -6,7 +6,7 @@ import {
   InferCreationAttributes,
   Model,
 } from 'sequelize';
-import { sequelize } from '@/config/database';
+import { sequelize } from '@/config/sequelize';
 
 export type UserRole = 'user' | 'admin';
 
@@ -18,9 +18,11 @@ class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   declare username: CreationOptional<string | null>;
   declare fullName: CreationOptional<string | null>;
   declare phoneNumber: CreationOptional<string | null>;
-  declare password: string;
+  declare password: CreationOptional<string>;
   declare isActive: CreationOptional<boolean>;
   declare isEmailVerified: CreationOptional<boolean>;
+  declare googleId: CreationOptional<string | null>;
+  declare authProvider: CreationOptional<'local' | 'google' | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
@@ -36,6 +38,7 @@ class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
     phoneNumber: string | null;
     isActive: boolean;
     isEmailVerified: boolean;
+    authProvider: 'local' | 'google' | null;
     createdAt: Date;
     updatedAt: Date;
   } {
@@ -47,6 +50,7 @@ class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
       phoneNumber: this.phoneNumber,
       isActive: this.isActive,
       isEmailVerified: this.isEmailVerified,
+      authProvider: this.authProvider,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };
@@ -84,16 +88,25 @@ User.init(
     },
     password: {
       type: DataTypes.STRING(255),
-      allowNull: false,
+      allowNull: true,
       field: 'password',
-      validate: {
-        notEmpty: true,
-      },
     },
     phoneNumber: {
       type: DataTypes.STRING(20),
       allowNull: true,
       field: 'phone_number',
+    },
+    googleId: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      unique: true,
+      field: 'google_id',
+    },
+    authProvider: {
+      type: DataTypes.ENUM('local', 'google'),
+      allowNull: true,
+      defaultValue: 'local',
+      field: 'auth_provider',
     },
     isActive: {
       type: DataTypes.BOOLEAN,
