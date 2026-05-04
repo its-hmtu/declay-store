@@ -143,6 +143,7 @@ create table articles (
 	title varchar(255),
 	content text,
 	author_id int references admins(id),
+	slug varchar(255) unique,
 	created_at timestamptz default CURRENT_TIMESTAMP
 );
 

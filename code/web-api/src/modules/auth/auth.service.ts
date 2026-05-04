@@ -1,4 +1,4 @@
-import User from "@/user/user.entity";
+import User from "@/modules/user/user.entity";
 import { IUserData, IAuthService } from "./auth.interface";
 import { httpError } from "@/utils/http-error";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "@/utils/jwt";

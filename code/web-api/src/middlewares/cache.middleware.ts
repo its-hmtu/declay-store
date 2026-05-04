@@ -75,7 +75,7 @@ export function cache(options: CacheOptions = {}) {
 function generateDefaultKey(req: Request): string {
   const method = req.method.toUpperCase();
   const path = req.path;
-  const userId = req.user?.userId;
+  const userId = req.user ? (req.user as any).userId || (req.user as any).id : 'guest';
 
   if (!userId) {
     throw httpError(401, 'User ID is required for caching');

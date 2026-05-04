@@ -1,4 +1,4 @@
-import User from "@/user/user.entity";
+import User from "@/modules/user/user.entity";
 import { IUserService } from "./user.interface";
 import { httpError } from "@/utils/http-error";
 

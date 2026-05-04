@@ -2,7 +2,7 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy, StrategyOptions, Profile } from 'passport-google-oauth20';
 import { VerifyCallback } from 'passport-google-oauth20';
 import config from './env';
-import User from '@/user/user.entity';
+import User from '@/modules/user/user.entity';
 
 const googleAuthConfig: StrategyOptions = {
   clientID: config.oauth.googleClientId || '',
