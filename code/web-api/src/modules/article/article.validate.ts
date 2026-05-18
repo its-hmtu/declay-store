@@ -1,31 +1,26 @@
 import { z } from "zod";
 
-// Create article validation
+const slugField = z
+  .string()
+  .min(2)
+  .max(280)
+  .regex(/^[a-z0-9-]+$/, 'Slug must be lowercase letters, numbers, and hyphens only');
+
 export const createArticleSchema = z.object({
-  title: z
-    .string("Title is required")
-    .min(5, "Title must be at least 5 characters")
-    .max(255, "Title must be less than 255 characters"),
-  content: z
-    .string("Content is required")
-    .min(20, "Content must be at least 20 characters"),
+  title: z.string().min(5, 'Title must be at least 5 characters').max(255),
+  content: z.string().min(20, 'Content must be at least 20 characters'),
+  slug: slugField,
 });
 
-// Update article validation
 export const updateArticleSchema = z
   .object({
-    title: z
-      .string()
-      .min(5, "Title must be at least 5 characters")
-      .max(255, "Title must be less than 255 characters")
-      .optional(),
-    content: z
-      .string()
-      .min(20, "Content must be at least 20 characters")
-      .optional(),
+    title: z.string().min(5).max(255).optional(),
+    content: z.string().min(20).optional(),
+    slug: slugField.optional(),
+    isPublished: z.boolean().optional(),
   })
-  .refine((data) => data.title || data.content, {
-    message: "At least one field (title or content) must be provided",
+  .refine((data) => Object.keys(data).length > 0, {
+    message: 'At least one field must be provided',
   });
 
 // Article ID validation (for path parameters)

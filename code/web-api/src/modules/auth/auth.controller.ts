@@ -12,26 +12,12 @@ export default class AuthController implements IAuthController {
   register = asyncHandler(async (req: Request, res: Response) => {
     const { email, password, username, fullName, phoneNumber } = req.body;
     const result = await this.authService.register({ email, password, username, fullName, phoneNumber });
-    
+
     if (result) {
       const { access_token, refresh_token, user } = result;
-
-      // set tokens in http-only cookies
-      res.cookie('access_token', access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 15 * 60 * 1000, // 15 minutes
-      });
-      res.cookie('refresh_token', refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
-
-      sendSuccess(res, { ...user }, 'User registered successfully', 201);
-    } 
+      sendSuccess(res, { accessToken: access_token, refreshToken: refresh_token, user }, 'User registered successfully', 201);
+      return;
+    }
 
     throw httpError(500, 'Something went wrong');
   });
@@ -39,45 +25,24 @@ export default class AuthController implements IAuthController {
   login = asyncHandler(async (req: Request, res: Response) => {
     const { email, password } = req.body;
     const result = await this.authService.login({ email, password });
-    
+
     if (result) {
       const { access_token, refresh_token, user } = result;
-      // set tokens in http-only cookies
-      res.cookie('access_token', access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 15 * 60 * 1000, // 15 minutes
-      });
-      res.cookie('refresh_token', refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
-
-      sendSuccess(res, { ...user }, 'Login successful');
+      sendSuccess(res, { accessToken: access_token, refreshToken: refresh_token, user });
     } else {
       throw httpError(500, 'Something went wrong');
     }
   });
 
   refreshToken = asyncHandler(async (req: Request, res: Response) => {
-    const { refresh_token } = req.body;
-    const result = await this.authService.refreshToken(refresh_token);
-    
+    const { refreshToken } = req.body;
+    const result = await this.authService.refreshToken(refreshToken);
+
     if (!result) {
       throw httpError(401, 'Invalid refresh token');
     }
 
-    res.cookie('access_token', result.access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 15 * 60 * 1000, // 15 minutes
-    });
-
-    sendSuccess(res, null, 'Token refreshed successfully');
+    sendSuccess(res, { accessToken: result.access_token });
   });
 
   logout = asyncHandler(async (req: Request, res: Response) => {
@@ -101,28 +66,19 @@ export default class AuthController implements IAuthController {
   googleAuthCallback = asyncHandler(async (req: Request, res: Response) => {
     const user = req.user as any;
     if (!user) {
-      throw httpError(401, 'Google authentication failed');
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      return res.redirect(`${frontendUrl}/login?error=oauth_failed`);
     }
 
     const result = await this.authService.handleOAuthCallback(user);
     const { access_token, refresh_token } = result;
 
-    // set tokens in http-only cookies
-    res.cookie('access_token', access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 15 * 60 * 1000, // 15 minutes
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const params = new URLSearchParams({
+      accessToken:  access_token,
+      refreshToken: refresh_token,
     });
-    res.cookie('refresh_token', refresh_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
-
-    // Redirect to frontend with success or send JSON response
-    sendSuccess(res, { ...result.user }, 'Google login successful', 200);
+    res.redirect(`${frontendUrl}/auth/callback?${params}`);
   });
 
   forgotPassword = asyncHandler(async (req: Request, res: Response) => {

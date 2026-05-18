@@ -20,16 +20,26 @@ const config = {
     secret: process.env.JWT_SECRET,
     refreshSecret: process.env.JWT_REFRESH_SECRET,
   },
+  adminJwt: {
+    secret: process.env.JWT_ADMIN_SECRET,
+    expiredIn: process.env.JWT_ADMIN_EXPIRED_IN || '8h',
+  },
   oauth: {
     googleClientId: process.env.GOOGLE_CLIENT_ID,
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
     googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL,
     sessionSecret: process.env.SESSION_SECRET || 'your-secret-key',
+    frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+  },
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY || '',
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
   },
   server: {
     env: process.env.NODE_ENV || 'development',
     port: Number(process.env.PORT) || 3000,
-  }
+  },
 }
 
 export default config;

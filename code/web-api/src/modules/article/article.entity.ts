@@ -14,19 +14,11 @@ class Article extends Model<InferAttributes<Article>, InferCreationAttributes<Ar
   declare authorId: number;
   declare slug: string;
   declare views: CreationOptional<number>;
+  declare isPublished: CreationOptional<boolean>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
-  toJSON(): {
-    id: number;
-    title: string;
-    content: string;
-    authorId: number;
-    slug: string;
-    views: number;
-    createdAt: Date;
-    updatedAt: Date;
-  } {
+  toJSON() {
     return {
       id: this.id,
       title: this.title,
@@ -34,6 +26,7 @@ class Article extends Model<InferAttributes<Article>, InferCreationAttributes<Ar
       authorId: this.authorId,
       slug: this.slug,
       views: this.views,
+      isPublished: this.isPublished,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };
@@ -42,51 +35,26 @@ class Article extends Model<InferAttributes<Article>, InferCreationAttributes<Ar
 
 Article.init(
   {
-    id: {
-      type: DataTypes.INTEGER,
-      autoIncrement: true,
-      primaryKey: true,
-    },
-    title: {
-      type: DataTypes.STRING(255),
-      allowNull: false,
-    },
-    content: {
-      type: DataTypes.TEXT,
-      allowNull: false,
-    },
+    id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+    title: { type: DataTypes.STRING(255), allowNull: false },
+    content: { type: DataTypes.TEXT, allowNull: false },
+    // authorId references admin_users — stored as a plain integer without DB-level FK
+    // to avoid coupling article writes to the users table
     authorId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       field: 'author_id',
-      references: {
-        model: 'users',
-        key: 'id',
-      },
-      onDelete: 'CASCADE',
     },
-    slug: {
-      type: DataTypes.STRING(255),
+    slug: { type: DataTypes.STRING(255), allowNull: false, unique: true },
+    views: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    isPublished: {
+      type: DataTypes.BOOLEAN,
       allowNull: false,
-      unique: true,
+      defaultValue: false,
+      field: 'is_published',
     },
-    views: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 0,
-    },
-    createdAt: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW,
-      field: 'created_at',
-    },
-    updatedAt: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW,
-      field: 'updated_at',
-    },
+    createdAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'created_at' },
+    updatedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'updated_at' },
   },
   {
     sequelize,
@@ -94,7 +62,7 @@ Article.init(
     modelName: 'Article',
     timestamps: true,
     underscored: true,
-  }
+  },
 );
 
 export default Article;

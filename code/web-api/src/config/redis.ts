@@ -26,6 +26,14 @@ export const redisConfigKeys = {
 
 export const cacheKey = {
   USER_INFO: 'user_info',
+  CATEGORY_LIST: 'category_list',
+  CATEGORY_DETAIL: 'category_detail',
+  PRODUCT_LIST: 'product_list',
+  PRODUCT_DETAIL: 'product_detail',
+  ARTICLE_LIST: 'article_list',
+  ARTICLE_DETAIL: 'article_detail',
+  JOB_LIST: 'job_list',
+  JOB_DETAIL: 'job_detail',
 }
 
 export default redisConfig;

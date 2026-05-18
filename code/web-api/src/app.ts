@@ -1,17 +1,20 @@
-import express, { type Express, type Request, type Response } from 'express';
+import express, { type Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import session from 'express-session';
-import { sendSuccess } from './utils/response';
 import { errorHandler } from './middlewares/error-handler';
 import { createRoutes } from './routes';
+import { createWebhookRouter } from './modules/payment/payment.route';
 import passport from './config/passport-google';
 import config from './config/env';
 
 export function createApp(): Express {
   const app = express();
   const apiPrefix = '/api';
+
+  // Stripe webhook must receive raw body — mount before express.json()
+  app.use(`${apiPrefix}/webhooks`, express.raw({ type: 'application/json' }), createWebhookRouter());
 
   // Session middleware
   app.use(session({
@@ -22,8 +25,8 @@ export function createApp(): Express {
       secure: config.server.env === 'production',
       httpOnly: true,
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    }
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    },
   }));
 
   app.use(helmet());
@@ -33,13 +36,11 @@ export function createApp(): Express {
   app.use(morgan('dev'));
   app.use(express.static('public'));
 
-  // Passport initialization
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Mount versioned API routes
   app.use(apiPrefix, createRoutes());
-  
+
   app.use(errorHandler);
 
   return app;

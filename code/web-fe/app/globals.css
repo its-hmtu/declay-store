@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* Artisan warm palette */
+  --color-brand:          #6B3F1A;
+  --color-brand-light:    #A0522D;
+  --color-brand-lighter:  #C27B4D;
+  --color-brand-faint:    #F5EFE0;
+
+  --color-surface:        #FDFAF5;
+  --color-surface-alt:    #F5EFE0;
+  --color-border:         #DDD0BB;
+  --color-border-strong:  #C4AE90;
+
+  --color-text:           #2C1810;
+  --color-text-muted:     #7A5C44;
+  --color-text-faint:     #A89280;
+
+  --color-success:        #5C8A5F;
+  --color-warning:        #C5920A;
+  --color-error:          #B35050;
+  --color-info:           #4A7FA5;
+
+  /* Typography */
+  --font-serif:  var(--font-source-serif-4), "Georgia", serif;
+  --font-sans:   var(--font-radio-canada-big), system-ui, sans-serif;
+  --font-mono:   var(--font-geist-mono), monospace;
+}
+
+:root {
+  --background: #FDFAF5;
+  --foreground: #2C1810;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+/* Heading style — all headings use the serif font */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+}

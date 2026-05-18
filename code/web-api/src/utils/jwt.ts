@@ -107,3 +107,38 @@ export function verifyAccessToken(token: string): AuthenticatedUser {
 export function verifyRefreshToken(token: string): AuthenticatedUser {
   return verifyToken(token, getRequiredEnv('JWT_REFRESH_SECRET'), 'refresh');
 }
+
+export interface AuthenticatedAdmin {
+  adminId: number;
+  email: string;
+  role: string;
+}
+
+export function signAdminAccessToken(admin: AuthenticatedAdmin): string {
+  return jwt.sign(
+    { sub: String(admin.adminId), email: admin.email, role: admin.role, tokenType: 'admin' },
+    getRequiredEnv('JWT_ADMIN_SECRET'),
+    { expiresIn: (process.env.JWT_ADMIN_EXPIRED_IN ?? '8h') as SignOptions['expiresIn'] },
+  );
+}
+
+export function verifyAdminAccessToken(token: string): AuthenticatedAdmin {
+  let decoded: jwt.JwtPayload;
+
+  try {
+    decoded = jwt.verify(token, getRequiredEnv('JWT_ADMIN_SECRET')) as jwt.JwtPayload;
+  } catch {
+    throw new AppError('Invalid or expired admin token', { statusCode: 401, code: 'UNAUTHORIZED' });
+  }
+
+  if (decoded.tokenType !== 'admin' || typeof decoded.sub !== 'string' || typeof decoded.email !== 'string') {
+    throw new AppError('Invalid admin token payload', { statusCode: 401, code: 'UNAUTHORIZED' });
+  }
+
+  const adminId = Number(decoded.sub);
+  if (!Number.isInteger(adminId) || adminId <= 0) {
+    throw new AppError('Invalid admin token payload', { statusCode: 401, code: 'UNAUTHORIZED' });
+  }
+
+  return { adminId, email: decoded.email, role: decoded.role as string };
+}
