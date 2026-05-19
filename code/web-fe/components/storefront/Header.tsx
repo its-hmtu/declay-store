@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { ShoppingCart, User, Menu, X } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { ShoppingCart, User, LogOut, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { auth } from '@/lib/auth';
+import { authApi } from '@/lib/api';
 
 const NAV = [
   { href: '/products', label: 'Shop' },
@@ -14,8 +15,18 @@ const NAV = [
 
 export default function Header({ cartCount = 0 }: { cartCount?: number }) {
   const pathname   = usePathname();
+  const router     = useRouter();
   const [open, setOpen] = useState(false);
   const isLoggedIn = auth.isLoggedIn();
+
+  async function logout() {
+    const token = auth.getToken();
+    if (token) {
+      try { await authApi.logout(token); } catch {}
+    }
+    auth.clearTokens();
+    router.push('/login');
+  }
 
   return (
     <header className="sticky top-0 z-40 bg-surface/95 backdrop-blur border-b border-border">
@@ -64,6 +75,16 @@ export default function Header({ cartCount = 0 }: { cartCount?: number }) {
           >
             <User size={20} />
           </Link>
+
+          {isLoggedIn && (
+            <button
+              onClick={logout}
+              className="p-2 text-text-muted hover:text-brand transition-colors"
+              aria-label="Log out"
+            >
+              <LogOut size={20} />
+            </button>
+          )}
 
           {/* Mobile menu toggle */}
           <button

@@ -16,7 +16,8 @@ export default function ProductDetail({ product }: { product: Product }) {
   const [loading,  setLoading]  = useState(false);
   const [imgIdx,   setImgIdx]   = useState(0);
 
-  const images = selected?.images ?? [];
+  const isValidSrc = (src: string) => src.startsWith('/') || src.startsWith('http');
+  const images = (selected?.images ?? []).filter(isValidSrc);
 
   async function addToCart() {
     const token = auth.getToken();

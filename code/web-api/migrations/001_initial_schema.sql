@@ -144,9 +144,12 @@ CREATE INDEX IF NOT EXISTS idx_cart_items_cart_id    ON cart_items(cart_id);
 CREATE INDEX IF NOT EXISTS idx_cart_items_variant_id ON cart_items(variant_id);
 
 -- ── 10. orders ───────────────────────────────────────────────
-CREATE TYPE IF NOT EXISTS order_status_enum AS ENUM (
-  'pending_payment', 'paid', 'processing', 'shipped', 'delivered', 'cancelled'
-);
+DO $$ BEGIN
+  CREATE TYPE order_status_enum AS ENUM (
+    'pending_payment', 'paid', 'processing', 'shipped', 'delivered', 'cancelled'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS orders (
   id                        SERIAL PRIMARY KEY,
@@ -195,9 +198,12 @@ CREATE TABLE IF NOT EXISTS jobs (
 CREATE INDEX IF NOT EXISTS idx_jobs_is_open ON jobs(is_open);
 
 -- ── 13. job_applications ─────────────────────────────────────
-CREATE TYPE IF NOT EXISTS application_status_enum AS ENUM (
-  'received', 'reviewing', 'interview', 'hired', 'rejected'
-);
+DO $$ BEGIN
+  CREATE TYPE application_status_enum AS ENUM (
+    'received', 'reviewing', 'interview', 'hired', 'rejected'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS job_applications (
   id              SERIAL PRIMARY KEY,

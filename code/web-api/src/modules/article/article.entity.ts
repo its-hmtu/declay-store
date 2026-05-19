@@ -16,7 +16,7 @@ class Article extends Model<InferAttributes<Article>, InferCreationAttributes<Ar
   declare views: CreationOptional<number>;
   declare isPublished: CreationOptional<boolean>;
   declare createdAt: CreationOptional<Date>;
-  declare updatedAt: CreationOptional<Date>;
+  // declare updatedAt: CreationOptional<Date>;
 
   toJSON() {
     return {
@@ -28,7 +28,7 @@ class Article extends Model<InferAttributes<Article>, InferCreationAttributes<Ar
       views: this.views,
       isPublished: this.isPublished,
       createdAt: this.createdAt,
-      updatedAt: this.updatedAt,
+      // updatedAt: this.updatedAt,
     };
   }
 }
@@ -54,7 +54,7 @@ Article.init(
       field: 'is_published',
     },
     createdAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'created_at' },
-    updatedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'updated_at' },
+    // updatedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'updated_at' },
   },
   {
     sequelize,

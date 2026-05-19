@@ -41,6 +41,8 @@ export function createAdminProductRouter(): Router {
 
   router.use(adminProtect);
 
+  router.get('/', controller.list);
+  router.get('/:id', validate(productIdSchema, 'params'), controller.findById);
   router.post('/', validate(createProductSchema), controller.create);
   router.put('/:id', validate(productIdSchema, 'params'), validate(updateProductSchema), controller.update);
   router.delete('/:id', validate(productIdSchema, 'params'), controller.delete);

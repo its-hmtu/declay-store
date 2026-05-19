@@ -34,6 +34,8 @@ export function createAdminCategoryRouter(): Router {
 
   router.use(adminProtect);
 
+  router.get('/', controller.list);
+  router.get('/:id', validate(categoryIdSchema, 'params'), controller.findById);
   router.post('/', validate(createCategorySchema), controller.create);
   router.put('/:id', validate(categoryIdSchema, 'params'), validate(updateCategorySchema), controller.update);
   router.delete('/:id', validate(categoryIdSchema, 'params'), controller.delete);

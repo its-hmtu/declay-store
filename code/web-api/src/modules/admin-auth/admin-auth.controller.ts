@@ -9,8 +9,8 @@ export default class AdminAuthController implements IAdminAuthController {
 
   login = asyncHandler(async (req: Request, res: Response) => {
     const { email, password } = req.body;
-    const result = await this.adminAuthService.login({ email, password });
-    sendSuccess(res, result, 'Admin login successful');
+    const { access_token, admin } = await this.adminAuthService.login({ email, password });
+    sendSuccess(res, { accessToken: access_token, admin }, 'Admin login successful');
   });
 
   getAdminInfo = asyncHandler(async (req: Request, res: Response) => {

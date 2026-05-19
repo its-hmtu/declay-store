@@ -8,7 +8,22 @@ type RequestOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   cache?: RequestCache;
   next?: NextFetchRequestConfig;
+  _retry?: boolean;
 };
+
+function readCookie(name: string): string | undefined {
+  if (typeof document === 'undefined') return undefined;
+  return document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))?.[1];
+}
+
+function writeCookie(name: string, value: string, maxAge: number): void {
+  const secure = location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `${name}=${value}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}`;
+}
+
+function deleteCookie(name: string): void {
+  document.cookie = `${name}=; Path=/; Max-Age=0`;
+}
 
 async function request<T>(
   path: string,
@@ -32,6 +47,26 @@ async function request<T>(
   const json = await res.json();
 
   if (!res.ok) {
+    if (res.status === 401 && !options._retry) {
+      const refreshToken = readCookie('declay_refresh');
+      if (refreshToken) {
+        try {
+          const refreshRes = await fetch(`${BASE_URL}/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken }),
+          });
+          if (refreshRes.ok) {
+            const refreshJson = await refreshRes.json();
+            const newToken = (refreshJson as ApiResponse<{ accessToken: string }>).data.accessToken;
+            writeCookie('declay_token', newToken, 3600);
+            return request(path, { ...options, token: newToken, _retry: true });
+          }
+        } catch {}
+        deleteCookie('declay_token');
+        deleteCookie('declay_refresh');
+      }
+    }
     const err = json as ApiError;
     throw new ApiRequestError(err.message, res.status, err.errorCode, err.errors);
   }
@@ -80,7 +115,7 @@ export const productsApi = {
     return api.get<import('./types').Product[]>(`/products?${qs}`, { next: { revalidate: 60 } });
   },
   detail: (slug: string) =>
-    api.get<import('./types').Product>(`/products/${slug}`, { next: { revalidate: 60 } }),
+    api.get<import('./types').Product>(`/products/slug/${slug}`, { next: { revalidate: 60 } }),
 };
 
 export const categoriesApi = {
@@ -129,7 +164,8 @@ export const authApi = {
     api.post<import('./types').AuthTokens>('/auth/register', data),
   refresh: (refreshToken: string) =>
     api.post<{ accessToken: string }>('/auth/refresh', { refreshToken }),
-  me:       (token: string) => api.get<import('./types').User>('/auth/me', { token }),
+  logout: (token: string) => api.post<void>('/auth/logout', {}, { token }),
+  me:     (token: string) => api.get<import('./types').User>('/auth/me', { token }),
 };
 
 export const adminAuthApi = {
