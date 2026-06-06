@@ -7,6 +7,7 @@ import {
 } from 'sequelize';
 import { sequelize } from '@/config/sequelize';
 import User from '@/modules/user/user.entity';
+import DiscountCode from '@/modules/discount/discount.entity';
 
 export type OrderStatus =
   | 'pending_payment'
@@ -23,6 +24,8 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
   declare totalAmount: number;
   declare stripePaymentIntentId: CreationOptional<string | null>;
   declare shippingAddressId: CreationOptional<number | null>;
+  declare discountCodeId: CreationOptional<number | null>;
+  declare discountAmount: CreationOptional<number>;
   declare notes: CreationOptional<string | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
@@ -60,6 +63,19 @@ Order.init(
       field: 'shipping_address_id',
       references: { model: 'addresses', key: 'id' },
       onDelete: 'SET NULL',
+    },
+    discountCodeId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'discount_code_id',
+      references: { model: 'discount_codes', key: 'id' },
+      onDelete: 'SET NULL',
+    },
+    discountAmount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 0,
+      field: 'discount_amount',
     },
     notes: { type: DataTypes.TEXT, allowNull: true },
     createdAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'created_at' },
@@ -119,8 +135,72 @@ OrderItem.init(
   { sequelize, tableName: 'order_items', modelName: 'OrderItem', timestamps: true, underscored: true },
 );
 
+export class OrderShipment extends Model<
+  InferAttributes<OrderShipment>,
+  InferCreationAttributes<OrderShipment>
+> {
+  declare id: CreationOptional<number>;
+  declare orderId: number;
+  declare carrier: string;
+  declare trackingNumber: string;
+  declare shippedAt: CreationOptional<Date>;
+  declare estimatedDeliveryAt: CreationOptional<Date | null>;
+  declare deliveredAt: CreationOptional<Date | null>;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+}
+
+OrderShipment.init(
+  {
+    id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+    orderId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      unique: true,
+      field: 'order_id',
+      references: { model: 'orders', key: 'id' },
+      onDelete: 'CASCADE',
+    },
+    carrier: { type: DataTypes.STRING(100), allowNull: false },
+    trackingNumber: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+      field: 'tracking_number',
+    },
+    shippedAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+      field: 'shipped_at',
+    },
+    estimatedDeliveryAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'estimated_delivery_at',
+    },
+    deliveredAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'delivered_at',
+    },
+    createdAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'created_at' },
+    updatedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'updated_at' },
+  },
+  {
+    sequelize,
+    tableName: 'order_shipments',
+    modelName: 'OrderShipment',
+    timestamps: true,
+    underscored: true,
+  },
+);
+
 // Associations
 User.hasMany(Order, { foreignKey: 'userId', as: 'orders' });
 Order.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 Order.hasMany(OrderItem, { foreignKey: 'orderId', as: 'items', onDelete: 'CASCADE' });
 OrderItem.belongsTo(Order, { foreignKey: 'orderId', as: 'order' });
+Order.hasOne(OrderShipment, { foreignKey: 'orderId', as: 'shipment', onDelete: 'CASCADE' });
+OrderShipment.belongsTo(Order, { foreignKey: 'orderId', as: 'order' });
+DiscountCode.hasMany(Order, { foreignKey: 'discountCodeId', as: 'orders' });
+Order.belongsTo(DiscountCode, { foreignKey: 'discountCodeId', as: 'discountCode' });
