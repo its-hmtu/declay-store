@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { createApp } from './app';
 import { initializeDatabase, disconnectDatabase } from './lib/database';
 import { connectRedis, disconnectRedis } from './lib/redis';
+import { startEmailWorker, closeEmailWorker } from './lib/email-queue';
 
 const port = Number(process.env.PORT ?? 3000);
 const app = createApp();
@@ -12,6 +13,8 @@ async function start(): Promise<void> {
       initializeDatabase(),
       connectRedis(),
     ]);
+
+    startEmailWorker();
 
     app.listen(port, '0.0.0.0', () => {
       console.log(`✅ Server running on http://localhost:${port}`);
@@ -27,6 +30,7 @@ async function shutdown(signal: string, error?: unknown, exitCode?: number): Pro
   await Promise.all([
     disconnectDatabase(),
     disconnectRedis(),
+    closeEmailWorker(),
   ]);
   process.exit(exitCode || 0);
 }

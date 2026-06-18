@@ -19,6 +19,7 @@ export interface IAuthService {
   handleOAuthCallback(user: User): Promise<{ access_token: string; refresh_token: string; user: any }>;
   forgotPassword(email: string): Promise<void>;
   resetPassword(token: string, newPassword: string): Promise<void>;
+  verifyEmail(token: string): Promise<void>;
 }
 
 export interface IAuthController {
@@ -30,4 +31,5 @@ export interface IAuthController {
   googleAuthCallback: RequestHandler;
   forgotPassword: RequestHandler;
   resetPassword: RequestHandler;
+  verifyEmail: RequestHandler;
 }

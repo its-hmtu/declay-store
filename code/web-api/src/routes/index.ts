@@ -8,6 +8,7 @@ import { createArticleRouter } from '@/modules/article/artical.route';
 import { createCategoryRouter } from '@/modules/category/category.route';
 import { createProductRouter } from '@/modules/product/product.route';
 import { createCartRouter } from '@/modules/cart/cart.route';
+import { createWishlistRouter } from '@/modules/wishlist/wishlist.route';
 import { createOrderRouter } from '@/modules/order/order.route';
 import { createJobRouter } from '@/modules/job/job.route';
 import { createApplicationRouter } from '@/modules/job-application/job-application.route';
@@ -32,6 +33,7 @@ export function createRoutes(): Router {
   router.use('/categories', createCategoryRouter());
   router.use('/products', createProductRouter());
   router.use('/cart', createCartRouter());
+  router.use('/wishlist', createWishlistRouter());
   router.use('/orders', createOrderRouter());
   router.use('/jobs', createJobRouter());
   // Nested: POST /api/jobs/:jobId/applications

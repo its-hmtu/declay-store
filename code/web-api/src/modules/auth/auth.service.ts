@@ -1,11 +1,17 @@
-import User from "@/modules/user/user.entity";
-import { IUserData, IAuthService } from "./auth.interface";
-import { httpError } from "@/utils/http-error";
-import { signAccessToken, signRefreshToken, verifyRefreshToken } from "@/utils/jwt";
+import User from '@/modules/user/user.entity';
+import { IUserData, IAuthService } from './auth.interface';
+import { httpError } from '@/utils/http-error';
+import { signAccessToken, signRefreshToken, verifyRefreshToken } from '@/utils/jwt';
+import { emailQueue } from '@/lib/email-queue';
+import {
+  createEmailVerificationToken,
+  consumeEmailVerificationToken,
+  createPasswordResetToken,
+  consumePasswordResetToken,
+} from '@/modules/auth-token/auth-token.service';
 
 export default class AuthService implements IAuthService {
   async register(userData: IUserData): Promise<{ access_token: string; refresh_token: string; user: any }> {
-    // Implementation for user registration
     const { email, password, username, phoneNumber, fullName } = userData;
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
@@ -13,38 +19,34 @@ export default class AuthService implements IAuthService {
     }
 
     const newUser = await User.create({ email, password, username, phoneNumber, fullName });
+
+    const token = await createEmailVerificationToken(newUser.id);
+    await emailQueue.add('verify-email', { to: email, token });
+
     const accessToken = await this.generateAccessToken(newUser);
     const refreshToken = await this.generateRefreshToken(newUser);
     return {
       access_token: accessToken,
       refresh_token: refreshToken,
       user: newUser.toSafeJSON(),
-    }
+    };
   }
 
   async login(userData: IUserData): Promise<{ access_token: string; refresh_token: string; user: any }> {
-    // Implementation for user login
     const { email, password } = userData;
 
-    // Use unscoped() to include password field (excluded by defaultScope)
     const user = await User.unscoped().findOne({ where: { email } });
     if (!user || !user.verifyPassword(password)) {
       throw httpError(401, 'Invalid email or password');
     }
 
-    // Generate token using jsonwebtoken
     const access_token = await this.generateAccessToken(user);
     const refresh_token = await this.generateRefreshToken(user);
 
-    return {
-      access_token,
-      refresh_token,
-      user: user.toSafeJSON(),
-    }
+    return { access_token, refresh_token, user: user.toSafeJSON() };
   }
 
   async refreshToken(refreshToken: string): Promise<{ access_token: string; user: any }> {
-    // verify refresh token and generate new access token
     const decoded = verifyRefreshToken(refreshToken);
 
     const user = await User.findByPk(decoded.userId);
@@ -53,11 +55,7 @@ export default class AuthService implements IAuthService {
     }
 
     const access_token = await this.generateAccessToken(user);
-
-    return {
-      access_token,
-      user: user.toSafeJSON(),
-    };
+    return { access_token, user: user.toSafeJSON() };
   }
 
   async generateAccessToken(user: User): Promise<string> {
@@ -73,34 +71,45 @@ export default class AuthService implements IAuthService {
     if (!user) {
       throw httpError(404, 'User not found');
     }
-
     return user;
   }
 
   async handleOAuthCallback(user: User): Promise<{ access_token: string; refresh_token: string; user: any }> {
-    // Generate tokens for OAuth user
     const access_token = await this.generateAccessToken(user);
     const refresh_token = await this.generateRefreshToken(user);
-
-    return {
-      access_token,
-      refresh_token,
-      user: user.toSafeJSON(),
-    };
+    return { access_token, refresh_token, user: user.toSafeJSON() };
   }
 
   async forgotPassword(email: string): Promise<void> {
-    // Implementation for forgot password
     const user = await User.findOne({ where: { email } });
+    // Return silently even if user not found — prevents email enumeration
+    if (!user) return;
+
+    const token = await createPasswordResetToken(user.id);
+    await emailQueue.add('reset-password', { to: email, token });
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const userId = await consumePasswordResetToken(token);
+
+    const user = await User.findByPk(userId);
     if (!user) {
       throw httpError(404, 'User not found');
     }
 
-    // Generate reset token and send email (not implemented here)
+    await user.update({ password: newPassword });
   }
 
-  async resetPassword(token: string, newPassword: string): Promise<void> {
-    // Implementation for reset password
-    // Verify token and update user's password (not implemented here)
+  async verifyEmail(token: string): Promise<void> {
+    const userId = await consumeEmailVerificationToken(token);
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      throw httpError(404, 'User not found');
+    }
+
+    if (user.isEmailVerified) return;
+
+    await user.update({ isEmailVerified: true });
   }
 }

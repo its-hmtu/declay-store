@@ -84,12 +84,19 @@ export default class AuthController implements IAuthController {
   forgotPassword = asyncHandler(async (req: Request, res: Response) => {
     const { email } = req.body;
     await this.authService.forgotPassword(email);
-    sendSuccess(res, null, 'Password reset instructions sent to email');
+    // Always 200 regardless of whether email exists — prevents enumeration
+    sendSuccess(res, null, 'If that email is registered, a reset link has been sent');
   });
 
   resetPassword = asyncHandler(async (req: Request, res: Response) => {
     const { token, newPassword } = req.body;
     await this.authService.resetPassword(token, newPassword);
     sendSuccess(res, null, 'Password reset successful');
+  });
+
+  verifyEmail = asyncHandler(async (req: Request, res: Response) => {
+    const { token } = req.body;
+    await this.authService.verifyEmail(token);
+    sendSuccess(res, null, 'Email verified successfully');
   });
 }

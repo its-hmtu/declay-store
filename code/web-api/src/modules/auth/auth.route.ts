@@ -3,7 +3,7 @@ import { Router } from "express";
 import { validate } from "@/middlewares/validate";
 import { routeProtect } from "@/middlewares/auth.middleware";
 import { cache } from "@/middlewares/cache.middleware";
-import { registerSchema, loginSchema } from "./auth.validate";
+import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, verifyEmailSchema } from "./auth.validate";
 import { IAuthService } from "./auth.interface";
 import AuthService from "./auth.service";
 import { cacheKey, redisConfigKeys } from "@/config/redis";
@@ -43,8 +43,9 @@ export function createAuthRouter(): Router {
     authController.getUserInfo
   );
 
-  router.post('/forgot-password', authController.forgotPassword);
-  router.post('/reset-password', authController.resetPassword);
+  router.post('/forgot-password', validate(forgotPasswordSchema), authController.forgotPassword);
+  router.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword);
+  router.post('/verify-email', validate(verifyEmailSchema), authController.verifyEmail);
 
   return router;
 }
