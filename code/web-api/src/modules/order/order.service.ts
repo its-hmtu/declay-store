@@ -1,4 +1,5 @@
 import Stripe from 'stripe';
+import { Op, literal } from 'sequelize';
 import { sequelize } from '@/config/sequelize';
 import config from '@/config/env';
 import { Order, OrderItem, type OrderStatus } from './order.entity';
@@ -10,6 +11,8 @@ import DiscountService from '@/modules/discount/discount.service';
 import { enqueueFulfillment } from '@/lib/shipping-queue';
 import { queueOrderStatusEmail } from '@/lib/email-queue';
 import type { IOrder, IOrderService, ICreateOrderData } from './order.interface';
+
+class OversoldError extends Error {}
 
 const stripe = new Stripe(config.stripe.secretKey);
 
@@ -140,43 +143,60 @@ export default class OrderService implements IOrderService {
     const order = await Order.findOne({ where: { stripePaymentIntentId } });
     if (!order) return; // Webhook may fire before order is fully persisted — safe to ignore
 
-    // Idempotency guard (W-01): Stripe may deliver `payment_intent.succeeded` more than once
-    // (documented retries on non-2xx, plus at-least-once delivery). Without a guard, a duplicate
-    // delivery would decrement stock again, double-count discount usage, re-send the email and
-    // re-enqueue fulfillment. We re-read the row WITH A LOCK inside the transaction and only run
-    // the state transition + side effects when the order is still `pending_payment`.
-    const transitioned = await sequelize.transaction(async (t) => {
-      const locked = await Order.findOne({
-        where: { id: order.id },
-        lock: t.LOCK.UPDATE,
-        transaction: t,
+    // Idempotency guard (W-01): Stripe may deliver `payment_intent.succeeded` more than once.
+    // Re-read the row WITH A LOCK inside the transaction and only run the paid transition +
+    // side effects when the order is still `pending_payment`, so duplicate deliveries are no-ops.
+    let transitioned = false;
+    try {
+      transitioned = await sequelize.transaction(async (t) => {
+        const locked = await Order.findOne({
+          where: { id: order.id },
+          lock: t.LOCK.UPDATE,
+          transaction: t,
+        });
+
+        // Already handled by an earlier (possibly duplicate) delivery — do nothing.
+        if (!locked || locked.status !== 'pending_payment') return false;
+
+        // Decrement stock for each ordered variant WITH A FLOOR to prevent overselling (W-02).
+        // update() returns the affected-row count; 0 means stock < quantity for this variant,
+        // so we abort the whole transaction (rolling back any earlier decrements).
+        const items = await OrderItem.findAll({ where: { orderId: locked.id }, transaction: t });
+        for (const item of items) {
+          const [affected] = await ProductVariant.update(
+            { stock: literal(`stock - ${item.quantity}`) },
+            { where: { id: item.variantId, stock: { [Op.gte]: item.quantity } }, transaction: t },
+          );
+          if (affected === 0) throw new OversoldError();
+        }
+
+        // Count the discount use now that payment succeeded
+        if (locked.discountCodeId) {
+          await this.discountService.incrementUsage(locked.discountCodeId, t);
+        }
+
+        // Clear the buyer's cart
+        const cart = await Cart.findOne({ where: { userId: locked.userId }, transaction: t });
+        if (cart) await CartItem.destroy({ where: { cartId: cart.id }, transaction: t });
+
+        // All stock reserved successfully — commit the paid transition last.
+        await locked.update({ status: 'paid' }, { transaction: t });
+        return true;
       });
-
-      // Already handled by an earlier (possibly duplicate) delivery — do nothing.
-      if (!locked || locked.status !== 'pending_payment') return false;
-
-      await locked.update({ status: 'paid' }, { transaction: t });
-
-      // Decrement stock for each ordered variant
-      const items = await OrderItem.findAll({ where: { orderId: locked.id }, transaction: t });
-      for (const item of items) {
-        await ProductVariant.decrement('stock', { by: item.quantity, where: { id: item.variantId }, transaction: t });
+    } catch (err) {
+      if (err instanceof OversoldError) {
+        // Payment was captured but stock ran out before we could reserve it. Refund and cancel
+        // so we never keep money for goods we cannot ship (W-02).
+        if (order.stripePaymentIntentId) {
+          await stripe.refunds.create({ payment_intent: order.stripePaymentIntentId });
+        }
+        await order.update({ status: 'cancelled' });
+        return;
       }
+      throw err;
+    }
 
-      // Count the discount use now that payment succeeded
-      if (locked.discountCodeId) {
-        await this.discountService.incrementUsage(locked.discountCodeId, t);
-      }
-
-      // Clear the buyer's cart
-      const cart = await Cart.findOne({ where: { userId: locked.userId }, transaction: t });
-      if (cart) await CartItem.destroy({ where: { cartId: cart.id }, transaction: t });
-
-      return true;
-    });
-
-    // Duplicate or late webhook delivery: the transaction found the order already paid (or gone).
-    // Skip all side effects so we never send a second email or start fulfillment twice.
+    // Duplicate or late webhook delivery: the order was already paid (or gone). No side effects.
     if (!transitioned) return;
 
     await queueOrderStatusEmail({ orderId: order.id, status: 'paid' });
