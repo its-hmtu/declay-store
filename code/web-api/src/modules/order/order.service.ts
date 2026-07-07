@@ -9,10 +9,9 @@ import Product from '@/modules/product/product.entity';
 import { httpError } from '@/utils/http-error';
 import DiscountService from '@/modules/discount/discount.service';
 import { enqueueFulfillment } from '@/lib/shipping-queue';
+import { enqueueReservationExpiry } from '@/lib/reservation-queue';
 import { queueOrderStatusEmail } from '@/lib/email-queue';
 import type { IOrder, IOrderService, ICreateOrderData } from './order.interface';
-
-class OversoldError extends Error {}
 
 const stripe = new Stripe(config.stripe.secretKey);
 
@@ -69,6 +68,16 @@ export default class OrderService implements IOrderService {
     });
 
     const order = await sequelize.transaction(async (t) => {
+      // W-03: reserve stock atomically by decrementing with a floor. 0 rows affected means
+      // another checkout took the last unit first — abort so we never oversell.
+      for (const item of items) {
+        const [affected] = await ProductVariant.update(
+          { stock: literal(`stock - ${item.quantity}`) },
+          { where: { id: item.variantId, stock: { [Op.gte]: item.quantity } }, transaction: t },
+        );
+        if (affected === 0) throw httpError(409, `Insufficient stock for "${item.variant.name}". Please try again.`);
+      }
+
       const newOrder = await Order.create(
         {
           userId,
@@ -97,6 +106,9 @@ export default class OrderService implements IOrderService {
 
       return newOrder;
     });
+
+    // Start the reservation-expiry timer so abandoned checkouts release their stock (W-03).
+    await enqueueReservationExpiry(order.id);
 
     return { order: order.toJSON() as IOrder, clientSecret: paymentIntent.client_secret! };
   }
@@ -144,57 +156,31 @@ export default class OrderService implements IOrderService {
     if (!order) return; // Webhook may fire before order is fully persisted — safe to ignore
 
     // Idempotency guard (W-01): Stripe may deliver `payment_intent.succeeded` more than once.
-    // Re-read the row WITH A LOCK inside the transaction and only run the paid transition +
-    // side effects when the order is still `pending_payment`, so duplicate deliveries are no-ops.
-    let transitioned = false;
-    try {
-      transitioned = await sequelize.transaction(async (t) => {
-        const locked = await Order.findOne({
-          where: { id: order.id },
-          lock: t.LOCK.UPDATE,
-          transaction: t,
-        });
-
-        // Already handled by an earlier (possibly duplicate) delivery — do nothing.
-        if (!locked || locked.status !== 'pending_payment') return false;
-
-        // Decrement stock for each ordered variant WITH A FLOOR to prevent overselling (W-02).
-        // update() returns the affected-row count; 0 means stock < quantity for this variant,
-        // so we abort the whole transaction (rolling back any earlier decrements).
-        const items = await OrderItem.findAll({ where: { orderId: locked.id }, transaction: t });
-        for (const item of items) {
-          const [affected] = await ProductVariant.update(
-            { stock: literal(`stock - ${item.quantity}`) },
-            { where: { id: item.variantId, stock: { [Op.gte]: item.quantity } }, transaction: t },
-          );
-          if (affected === 0) throw new OversoldError();
-        }
-
-        // Count the discount use now that payment succeeded
-        if (locked.discountCodeId) {
-          await this.discountService.incrementUsage(locked.discountCodeId, t);
-        }
-
-        // Clear the buyer's cart
-        const cart = await Cart.findOne({ where: { userId: locked.userId }, transaction: t });
-        if (cart) await CartItem.destroy({ where: { cartId: cart.id }, transaction: t });
-
-        // All stock reserved successfully — commit the paid transition last.
-        await locked.update({ status: 'paid' }, { transaction: t });
-        return true;
+    // Re-read the row WITH A LOCK and only finalize when still `pending_payment`. Stock was
+    // already reserved at order creation (W-03), so payment does NOT decrement stock again.
+    const transitioned = await sequelize.transaction(async (t) => {
+      const locked = await Order.findOne({
+        where: { id: order.id },
+        lock: t.LOCK.UPDATE,
+        transaction: t,
       });
-    } catch (err) {
-      if (err instanceof OversoldError) {
-        // Payment was captured but stock ran out before we could reserve it. Refund and cancel
-        // so we never keep money for goods we cannot ship (W-02).
-        if (order.stripePaymentIntentId) {
-          await stripe.refunds.create({ payment_intent: order.stripePaymentIntentId });
-        }
-        await order.update({ status: 'cancelled' });
-        return;
+
+      // Already handled by an earlier (possibly duplicate) delivery — do nothing.
+      if (!locked || locked.status !== 'pending_payment') return false;
+
+      // Count the discount use now that payment succeeded
+      if (locked.discountCodeId) {
+        await this.discountService.incrementUsage(locked.discountCodeId, t);
       }
-      throw err;
-    }
+
+      // Clear the buyer's cart
+      const cart = await Cart.findOne({ where: { userId: locked.userId }, transaction: t });
+      if (cart) await CartItem.destroy({ where: { cartId: cart.id }, transaction: t });
+
+      // The reservation becomes a firm sale.
+      await locked.update({ status: 'paid' }, { transaction: t });
+      return true;
+    });
 
     // Duplicate or late webhook delivery: the order was already paid (or gone). No side effects.
     if (!transitioned) return;
@@ -214,11 +200,23 @@ export default class OrderService implements IOrderService {
     }
 
     const wasPaid = order.status === 'paid';
+
+    // Restore the reserved/sold stock and mark cancelled atomically (W-03). The status
+    // transition also guards re-cancellation, so stock is never restored twice.
+    await sequelize.transaction(async (t) => {
+      const items = await OrderItem.findAll({ where: { orderId: order.id }, transaction: t });
+      for (const item of items) {
+        await ProductVariant.increment('stock', { by: item.quantity, where: { id: item.variantId }, transaction: t });
+      }
+      await order.update({ status: 'cancelled' }, { transaction: t });
+    });
+
+    // Refund only after the order is safely cancelled: a refund failure then leaves a
+    // cancelled order for an admin to reconcile, rather than risking a double refund.
     if (order.stripePaymentIntentId && wasPaid) {
       await stripe.refunds.create({ payment_intent: order.stripePaymentIntentId });
     }
 
-    await order.update({ status: 'cancelled' });
     return order.toJSON() as IOrder;
   }
 

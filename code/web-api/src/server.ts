@@ -3,6 +3,8 @@ import { createApp } from './app';
 import { initializeDatabase, disconnectDatabase } from './lib/database';
 import { connectRedis, disconnectRedis } from './lib/redis';
 import { startEmailWorker, closeEmailWorker } from './lib/email-queue';
+import { startShippingWorker, closeShippingWorker, reconcileFulfillment } from './lib/shipping-queue';
+import { startReservationWorker, closeReservationWorker, reconcileReservations } from './lib/reservation-queue';
 
 const port = Number(process.env.PORT ?? 3000);
 const app = createApp();
@@ -15,6 +17,11 @@ async function start(): Promise<void> {
     ]);
 
     startEmailWorker();
+    startShippingWorker();
+    startReservationWorker();
+    // Resume any orders left mid-fulfillment (e.g. paid before this pipeline existed)
+    await reconcileFulfillment();
+    await reconcileReservations();
 
     app.listen(port, '0.0.0.0', () => {
       console.log(`✅ Server running on http://localhost:${port}`);
@@ -31,6 +38,8 @@ async function shutdown(signal: string, error?: unknown, exitCode?: number): Pro
     disconnectDatabase(),
     disconnectRedis(),
     closeEmailWorker(),
+    closeShippingWorker(),
+    closeReservationWorker(),
   ]);
   process.exit(exitCode || 0);
 }
