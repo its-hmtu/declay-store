@@ -6,13 +6,18 @@ import { Cart, CartItem } from '@/modules/cart/cart.entity';
 import ProductVariant from '@/modules/product-variant/product-variant.entity';
 import Product from '@/modules/product/product.entity';
 import { httpError } from '@/utils/http-error';
+import DiscountService from '@/modules/discount/discount.service';
+import { enqueueFulfillment } from '@/lib/shipping-queue';
+import { queueOrderStatusEmail } from '@/lib/email-queue';
 import type { IOrder, IOrderService, ICreateOrderData } from './order.interface';
 
 const stripe = new Stripe(config.stripe.secretKey);
 
 export default class OrderService implements IOrderService {
+  private discountService = new DiscountService();
+
   async createFromCart(data: ICreateOrderData): Promise<{ order: IOrder; clientSecret: string }> {
-    const { userId, shippingAddressId, notes } = data;
+    const { userId, shippingAddressId, notes, discountCode } = data;
 
     const cart = await Cart.findOne({
       where: { userId },
@@ -37,10 +42,22 @@ export default class OrderService implements IOrderService {
       }
     }
 
-    const totalAmount = items.reduce(
+    const subtotal = items.reduce(
       (sum: number, item: any) => sum + Number(item.variant.price) * item.quantity,
       0,
     );
+
+    // Validate the code against the subtotal before charging anything
+    let discountCodeId: number | null = null;
+    let discountAmount = 0;
+    if (discountCode) {
+      const validated = await this.discountService.validateCode(discountCode, subtotal);
+      discountCodeId = validated.discountCodeId;
+      discountAmount = validated.discountAmount;
+    }
+
+    // totalAmount is the final amount charged (subtotal minus discount)
+    const totalAmount = Math.round((subtotal - discountAmount) * 100) / 100;
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(totalAmount * 100), // cents
@@ -54,6 +71,8 @@ export default class OrderService implements IOrderService {
           userId,
           status: 'pending_payment',
           totalAmount,
+          discountCodeId,
+          discountAmount,
           stripePaymentIntentId: paymentIntent.id,
           shippingAddressId,
           notes,
@@ -107,7 +126,13 @@ export default class OrderService implements IOrderService {
   async updateStatus(orderId: number, status: OrderStatus): Promise<IOrder> {
     const order = await Order.findByPk(orderId);
     if (!order) throw httpError(404, 'Order not found');
+    const previousStatus = order.status;
     await order.update({ status });
+
+    if (previousStatus !== status) {
+      await queueOrderStatusEmail({ orderId: order.id, status });
+    }
+
     return order.toJSON() as IOrder;
   }
 
@@ -115,19 +140,49 @@ export default class OrderService implements IOrderService {
     const order = await Order.findOne({ where: { stripePaymentIntentId } });
     if (!order) return; // Webhook may fire before order is fully persisted — safe to ignore
 
-    await sequelize.transaction(async (t) => {
-      await order.update({ status: 'paid' }, { transaction: t });
+    // Idempotency guard (W-01): Stripe may deliver `payment_intent.succeeded` more than once
+    // (documented retries on non-2xx, plus at-least-once delivery). Without a guard, a duplicate
+    // delivery would decrement stock again, double-count discount usage, re-send the email and
+    // re-enqueue fulfillment. We re-read the row WITH A LOCK inside the transaction and only run
+    // the state transition + side effects when the order is still `pending_payment`.
+    const transitioned = await sequelize.transaction(async (t) => {
+      const locked = await Order.findOne({
+        where: { id: order.id },
+        lock: t.LOCK.UPDATE,
+        transaction: t,
+      });
+
+      // Already handled by an earlier (possibly duplicate) delivery — do nothing.
+      if (!locked || locked.status !== 'pending_payment') return false;
+
+      await locked.update({ status: 'paid' }, { transaction: t });
 
       // Decrement stock for each ordered variant
-      const items = await OrderItem.findAll({ where: { orderId: order.id }, transaction: t });
+      const items = await OrderItem.findAll({ where: { orderId: locked.id }, transaction: t });
       for (const item of items) {
         await ProductVariant.decrement('stock', { by: item.quantity, where: { id: item.variantId }, transaction: t });
       }
 
+      // Count the discount use now that payment succeeded
+      if (locked.discountCodeId) {
+        await this.discountService.incrementUsage(locked.discountCodeId, t);
+      }
+
       // Clear the buyer's cart
-      const cart = await Cart.findOne({ where: { userId: order.userId }, transaction: t });
+      const cart = await Cart.findOne({ where: { userId: locked.userId }, transaction: t });
       if (cart) await CartItem.destroy({ where: { cartId: cart.id }, transaction: t });
+
+      return true;
     });
+
+    // Duplicate or late webhook delivery: the transaction found the order already paid (or gone).
+    // Skip all side effects so we never send a second email or start fulfillment twice.
+    if (!transitioned) return;
+
+    await queueOrderStatusEmail({ orderId: order.id, status: 'paid' });
+
+    // Start the automated fulfillment pipeline (processing → shipped → delivered)
+    await enqueueFulfillment(order.id);
   }
 
   async cancelOrder(orderId: number, userId: number): Promise<IOrder> {
@@ -138,7 +193,8 @@ export default class OrderService implements IOrderService {
       throw httpError(400, `Cannot cancel an order that is already ${order.status}`);
     }
 
-    if (order.stripePaymentIntentId && order.status === 'paid') {
+    const wasPaid = order.status === 'paid';
+    if (order.stripePaymentIntentId && wasPaid) {
       await stripe.refunds.create({ payment_intent: order.stripePaymentIntentId });
     }
 
