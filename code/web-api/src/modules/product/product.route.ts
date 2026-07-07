@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { validate } from '@/middlewares/validate';
-import { adminProtect } from '@/middlewares/admin.middleware';
+import { adminProtect, requireRole } from '@/middlewares/admin.middleware';
 import { cache } from '@/middlewares/cache.middleware';
 import { redisConfigKeys, cacheKey } from '@/config/redis';
 import ProductService from './product.service';
@@ -39,9 +39,9 @@ export function createAdminProductRouter(): Router {
   const router = Router();
   const controller = new ProductController(new ProductService());
 
-  router.use(adminProtect);
+  router.use(adminProtect, requireRole('admin', 'super_admin'));
 
-  router.get('/', controller.list);
+  router.get('/', controller.adminList);
   router.get('/:id', validate(productIdSchema, 'params'), controller.findById);
   router.post('/', validate(createProductSchema), controller.create);
   router.put('/:id', validate(productIdSchema, 'params'), validate(updateProductSchema), controller.update);

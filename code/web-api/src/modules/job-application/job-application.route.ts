@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { validate } from '@/middlewares/validate';
-import { adminProtect } from '@/middlewares/admin.middleware';
+import { adminProtect, requireRole } from '@/middlewares/admin.middleware';
 import JobApplicationService from './job-application.service';
 import JobApplicationController from './job-application.controller';
 import {
@@ -25,7 +25,7 @@ export function createAdminApplicationRouter(): Router {
   const router = Router({ mergeParams: true });
   const controller = new JobApplicationController(new JobApplicationService());
 
-  router.use(adminProtect);
+  router.use(adminProtect, requireRole('admin', 'super_admin'));
 
   router.get('/', validate(jobIdParamSchema, 'params'), controller.listByJob);
   router.get('/:applicationId', validate(applicationIdSchema, 'params'), controller.findById);
