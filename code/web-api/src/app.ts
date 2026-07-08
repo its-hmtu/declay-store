@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import session from 'express-session';
 import { errorHandler } from './middlewares/error-handler';
 import { createRoutes } from './routes';
+import { auditAdminWrites } from './middlewares/audit.middleware';
 import { createWebhookRouter } from './modules/payment/payment.route';
 import passport from './config/passport-google';
 import config from './config/env';
@@ -48,6 +49,7 @@ export function createApp(): Express {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  app.use(apiPrefix, auditAdminWrites);
   app.use(apiPrefix, createRoutes());
 
   app.use(errorHandler);
