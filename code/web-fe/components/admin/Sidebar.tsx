@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Package, Tag, ShoppingBag,
   FileText, Briefcase, LogOut, ChevronRight,
-  Ticket, Image as ImageIcon, Star, Users, Settings, ScrollText,
+  Ticket, Image as ImageIcon, Star, Users, Settings, ScrollText, Truck,
 } from 'lucide-react';
 import { adminAuth } from '@/lib/auth';
 import { toast } from 'sonner';
@@ -15,6 +15,7 @@ const NAV = [
   { href: '/admin/products',    label: 'Products',    icon: Package         },
   { href: '/admin/categories',  label: 'Categories',  icon: Tag             },
   { href: '/admin/orders',      label: 'Orders',      icon: ShoppingBag     },
+  { href: '/admin/shipping-methods', label: 'Shipping', icon: Truck },
   { href: '/admin/discounts',   label: 'Discounts',   icon: Ticket          },
   { href: '/admin/banners',     label: 'Banners',     icon: ImageIcon       },
   { href: '/admin/reviews',     label: 'Reviews',     icon: Star            },

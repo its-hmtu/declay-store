@@ -160,15 +160,19 @@ export const cartApi = {
 export const ordersApi = {
   list:     (token: string) => api.get<import('./types').Order[]>('/orders', { token }),
   detail:   (token: string, id: number) => api.get<import('./types').Order>(`/orders/${id}`, { token }),
-  checkout: (token: string, shippingAddressId: number, discountCode?: string) =>
+  checkout: (token: string, shippingAddressId: number, discountCode?: string, shippingMethodId?: number) =>
     api.post<import('./types').CheckoutResult>(
       '/orders/checkout',
-      { shippingAddressId, ...(discountCode ? { discountCode } : {}) },
+      { shippingAddressId, ...(discountCode ? { discountCode } : {}), ...(shippingMethodId ? { shippingMethodId } : {}) },
       { token },
     ),
 };
 
 /* ── Wishlist (customer) ───────────────────────────────── */
+export const shippingMethodsApi = {
+  list: () => api.get<import('./types').ShippingMethod[]>('/shipping-methods', { next: { revalidate: 300 } }),
+};
+
 export const wishlistApi = {
   get:    (token: string) => api.get<import('./types').Wishlist>('/wishlist', { token }),
   add:    (token: string, variantId: number) =>
@@ -238,6 +242,13 @@ export const adminSettingsApi = {
   list: (token: string) => api.get<import('./types').SiteSetting[]>('/admin/settings', { token }),
   save: (token: string, settings: Record<string, string | null>) =>
     api.put<import('./types').SiteSetting[]>('/admin/settings', { settings }, { token }),
+};
+
+export const adminShippingMethodsApi = {
+  list:   (token: string) => api.get<import('./types').ShippingMethod[]>('/admin/shipping-methods', { token }),
+  create: (token: string, data: unknown) => api.post<import('./types').ShippingMethod>('/admin/shipping-methods', data, { token }),
+  update: (token: string, id: number, data: unknown) => api.put<import('./types').ShippingMethod>(`/admin/shipping-methods/${id}`, data, { token }),
+  remove: (token: string, id: number) => api.delete<void>(`/admin/shipping-methods/${id}`, { token }),
 };
 
 export const adminUsersApi = {

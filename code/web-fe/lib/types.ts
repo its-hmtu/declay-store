@@ -363,3 +363,15 @@ export interface PageVersion {
   editedBy: number | null;
   createdAt: string;
 }
+
+export interface ShippingMethod {
+  id: number;
+  name: string;
+  description: string | null;
+  zone: 'all' | 'domestic' | 'international';
+  fee: number;
+  freeOver: number | null;
+  estimatedDays: string | null;
+  isActive: boolean;
+  sortOrder: number;
+}
