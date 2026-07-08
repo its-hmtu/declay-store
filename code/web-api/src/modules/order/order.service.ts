@@ -185,6 +185,18 @@ export default class OrderService implements IOrderService {
     if (status === 'shipped') {
       throw httpError(400, 'To mark an order shipped, create a shipment (carrier + tracking) via POST /admin/orders/:id/shipment.');
     }
+
+    // W-21: order status is forward-only; terminal states are locked.
+    const STATUS_RANK: Record<string, number> = {
+      pending_payment: 0, paid: 1, processing: 2, shipped: 3, delivered: 4, cancelled: 5,
+    };
+    if (order.status === 'delivered' || order.status === 'cancelled') {
+      throw httpError(400, `Order is already ${order.status} and its status can no longer change.`);
+    }
+    if (status !== 'cancelled' && STATUS_RANK[status] <= STATUS_RANK[order.status]) {
+      throw httpError(400, `Cannot move an order from ${order.status} back to ${status}.`);
+    }
+
     const previousStatus = order.status;
     await order.update({ status });
 
