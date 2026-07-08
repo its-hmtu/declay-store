@@ -217,6 +217,15 @@ export const adminDiscountsApi = {
   remove: (token: string, id: number) => api.delete<void>(`/admin/discounts/${id}`, { token }),
 };
 
+export const adminPagesApi = {
+  list:     (token: string) => api.get<import('./types').Page[]>('/admin/pages', { token }),
+  detail:   (token: string, id: number) => api.get<import('./types').Page>(`/admin/pages/${id}`, { token }),
+  versions: (token: string, id: number) => api.get<import('./types').PageVersion[]>(`/admin/pages/${id}/versions`, { token }),
+  create:   (token: string, data: unknown) => api.post<import('./types').Page>('/admin/pages', data, { token }),
+  update:   (token: string, id: number, data: unknown) => api.put<import('./types').Page>(`/admin/pages/${id}`, data, { token }),
+  remove:   (token: string, id: number) => api.delete<void>(`/admin/pages/${id}`, { token }),
+};
+
 export const adminBannersApi = {
   list:   (token: string) => api.get<import('./types').Banner[]>('/admin/banners?limit=100', { token }),
   detail: (token: string, id: number) => api.get<import('./types').Banner>(`/admin/banners/${id}`, { token }),

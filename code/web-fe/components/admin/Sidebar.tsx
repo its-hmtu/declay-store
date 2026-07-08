@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Package, Tag, ShoppingBag,
   FileText, Briefcase, LogOut, ChevronRight,
+  Ticket, Image as ImageIcon, Star, Users, Settings, ScrollText,
 } from 'lucide-react';
 import { adminAuth } from '@/lib/auth';
 import { toast } from 'sonner';
@@ -14,8 +15,14 @@ const NAV = [
   { href: '/admin/products',    label: 'Products',    icon: Package         },
   { href: '/admin/categories',  label: 'Categories',  icon: Tag             },
   { href: '/admin/orders',      label: 'Orders',      icon: ShoppingBag     },
+  { href: '/admin/discounts',   label: 'Discounts',   icon: Ticket          },
+  { href: '/admin/banners',     label: 'Banners',     icon: ImageIcon       },
+  { href: '/admin/reviews',     label: 'Reviews',     icon: Star            },
   { href: '/admin/articles',    label: 'Articles',    icon: FileText        },
+  { href: '/admin/pages',       label: 'Pages',       icon: ScrollText      },
   { href: '/admin/jobs',        label: 'Jobs',        icon: Briefcase       },
+  { href: '/admin/users',       label: 'Admin Users', icon: Users           },
+  { href: '/admin/settings',    label: 'Settings',    icon: Settings        },
 ];
 
 export default function AdminSidebar() {
@@ -31,8 +38,10 @@ export default function AdminSidebar() {
   return (
     <aside className="w-56 shrink-0 bg-brand text-white flex flex-col h-full">
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-white/10">
-        <p className="font-serif text-lg font-semibold">Declay Admin</p>
+      <div className="px-5 py-5 border-b border-white/10 flex items-center gap-2.5">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/DeCLAYStudioLogo.avif" alt="Declay" className="h-8 w-auto bg-white rounded-md p-1" />
+        <p className="font-serif text-lg font-semibold">Admin</p>
       </div>
 
       {/* Nav */}

@@ -351,3 +351,15 @@ export interface Page {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface PageVersion {
+  id: number;
+  pageId: number;
+  version: number;
+  title: string;
+  body: string;
+  effectiveDate: string | null;
+  isPublished: boolean;
+  editedBy: number | null;
+  createdAt: string;
+}
