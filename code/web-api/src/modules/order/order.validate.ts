@@ -3,6 +3,8 @@ import { z } from 'zod';
 export const createOrderSchema = z.object({
   shippingAddressId: z.number().int().positive('Shipping address is required'),
   notes: z.string().max(500).optional(),
+  discountCode: z.string().min(3).max(50).optional(),
+  shippingMethodId: z.number().int().positive().optional(),
 });
 
 export const updateOrderStatusSchema = z.object({

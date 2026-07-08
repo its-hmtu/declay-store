@@ -13,6 +13,7 @@ import { createWishlistRouter } from '@/modules/wishlist/wishlist.route';
 import { createDiscountRouter } from '@/modules/discount/discount.route';
 import { createBannerRouter } from '@/modules/banner/banner.route';
 import { createPageRouter } from '@/modules/page/page.route';
+import { createShippingMethodRouter } from '@/modules/shipping-method/shipping-method.route';
 import { createSettingRouter } from '@/modules/site-setting/site-setting.route';
 import { createChatRouter } from '@/modules/chat/chat.route';
 import { createOrderRouter } from '@/modules/order/order.route';
@@ -31,6 +32,7 @@ import { createAdminReviewRouter } from '@/modules/product-review/product-review
 import { createAdminDiscountRouter } from '@/modules/discount/discount.route';
 import { createAdminBannerRouter } from '@/modules/banner/banner.route';
 import { createAdminPageRouter } from '@/modules/page/page.route';
+import { createAdminShippingMethodRouter } from '@/modules/shipping-method/shipping-method.route';
 import { createAdminSettingRouter } from '@/modules/site-setting/site-setting.route';
 import { createAssistantRouter } from '@/modules/assistant/assistant.route';
 import { createAdminOrderRouter } from '@/modules/order/order.route';
@@ -55,6 +57,7 @@ export function createRoutes(): Router {
   router.use('/discounts', createDiscountRouter());
   router.use('/banners', createBannerRouter());
   router.use('/pages', createPageRouter());
+  router.use('/shipping-methods', createShippingMethodRouter());
   router.use('/settings', createSettingRouter());
   router.use('/chat', createChatRouter());
   router.use('/orders', createOrderRouter());
@@ -75,6 +78,7 @@ export function createRoutes(): Router {
   router.use('/admin/discounts', createAdminDiscountRouter());
   router.use('/admin/banners', createAdminBannerRouter());
   router.use('/admin/pages', createAdminPageRouter());
+  router.use('/admin/shipping-methods', createAdminShippingMethodRouter());
   router.use('/admin/settings', createAdminSettingRouter());
   router.use('/admin/assistant', createAssistantRouter());
   router.use('/admin/orders', createAdminOrderRouter());

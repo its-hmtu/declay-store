@@ -31,6 +31,7 @@ export interface ICreateOrderData {
   shippingAddressId: number;
   notes?: string;
   discountCode?: string;
+  shippingMethodId?: number;
 }
 
 export interface IOrderService {

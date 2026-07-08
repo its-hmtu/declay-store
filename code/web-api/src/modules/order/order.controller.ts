@@ -14,11 +14,13 @@ export default class OrderController implements IOrderController {
   }
 
   createCheckout = asyncHandler(async (req: Request, res: Response) => {
-    const { shippingAddressId, notes } = req.body;
+    const { shippingAddressId, notes, discountCode, shippingMethodId } = req.body;
     const result = await this.orderService.createFromCart({
       userId: this.getUserId(req),
       shippingAddressId,
       notes,
+      discountCode,
+      shippingMethodId,
     });
     sendSuccess(res, result, 'Checkout initiated', 201);
   });

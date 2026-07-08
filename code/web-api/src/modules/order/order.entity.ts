@@ -26,6 +26,9 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
   declare shippingAddressId: CreationOptional<number | null>;
   declare discountCodeId: CreationOptional<number | null>;
   declare discountAmount: CreationOptional<number>;
+  declare subtotal: CreationOptional<number>;
+  declare shippingFee: CreationOptional<number>;
+  declare shippingMethodId: CreationOptional<number | null>;
   declare notes: CreationOptional<string | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
@@ -76,6 +79,24 @@ Order.init(
       allowNull: false,
       defaultValue: 0,
       field: 'discount_amount',
+    },
+    subtotal: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 0,
+    },
+    shippingFee: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 0,
+      field: 'shipping_fee',
+    },
+    shippingMethodId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'shipping_method_id',
+      references: { model: 'shipping_methods', key: 'id' },
+      onDelete: 'SET NULL',
     },
     notes: { type: DataTypes.TEXT, allowNull: true },
     createdAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'created_at' },

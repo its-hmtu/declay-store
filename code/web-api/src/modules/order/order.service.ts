@@ -10,16 +10,24 @@ import { httpError } from '@/utils/http-error';
 import DiscountService from '@/modules/discount/discount.service';
 import { enqueueReservationExpiry } from '@/lib/reservation-queue';
 import { Payment, Refund } from '@/modules/payment/payment.entity';
+import ShippingMethod from '@/modules/shipping-method/shipping-method.entity';
+import Address from '@/modules/address/address.entity';
 import { queueOrderStatusEmail } from '@/lib/email-queue';
 import type { IOrder, IOrderService, ICreateOrderData } from './order.interface';
 
 const stripe = new Stripe(config.stripe.secretKey);
 
+function resolveShippingZone(country?: string | null): 'domestic' | 'international' {
+  const c = (country ?? '').trim().toLowerCase();
+  if (c === '' || c === 'vn' || c === 'vietnam' || c === 'viet nam' || c === 'việt nam') return 'domestic';
+  return 'international';
+}
+
 export default class OrderService implements IOrderService {
   private discountService = new DiscountService();
 
   async createFromCart(data: ICreateOrderData): Promise<{ order: IOrder; clientSecret: string }> {
-    const { userId, shippingAddressId, notes, discountCode } = data;
+    const { userId, shippingAddressId, notes, discountCode, shippingMethodId } = data;
 
     const cart = await Cart.findOne({
       where: { userId },
@@ -58,8 +66,24 @@ export default class OrderService implements IOrderService {
       discountAmount = validated.discountAmount;
     }
 
-    // totalAmount is the final amount charged (subtotal minus discount)
-    const totalAmount = Math.round((subtotal - discountAmount) * 100) / 100;
+    // W-15: resolve shipping fee (0 if no method, or subtotal reaches the free-over threshold)
+    let shippingFee = 0;
+    let resolvedShippingMethodId: number | null = null;
+    if (shippingMethodId) {
+      const method = await ShippingMethod.findByPk(shippingMethodId);
+      if (!method || !method.isActive) throw httpError(400, 'Selected shipping method is not available');
+      const address = shippingAddressId ? await Address.findByPk(shippingAddressId) : null;
+      const zone = resolveShippingZone(address?.country);
+      if (method.zone !== 'all' && method.zone !== zone) {
+        throw httpError(400, 'Selected shipping method is not available for your address');
+      }
+      const freeOver = method.freeOver != null ? Number(method.freeOver) : null;
+      shippingFee = freeOver != null && subtotal >= freeOver ? 0 : Number(method.fee);
+      resolvedShippingMethodId = method.id;
+    }
+
+    // totalAmount is the final amount charged (subtotal - discount + shipping)
+    const totalAmount = Math.round((subtotal - discountAmount + shippingFee) * 100) / 100;
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(totalAmount * 100), // cents
@@ -82,6 +106,9 @@ export default class OrderService implements IOrderService {
         {
           userId,
           status: 'pending_payment',
+          subtotal,
+          shippingFee,
+          shippingMethodId: resolvedShippingMethodId,
           totalAmount,
           discountCodeId,
           discountAmount,
