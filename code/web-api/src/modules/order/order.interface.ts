@@ -16,6 +16,8 @@ export interface IOrder {
   userId: number;
   status: OrderStatus;
   totalAmount: number;
+  discountCodeId: number | null;
+  discountAmount: number;
   stripePaymentIntentId: string | null;
   shippingAddressId: number | null;
   notes: string | null;
@@ -28,6 +30,7 @@ export interface ICreateOrderData {
   userId: number;
   shippingAddressId: number;
   notes?: string;
+  discountCode?: string;
 }
 
 export interface IOrderService {
@@ -36,6 +39,7 @@ export interface IOrderService {
   findById(id: number, userId?: number): Promise<IOrder>;
   updateStatus(orderId: number, status: OrderStatus): Promise<IOrder>;
   markAsPaid(stripePaymentIntentId: string): Promise<void>;
+  markPaymentFailed(stripePaymentIntentId: string): Promise<void>;
   cancelOrder(orderId: number, userId: number): Promise<IOrder>;
   listAll(page: number, limit: number, status?: OrderStatus): Promise<{ rows: IOrder[]; count: number }>;
 }

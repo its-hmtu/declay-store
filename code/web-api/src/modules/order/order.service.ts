@@ -9,6 +9,7 @@ import Product from '@/modules/product/product.entity';
 import { httpError } from '@/utils/http-error';
 import DiscountService from '@/modules/discount/discount.service';
 import { enqueueReservationExpiry } from '@/lib/reservation-queue';
+import { Payment, Refund } from '@/modules/payment/payment.entity';
 import { queueOrderStatusEmail } from '@/lib/email-queue';
 import type { IOrder, IOrderService, ICreateOrderData } from './order.interface';
 
@@ -87,6 +88,17 @@ export default class OrderService implements IOrderService {
           stripePaymentIntentId: paymentIntent.id,
           shippingAddressId,
           notes,
+        },
+        { transaction: t },
+      );
+
+      await Payment.create(
+        {
+          orderId: newOrder.id,
+          stripePaymentIntentId: paymentIntent.id,
+          amount: totalAmount,
+          currency: 'usd',
+          status: 'pending',
         },
         { transaction: t },
       );
@@ -184,6 +196,7 @@ export default class OrderService implements IOrderService {
 
       // The reservation becomes a firm sale.
       await locked.update({ status: 'paid' }, { transaction: t });
+      await Payment.update({ status: 'succeeded' }, { where: { stripePaymentIntentId }, transaction: t });
       return true;
     });
 
@@ -191,6 +204,10 @@ export default class OrderService implements IOrderService {
     if (!transitioned) return;
 
     await queueOrderStatusEmail({ orderId: order.id, status: 'paid' });
+  }
+
+  async markPaymentFailed(stripePaymentIntentId: string): Promise<void> {
+    await Payment.update({ status: 'failed' }, { where: { stripePaymentIntentId } });
   }
 
   async cancelOrder(orderId: number, userId: number): Promise<IOrder> {
@@ -216,7 +233,16 @@ export default class OrderService implements IOrderService {
     // Refund only after the order is safely cancelled: a refund failure then leaves a
     // cancelled order for an admin to reconcile, rather than risking a double refund.
     if (order.stripePaymentIntentId && wasPaid) {
-      await stripe.refunds.create({ payment_intent: order.stripePaymentIntentId });
+      const refund = await stripe.refunds.create({ payment_intent: order.stripePaymentIntentId });
+      const payment = await Payment.findOne({ where: { stripePaymentIntentId: order.stripePaymentIntentId } });
+      await Refund.create({
+        orderId: order.id,
+        paymentId: payment?.id ?? null,
+        stripeRefundId: refund.id,
+        amount: Number(order.totalAmount),
+        reason: 'order_cancelled',
+        status: 'succeeded',
+      });
     }
 
     return order.toJSON() as IOrder;

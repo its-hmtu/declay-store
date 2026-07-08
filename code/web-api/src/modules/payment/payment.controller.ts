@@ -30,6 +30,8 @@ export const stripeWebhook = asyncHandler(async (req: Request, res: Response) =>
 
   if (event.type === 'payment_intent.succeeded') {
     await orderService.markAsPaid(event.data.object.id);
+  } else if (event.type === 'payment_intent.payment_failed') {
+    await orderService.markPaymentFailed(event.data.object.id);
   }
 
   sendSuccess(res, null, 'Webhook received');
