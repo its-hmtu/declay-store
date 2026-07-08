@@ -30,6 +30,7 @@ Rules:
 - Be precise and concise. Confirm what you did, referencing the affected IDs.`;
 
 interface PendingState {
+  adminId: number;
   sessionId: number;
   messages: Anthropic.MessageParam[];
   toolUses: Array<{ id: string; name: string; input: unknown }>;
@@ -174,6 +175,7 @@ export default class AssistantService implements IAssistantService {
     await ChatMessage.create({ sessionId: session.id, role: 'user', content: input.message });
 
     const state: PendingState = {
+      adminId,
       sessionId: session.id,
       messages: [...history, { role: 'user', content: input.message }],
       toolUses: [],
@@ -188,6 +190,7 @@ export default class AssistantService implements IAssistantService {
     const key = `${PENDING_PREFIX}${pendingId}`;
     const pending = (await redisOperations.get(key)) as PendingState | null;
     if (!pending) throw httpError(404, 'No pending action found, or it has expired');
+    if (pending.adminId !== adminId) throw httpError(403, 'This pending action belongs to another admin');
     await redisOperations.delete(key);
 
     sendSSE(res, 'session', { sessionId: pending.sessionId });
