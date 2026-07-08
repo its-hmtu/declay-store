@@ -48,23 +48,29 @@ async function request<T>(
 
   if (!res.ok) {
     if (res.status === 401 && !options._retry) {
-      const refreshToken = readCookie('declay_refresh');
-      if (refreshToken) {
-        try {
-          const refreshRes = await fetch(`${BASE_URL}/auth/refresh`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken }),
-          });
-          if (refreshRes.ok) {
-            const refreshJson = await refreshRes.json();
-            const newToken = (refreshJson as ApiResponse<{ accessToken: string }>).data.accessToken;
-            writeCookie('declay_token', newToken, 3600);
-            return request(path, { ...options, token: newToken, _retry: true });
-          }
-        } catch {}
-        deleteCookie('declay_token');
-        deleteCookie('declay_refresh');
+      if (path.startsWith('/admin')) {
+        // Admin token rejected — clear it so the admin layout redirects to login.
+        // Never touch the customer session here.
+        deleteCookie('declay_admin_token');
+      } else {
+        const refreshToken = readCookie('declay_refresh');
+        if (refreshToken) {
+          try {
+            const refreshRes = await fetch(`${BASE_URL}/auth/refresh`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refreshToken }),
+            });
+            if (refreshRes.ok) {
+              const refreshJson = await refreshRes.json();
+              const newToken = (refreshJson as ApiResponse<{ accessToken: string }>).data.accessToken;
+              writeCookie('declay_token', newToken, 3600);
+              return request(path, { ...options, token: newToken, _retry: true });
+            }
+          } catch {}
+          deleteCookie('declay_token');
+          deleteCookie('declay_refresh');
+        }
       }
     }
     const err = json as ApiError;
@@ -106,12 +112,13 @@ export const api = {
 
 /* ── Domain helpers (server-side, pass token from cookies) ─ */
 export const productsApi = {
-  list: (params?: { page?: number; limit?: number; categoryId?: number; search?: string }) => {
+  list: (params?: { page?: number; limit?: number; categoryId?: number; search?: string; sort?: string }) => {
     const qs = new URLSearchParams();
     if (params?.page)       qs.set('page',       String(params.page));
     if (params?.limit)      qs.set('limit',      String(params.limit));
     if (params?.categoryId) qs.set('categoryId', String(params.categoryId));
     if (params?.search)     qs.set('search',     params.search);
+    if (params?.sort)       qs.set('sort',       params.sort);
     return api.get<import('./types').Product[]>(`/products?${qs}`, { next: { revalidate: 60 } });
   },
   detail: (slug: string) =>
@@ -153,14 +160,106 @@ export const cartApi = {
 export const ordersApi = {
   list:     (token: string) => api.get<import('./types').Order[]>('/orders', { token }),
   detail:   (token: string, id: number) => api.get<import('./types').Order>(`/orders/${id}`, { token }),
-  checkout: (token: string, addressId: number) =>
-    api.post<import('./types').CheckoutResult>('/orders/checkout', { addressId }, { token }),
+  checkout: (token: string, shippingAddressId: number, discountCode?: string) =>
+    api.post<import('./types').CheckoutResult>(
+      '/orders/checkout',
+      { shippingAddressId, ...(discountCode ? { discountCode } : {}) },
+      { token },
+    ),
+};
+
+/* ── Wishlist (customer) ───────────────────────────────── */
+export const wishlistApi = {
+  get:    (token: string) => api.get<import('./types').Wishlist>('/wishlist', { token }),
+  add:    (token: string, variantId: number) =>
+    api.post<import('./types').Wishlist>('/wishlist/items', { variantId }, { token }),
+  remove: (token: string, itemId: number) =>
+    api.delete<import('./types').Wishlist>(`/wishlist/items/${itemId}`, { token }),
+  clear:  (token: string) => api.delete<import('./types').Wishlist>('/wishlist', { token }),
+};
+
+/* ── Product reviews (public read, customer write) ─────── */
+export const reviewsApi = {
+  list:   (productId: number) =>
+    api.get<import('./types').ProductReview[]>(`/products/${productId}/reviews`),
+  create: (token: string, productId: number, data: { rating: number; title?: string; body?: string }) =>
+    api.post<import('./types').ProductReview>(`/products/${productId}/reviews`, data, { token }),
+  remove: (token: string, productId: number, reviewId: number) =>
+    api.delete<void>(`/products/${productId}/reviews/${reviewId}`, { token }),
+};
+
+/* ── Discount (customer preview against cart) ──────────── */
+export const discountsApi = {
+  validate: (token: string, code: string) =>
+    api.post<import('./types').DiscountPreview>('/discounts/validate', { code }, { token }),
+};
+
+/* ── Banners / Settings (public) ───────────────────────── */
+export const bannersApi = {
+  list: () => api.get<import('./types').Banner[]>('/banners', { next: { revalidate: 120 } }),
+};
+
+export const settingsApi = {
+  getPublic: () => api.get<Record<string, string>>('/settings', { next: { revalidate: 300 } }),
+};
+
+/* ── Admin: discounts / banners / settings / users / reviews / shipment ── */
+export const adminDiscountsApi = {
+  list:   (token: string) => api.get<import('./types').DiscountCode[]>('/admin/discounts?limit=100', { token }),
+  detail: (token: string, id: number) => api.get<import('./types').DiscountCode>(`/admin/discounts/${id}`, { token }),
+  create: (token: string, data: unknown) => api.post<import('./types').DiscountCode>('/admin/discounts', data, { token }),
+  update: (token: string, id: number, data: unknown) => api.put<import('./types').DiscountCode>(`/admin/discounts/${id}`, data, { token }),
+  remove: (token: string, id: number) => api.delete<void>(`/admin/discounts/${id}`, { token }),
+};
+
+export const adminBannersApi = {
+  list:   (token: string) => api.get<import('./types').Banner[]>('/admin/banners?limit=100', { token }),
+  detail: (token: string, id: number) => api.get<import('./types').Banner>(`/admin/banners/${id}`, { token }),
+  create: (token: string, data: unknown) => api.post<import('./types').Banner>('/admin/banners', data, { token }),
+  update: (token: string, id: number, data: unknown) => api.put<import('./types').Banner>(`/admin/banners/${id}`, data, { token }),
+  remove: (token: string, id: number) => api.delete<void>(`/admin/banners/${id}`, { token }),
+};
+
+export const adminSettingsApi = {
+  list: (token: string) => api.get<import('./types').SiteSetting[]>('/admin/settings', { token }),
+  save: (token: string, settings: Record<string, string | null>) =>
+    api.put<import('./types').SiteSetting[]>('/admin/settings', { settings }, { token }),
+};
+
+export const adminUsersApi = {
+  list:   (token: string) => api.get<import('./types').AdminUser[]>('/admin/users?limit=100', { token }),
+  create: (token: string, data: unknown) => api.post<import('./types').AdminUser>('/admin/users', data, { token }),
+  update: (token: string, id: number, data: unknown) => api.put<import('./types').AdminUser>(`/admin/users/${id}`, data, { token }),
+  remove: (token: string, id: number) => api.delete<void>(`/admin/users/${id}`, { token }),
+};
+
+export const adminReviewsApi = {
+  list:   (token: string, params?: { page?: number; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.page)  qs.set('page',  String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return api.get<import('./types').ProductReview[]>(`/admin/reviews?${qs}`, { token });
+  },
+  remove: (token: string, reviewId: number) => api.delete<void>(`/admin/reviews/${reviewId}`, { token }),
+};
+
+/* ── Shipment (customer read) ──────────────────────────── */
+export const shipmentApi = {
+  getMine: (token: string, orderId: number) =>
+    api.get<import('./types').Shipment>(`/orders/${orderId}/shipment`, { token }),
+};
+
+export const adminShipmentApi = {
+  get:    (token: string, orderId: number) => api.get<import('./types').Shipment>(`/admin/orders/${orderId}/shipment`, { token }),
+  create: (token: string, orderId: number, data: unknown) => api.post<import('./types').Shipment>(`/admin/orders/${orderId}/shipment`, data, { token }),
+  update: (token: string, orderId: number, data: unknown) => api.put<import('./types').Shipment>(`/admin/orders/${orderId}/shipment`, data, { token }),
+  remove: (token: string, orderId: number) => api.delete<void>(`/admin/orders/${orderId}/shipment`, { token }),
 };
 
 export const authApi = {
   login:    (email: string, password: string) =>
     api.post<import('./types').AuthTokens>('/auth/login', { email, password }),
-  register: (data: { email: string; password: string; fullName: string }) =>
+  register: (data: { email: string; password: string; fullName: string; phoneNumber?: string; dateOfBirth?: string }) =>
     api.post<import('./types').AuthTokens>('/auth/register', data),
   refresh: (refreshToken: string) =>
     api.post<{ accessToken: string }>('/auth/refresh', { refreshToken }),
@@ -173,8 +272,38 @@ export const adminAuthApi = {
     api.post<{ accessToken: string }>('/admin/auth/login', { email, password }),
 };
 
+/* Multipart image upload — bypasses the JSON `request()` helper. Returns the URL. */
+export async function uploadImage(file: File, token: string): Promise<string> {
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch(`${BASE_URL}/admin/upload`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` }, // no Content-Type — browser sets the boundary
+    body: fd,
+  });
+  const json = await res.json();
+  if (!res.ok) {
+    const err = json as ApiError;
+    throw new ApiRequestError(err.message || 'Upload failed', res.status, err.errorCode);
+  }
+  return (json as ApiResponse<{ url: string }>).data.url;
+}
+
 export const addressApi = {
   list:   (token: string) => api.get<import('./types').Address[]>('/addresses', { token }),
   create: (token: string, data: Partial<import('./types').Address>) =>
     api.post<import('./types').Address>('/addresses', data, { token }),
+  update: (token: string, id: number, data: Partial<import('./types').Address>) =>
+    api.put<import('./types').Address>(`/addresses/${id}`, data, { token }),
+  remove: (token: string, id: number) =>
+    api.delete<void>(`/addresses/${id}`, { token }),
+};
+
+/* ── User profile (customer) ───────────────────────────── */
+export const userApi = {
+  getInfo:    (token: string) => api.get<import('./types').User>('/users/info', { token }),
+  updateInfo: (token: string, data: Partial<import('./types').User>) =>
+    api.put<import('./types').User>('/users/info', data, { token }),
+  changePassword: (token: string, data: { currentPassword: string; newPassword: string; confirmPassword: string }) =>
+    api.post<void>('/users/change-password', data, { token }),
 };
