@@ -199,6 +199,11 @@ export const bannersApi = {
   list: () => api.get<import('./types').Banner[]>('/banners', { next: { revalidate: 120 } }),
 };
 
+export const pagesApi = {
+  getBySlug: (slug: string) =>
+    api.get<import('./types').Page>(`/pages/${slug}`, { next: { revalidate: 300 } }),
+};
+
 export const settingsApi = {
   getPublic: () => api.get<Record<string, string>>('/settings', { next: { revalidate: 300 } }),
 };

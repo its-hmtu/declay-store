@@ -61,6 +61,11 @@ export interface ProductVariant {
   isActive: boolean;
 }
 
+export interface ProductRating {
+  average: number;
+  count: number;
+}
+
 export interface Product {
   id: number;
   categoryId?: number;
@@ -68,9 +73,23 @@ export interface Product {
   slug: string;
   description?: string;
   isActive: boolean;
+  views?: number;
   category?: Category;
   variants?: ProductVariant[];
+  rating?: ProductRating;
+  salesCount?: number;
 }
+
+export const PRODUCT_SORTS = [
+  { value: 'newest',       label: 'Newest' },
+  { value: 'best-sellers', label: 'Best Sellers' },
+  { value: 'top-rated',    label: 'Top Rated' },
+  { value: 'trending',     label: 'Trending' },
+  { value: 'price-asc',    label: 'Price: Low to High' },
+  { value: 'price-desc',   label: 'Price: High to Low' },
+] as const;
+
+export type ProductSort = (typeof PRODUCT_SORTS)[number]['value'];
 
 /* ── Cart ──────────────────────────────────────────────── */
 export interface CartItem {
@@ -134,17 +153,22 @@ export interface Article {
 }
 
 /* ── Address ───────────────────────────────────────────── */
+export type AddressType = 'home' | 'work' | 'other';
+
 export interface Address {
   id: number;
   userId: number;
-  fullName: string;
-  phone: string;
-  street: string;
+  receiverName: string;
+  receiverPhone: string;
+  addressLine: string;
+  addressLine2?: string | null;
+  ward: string;
+  district: string;
   city: string;
-  state?: string;
-  postalCode?: string;
   country: string;
+  postalCode?: string | null;
   isDefault: boolean;
+  addressType: AddressType;
 }
 
 /* ── Job & Application ─────────────────────────────────── */
@@ -180,14 +204,150 @@ export interface JobApplication {
 export interface User {
   id: number;
   email: string;
-  fullName: string;
-  phone?: string;
-  avatarUrl?: string;
+  username: string | null;
+  fullName: string | null;
+  phoneNumber: string | null;
+  dateOfBirth: string | null;
+  isActive: boolean;
+  isEmailVerified: boolean;
+  authProvider: 'local' | 'google' | null;
   createdAt: string;
+  updatedAt: string;
 }
 
 /* ── Checkout ──────────────────────────────────────────── */
 export interface CheckoutResult {
-  orderId: number;
+  order: Order;
   clientSecret: string;
+}
+
+/* ── Wishlist ──────────────────────────────────────────── */
+export interface WishlistItem {
+  id: number;
+  wishlistId: number;
+  variantId: number;
+  addedAt: string;
+  variant?: {
+    id: number;
+    name: string;
+    price: number | string;
+    stock: number;
+    images: string[];
+    product?: { id: number; name: string; slug: string };
+  };
+}
+
+export interface Wishlist {
+  id: number;
+  userId: number;
+  items: WishlistItem[];
+}
+
+/* ── Product Reviews ───────────────────────────────────── */
+export interface ReviewAuthor {
+  id: number;
+  fullName: string | null;
+  username: string | null;
+}
+
+export interface ProductReview {
+  id: number;
+  userId: number;
+  productId: number;
+  variantId?: number | null;
+  rating: number;
+  title: string | null;
+  body: string | null;
+  isVerifiedPurchase: boolean;
+  createdAt: string;
+  user?: ReviewAuthor;
+  product?: { id: number; name: string; slug: string };
+}
+
+export interface ReviewSummary {
+  average: number;
+  total: number;
+  distribution: Record<1 | 2 | 3 | 4 | 5, number>;
+}
+
+/* ── Discounts ─────────────────────────────────────────── */
+export type DiscountType = 'percent' | 'fixed';
+
+export interface DiscountCode {
+  id: number;
+  code: string;
+  type: DiscountType;
+  value: number;
+  minOrderAmount: number;
+  maxUses: number | null;
+  usedCount: number;
+  expiresAt: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface DiscountPreview {
+  discountCodeId: number;
+  code: string;
+  type: DiscountType;
+  value: number;
+  discountAmount: number;
+  orderAmount: number;
+}
+
+/* ── Banners ───────────────────────────────────────────── */
+export interface Banner {
+  id: number;
+  title: string | null;
+  subtitle: string | null;
+  imageUrl: string;
+  linkUrl: string | null;
+  position: number;
+  isActive: boolean;
+  startsAt: string | null;
+  endsAt: string | null;
+  createdAt: string;
+}
+
+/* ── Site Settings ─────────────────────────────────────── */
+export interface SiteSetting {
+  key: string;
+  value: string | null;
+  updatedAt: string;
+}
+
+/* ── Admin Users ───────────────────────────────────────── */
+export type AdminRole = 'super_admin' | 'admin' | 'editor';
+
+export interface AdminUser {
+  id: number;
+  email: string;
+  fullName: string | null;
+  role: AdminRole;
+  isActive: boolean;
+  createdAt: string;
+}
+
+/* ── Order Shipment ────────────────────────────────────── */
+export interface Shipment {
+  id: number;
+  orderId: number;
+  carrier: string;
+  trackingNumber: string;
+  shippedAt: string;
+  estimatedDeliveryAt: string | null;
+  deliveredAt: string | null;
+}
+
+export interface Page {
+  id: number;
+  slug: string;
+  title: string;
+  body: string;
+  isPublished: boolean;
+  effectiveDate: string | null;
+  version: number;
+  updatedBy: number | null;
+  createdAt: string;
+  updatedAt: string;
 }
