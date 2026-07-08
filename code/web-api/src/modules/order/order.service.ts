@@ -8,7 +8,6 @@ import ProductVariant from '@/modules/product-variant/product-variant.entity';
 import Product from '@/modules/product/product.entity';
 import { httpError } from '@/utils/http-error';
 import DiscountService from '@/modules/discount/discount.service';
-import { enqueueFulfillment } from '@/lib/shipping-queue';
 import { enqueueReservationExpiry } from '@/lib/reservation-queue';
 import { queueOrderStatusEmail } from '@/lib/email-queue';
 import type { IOrder, IOrderService, ICreateOrderData } from './order.interface';
@@ -141,6 +140,12 @@ export default class OrderService implements IOrderService {
   async updateStatus(orderId: number, status: OrderStatus): Promise<IOrder> {
     const order = await Order.findByPk(orderId);
     if (!order) throw httpError(404, 'Order not found');
+
+    // W-08: shipping is a real, human action. Orders become 'shipped' only via the
+    // shipment endpoint (which requires a carrier + tracking number), never here.
+    if (status === 'shipped') {
+      throw httpError(400, 'To mark an order shipped, create a shipment (carrier + tracking) via POST /admin/orders/:id/shipment.');
+    }
     const previousStatus = order.status;
     await order.update({ status });
 
@@ -186,9 +191,6 @@ export default class OrderService implements IOrderService {
     if (!transitioned) return;
 
     await queueOrderStatusEmail({ orderId: order.id, status: 'paid' });
-
-    // Start the automated fulfillment pipeline (processing → shipped → delivered)
-    await enqueueFulfillment(order.id);
   }
 
   async cancelOrder(orderId: number, userId: number): Promise<IOrder> {
