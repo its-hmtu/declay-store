@@ -173,6 +173,12 @@ export const shippingMethodsApi = {
   list: () => api.get<import('./types').ShippingMethod[]>('/shipping-methods', { next: { revalidate: 300 } }),
 };
 
+export const notificationsApi = {
+  list:        (token: string) => api.get<import('./types').NotificationList>('/notifications', { token }),
+  markRead:    (token: string, id: number) => api.patch<void>(`/notifications/${id}/read`, {}, { token }),
+  markAllRead: (token: string) => api.post<void>('/notifications/read-all', {}, { token }),
+};
+
 export const wishlistApi = {
   get:    (token: string) => api.get<import('./types').Wishlist>('/wishlist', { token }),
   add:    (token: string, variantId: number) =>
@@ -249,6 +255,12 @@ export const adminShippingMethodsApi = {
   create: (token: string, data: unknown) => api.post<import('./types').ShippingMethod>('/admin/shipping-methods', data, { token }),
   update: (token: string, id: number, data: unknown) => api.put<import('./types').ShippingMethod>(`/admin/shipping-methods/${id}`, data, { token }),
   remove: (token: string, id: number) => api.delete<void>(`/admin/shipping-methods/${id}`, { token }),
+};
+
+export const adminNotificationsApi = {
+  list:        (token: string) => api.get<import('./types').NotificationList>('/admin/notifications', { token }),
+  markRead:    (token: string, id: number) => api.patch<void>(`/admin/notifications/${id}/read`, {}, { token }),
+  markAllRead: (token: string) => api.post<void>('/admin/notifications/read-all', {}, { token }),
 };
 
 export const adminUsersApi = {

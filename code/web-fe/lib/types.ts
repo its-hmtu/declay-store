@@ -375,3 +375,21 @@ export interface ShippingMethod {
   isActive: boolean;
   sortOrder: number;
 }
+
+export interface Notification {
+  id: number;
+  recipientType: 'admin' | 'user';
+  recipientId: number | null;
+  type: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface NotificationList {
+  rows: Notification[];
+  count: number;
+  unread: number;
+}
