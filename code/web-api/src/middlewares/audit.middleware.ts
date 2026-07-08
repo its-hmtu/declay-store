@@ -4,7 +4,7 @@ import { recordAudit } from '@/lib/audit';
 const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const SENSITIVE_KEYS = ['password', 'token', 'secret', 'card'];
 
-function sanitize(body: unknown): unknown {
+export function sanitizeAuditBody(body: unknown): unknown {
   if (!body || typeof body !== 'object') return body;
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(body as Record<string, unknown>)) {
@@ -29,7 +29,7 @@ export function auditAdminWrites(req: Request, res: Response, next: NextFunction
       actorId: req.admin.adminId,
       action: `${req.method} ${req.baseUrl}${req.path}`,
       source: 'admin_ui',
-      metadata: { params: req.params, body: sanitize(req.body), status: res.statusCode },
+      metadata: { params: req.params, body: sanitizeAuditBody(req.body), status: res.statusCode },
     });
   });
 
