@@ -47,6 +47,10 @@ const config = {
     // Auto-expire unpaid orders and release their reserved stock after this window (W-03).
     ttlMs: Number(process.env.RESERVATION_TTL_MS) || 30 * 60 * 1000, // 30 minutes
   },
+  notifications: {
+    // Alert admins when a variant's stock falls to or below this level (W-17).
+    lowStockThreshold: Number(process.env.LOW_STOCK_THRESHOLD) || 5,
+  },
   server: {
     env: process.env.NODE_ENV || 'development',
     port: Number(process.env.PORT) || 3000,

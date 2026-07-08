@@ -12,6 +12,7 @@ import { enqueueReservationExpiry } from '@/lib/reservation-queue';
 import { Payment, Refund } from '@/modules/payment/payment.entity';
 import ShippingMethod from '@/modules/shipping-method/shipping-method.entity';
 import Address from '@/modules/address/address.entity';
+import NotificationService from '@/modules/notification/notification.service';
 import { queueOrderStatusEmail } from '@/lib/email-queue';
 import type { IOrder, IOrderService, ICreateOrderData } from './order.interface';
 
@@ -25,6 +26,7 @@ function resolveShippingZone(country?: string | null): 'domestic' | 'internation
 
 export default class OrderService implements IOrderService {
   private discountService = new DiscountService();
+  private notificationService = new NotificationService();
 
   async createFromCart(data: ICreateOrderData): Promise<{ order: IOrder; clientSecret: string }> {
     const { userId, shippingAddressId, notes, discountCode, shippingMethodId } = data;
@@ -148,6 +150,17 @@ export default class OrderService implements IOrderService {
     // Start the reservation-expiry timer so abandoned checkouts release their stock (W-03).
     await enqueueReservationExpiry(order.id);
 
+    // W-17: alert admins about variants that dropped to/below the low-stock threshold.
+    const lowStock = await ProductVariant.findAll({
+      where: { id: items.map((i: any) => i.variantId), stock: { [Op.lte]: config.notifications.lowStockThreshold } },
+    });
+    for (const v of lowStock) {
+      await this.notificationService.notifyAdmins({
+        type: 'low_stock', title: `Low stock: ${v.name}`,
+        body: `Only ${v.stock} left in stock.`, link: '/admin/products',
+      });
+    }
+
     return { order: order.toJSON() as IOrder, clientSecret: paymentIntent.client_secret! };
   }
 
@@ -202,6 +215,9 @@ export default class OrderService implements IOrderService {
 
     if (previousStatus !== status) {
       await queueOrderStatusEmail({ orderId: order.id, status });
+      await this.notificationService.notifyUser(order.userId, {
+        type: 'order_status', title: `Order #${order.id} is now ${status}`, link: `/orders/${order.id}`,
+      });
     }
 
     return order.toJSON() as IOrder;
@@ -243,6 +259,13 @@ export default class OrderService implements IOrderService {
     if (!transitioned) return;
 
     await queueOrderStatusEmail({ orderId: order.id, status: 'paid' });
+    await this.notificationService.notifyAdmins({
+      type: 'order_paid', title: `New paid order #${order.id}`,
+      body: 'A new order has been paid and is ready to prepare.', link: `/admin/orders/${order.id}`,
+    });
+    await this.notificationService.notifyUser(order.userId, {
+      type: 'order_status', title: `Payment received for order #${order.id}`, link: `/orders/${order.id}`,
+    });
   }
 
   async markPaymentFailed(stripePaymentIntentId: string): Promise<void> {
