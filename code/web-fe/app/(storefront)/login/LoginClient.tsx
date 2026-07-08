@@ -58,6 +58,10 @@ export default function LoginClient() {
         />
       </div>
 
+      <div className="-mt-2 text-right">
+        <Link href="/auth/forgot-password" className="text-sm text-brand hover:underline">Forgot password?</Link>
+      </div>
+
       <Button type="submit" loading={loading} className="w-full">Log In</Button>
 
       <div className="relative my-1">

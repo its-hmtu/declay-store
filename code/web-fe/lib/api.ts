@@ -279,6 +279,9 @@ export const authApi = {
     api.post<{ accessToken: string }>('/auth/refresh', { refreshToken }),
   logout: (token: string) => api.post<void>('/auth/logout', {}, { token }),
   me:     (token: string) => api.get<import('./types').User>('/auth/me', { token }),
+  forgotPassword: (email: string) => api.post<void>('/auth/forgot-password', { email }),
+  resetPassword:  (token: string, newPassword: string) => api.post<void>('/auth/reset-password', { token, newPassword }),
+  verifyEmail:    (token: string) => api.post<void>('/auth/verify-email', { token }),
 };
 
 export const adminAuthApi = {
