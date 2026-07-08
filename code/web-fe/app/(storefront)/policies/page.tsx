@@ -1,30 +1,31 @@
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = { title: 'Chính sách cửa hàng' };
+export const metadata: Metadata = { title: 'Store Policies' };
 
-// NOTE (W-11): Bản mẫu để cửa hàng rà soát và thay bằng nội dung chính thức.
+// NOTE (W-11): Template content — the store must review and replace this with
+// the official policies before publishing.
 export default function PoliciesPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
-      <h1 className="font-serif text-4xl font-bold text-text mb-2">Chính sách cửa hàng</h1>
-      <p className="text-text-faint text-sm mb-8">Cập nhật lần cuối: (đang hoàn thiện)</p>
+      <h1 className="font-serif text-4xl font-bold text-text mb-2">Store Policies</h1>
+      <p className="text-text-faint text-sm mb-8">Last updated: (draft)</p>
 
       <div className="space-y-6 text-text-muted leading-relaxed">
         <p className="text-warning text-sm">
-          Đây là bản mẫu. Nội dung chính thức cần được cửa hàng rà soát trước khi phát hành.
+          This is a template. The final content must be reviewed by the store before publishing.
         </p>
 
         <section>
-          <h2 className="font-serif text-xl font-semibold text-text mb-2">Chính sách bảo mật</h2>
-          <p>Chúng tôi thu thập thông tin (email, số điện thoại, ngày sinh, địa chỉ) để xử lý đơn hàng và chăm sóc khách hàng, và không bán dữ liệu cho bên thứ ba.</p>
+          <h2 className="font-serif text-xl font-semibold text-text mb-2">Privacy Policy</h2>
+          <p>We collect information (email, phone number, date of birth, address) to process orders and support customers, and we do not sell your data to third parties.</p>
         </section>
         <section>
-          <h2 className="font-serif text-xl font-semibold text-text mb-2">Chính sách vận chuyển</h2>
-          <p>Thời gian và phí vận chuyển tùy theo khu vực. Mã vận đơn được cung cấp khi đơn hàng được gửi đi.</p>
+          <h2 className="font-serif text-xl font-semibold text-text mb-2">Shipping Policy</h2>
+          <p>Delivery time and shipping fees vary by region. A tracking number is provided once your order ships.</p>
         </section>
         <section>
-          <h2 className="font-serif text-xl font-semibold text-text mb-2">Chính sách đổi trả &amp; hoàn tiền</h2>
-          <p>Sản phẩm có thể được đổi/trả trong thời hạn quy định nếu còn nguyên trạng. Hoàn tiền được xử lý qua phương thức thanh toán ban đầu.</p>
+          <h2 className="font-serif text-xl font-semibold text-text mb-2">Returns &amp; Refunds Policy</h2>
+          <p>Items may be returned or exchanged within the stated period if they remain in original condition. Refunds are processed to the original payment method.</p>
         </section>
       </div>
     </div>

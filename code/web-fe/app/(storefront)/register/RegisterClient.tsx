@@ -9,15 +9,16 @@ import { authApi } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import GoogleSignInButton from '@/components/storefront/GoogleSignInButton';
-import { COUNTRY_CODES } from '@/lib/countryCodes';
+import { COUNTRY_CODES, type CountryCode } from '@/lib/countryCodes';
+import CountrySelect from '@/components/storefront/CountrySelect';
 
 const inputClass =
   'w-full px-4 py-2.5 border border-border rounded-lg bg-surface focus:outline-none focus:border-brand text-text placeholder:text-text-faint';
 
 const PASSWORD_RULES = [
-  { label: 'Ít nhất 8 ký tự', test: (v: string) => v.length >= 8 },
-  { label: 'Ít nhất 1 chữ hoa (A–Z)', test: (v: string) => /[A-Z]/.test(v) },
-  { label: 'Ít nhất 1 chữ số (0–9)', test: (v: string) => /[0-9]/.test(v) },
+  { label: 'At least 8 characters', test: (v: string) => v.length >= 8 },
+  { label: 'At least 1 uppercase letter (A–Z)', test: (v: string) => /[A-Z]/.test(v) },
+  { label: 'At least 1 number (0–9)', test: (v: string) => /[0-9]/.test(v) },
 ];
 
 export default function RegisterClient() {
@@ -25,7 +26,7 @@ export default function RegisterClient() {
   const [form, setForm] = useState({
     fullName: '', email: '', phone: '', dateOfBirth: '', password: '', confirmPassword: '',
   });
-  const [dialCode, setDialCode]       = useState('+84');
+  const [country, setCountry]         = useState<CountryCode>(COUNTRY_CODES[0]);
   const [showPassword, setShowPass]   = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [agreed, setAgreed]           = useState(false);
@@ -46,9 +47,9 @@ export default function RegisterClient() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!passwordValid)                       { toast.error('Mật khẩu chưa đạt yêu cầu.'); return; }
-    if (form.password !== form.confirmPassword) { toast.error('Mật khẩu xác nhận không khớp.'); return; }
-    if (!agreed)                              { toast.error('Bạn cần đồng ý với Điều khoản & Điều kiện.'); return; }
+    if (!passwordValid)                        { toast.error('Password does not meet the requirements.'); return; }
+    if (form.password !== form.confirmPassword) { toast.error('Passwords do not match.'); return; }
+    if (!agreed)                               { toast.error('You must agree to the Terms & Conditions.'); return; }
 
     setLoading(true);
     try {
@@ -57,7 +58,7 @@ export default function RegisterClient() {
         fullName: form.fullName,
         email: form.email,
         password: form.password,
-        phoneNumber: phoneDigits ? `${dialCode} ${phoneDigits}` : undefined,
+        phoneNumber: phoneDigits ? `${country.dial} ${phoneDigits}` : undefined,
         dateOfBirth: form.dateOfBirth || undefined,
       });
       auth.setTokens(data.accessToken, data.refreshToken);
@@ -75,7 +76,7 @@ export default function RegisterClient() {
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Full name */}
       <div>
-        <label className="block text-sm font-medium text-text mb-1.5" htmlFor="fullName">Họ và tên</label>
+        <label className="block text-sm font-medium text-text mb-1.5" htmlFor="fullName">Full Name</label>
         <input
           id="fullName" name="fullName" required
           value={form.fullName} onChange={handleChange}
@@ -95,17 +96,9 @@ export default function RegisterClient() {
 
       {/* Phone with country prefix */}
       <div>
-        <label className="block text-sm font-medium text-text mb-1.5" htmlFor="phone">Số điện thoại</label>
+        <label className="block text-sm font-medium text-text mb-1.5" htmlFor="phone">Phone Number</label>
         <div className="flex gap-2">
-          <select
-            aria-label="Mã vùng quốc gia" value={dialCode}
-            onChange={(e) => setDialCode(e.target.value)}
-            className="shrink-0 max-w-[7.5rem] px-2 py-2.5 border border-border rounded-lg bg-surface text-text focus:outline-none focus:border-brand"
-          >
-            {COUNTRY_CODES.map((c) => (
-              <option key={c.iso} value={c.dial}>{c.flag} {c.dial}</option>
-            ))}
-          </select>
+          <CountrySelect value={country} onChange={setCountry} />
           <input
             id="phone" name="phone" type="tel" inputMode="numeric" autoComplete="tel-national"
             value={form.phone} onChange={handleChange}
@@ -116,7 +109,7 @@ export default function RegisterClient() {
 
       {/* Date of birth */}
       <div>
-        <label className="block text-sm font-medium text-text mb-1.5" htmlFor="dateOfBirth">Ngày sinh</label>
+        <label className="block text-sm font-medium text-text mb-1.5" htmlFor="dateOfBirth">Date of Birth</label>
         <input
           id="dateOfBirth" name="dateOfBirth" type="date" max={today}
           value={form.dateOfBirth} onChange={handleChange}
@@ -126,7 +119,7 @@ export default function RegisterClient() {
 
       {/* Password + toggle + live rules */}
       <div>
-        <label className="block text-sm font-medium text-text mb-1.5" htmlFor="password">Mật khẩu</label>
+        <label className="block text-sm font-medium text-text mb-1.5" htmlFor="password">Password</label>
         <div className="relative">
           <input
             id="password" name="password" required autoComplete="new-password"
@@ -136,7 +129,7 @@ export default function RegisterClient() {
           />
           <button
             type="button" onClick={() => setShowPass((s) => !s)}
-            aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
             className="absolute inset-y-0 right-0 flex items-center px-3 text-text-faint hover:text-text"
           >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -154,7 +147,7 @@ export default function RegisterClient() {
 
       {/* Confirm password + toggle */}
       <div>
-        <label className="block text-sm font-medium text-text mb-1.5" htmlFor="confirmPassword">Xác nhận mật khẩu</label>
+        <label className="block text-sm font-medium text-text mb-1.5" htmlFor="confirmPassword">Confirm Password</label>
         <div className="relative">
           <input
             id="confirmPassword" name="confirmPassword" required autoComplete="new-password"
@@ -164,14 +157,14 @@ export default function RegisterClient() {
           />
           <button
             type="button" onClick={() => setShowConfirm((s) => !s)}
-            aria-label={showConfirm ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+            aria-label={showConfirm ? 'Hide password' : 'Show password'}
             className="absolute inset-y-0 right-0 flex items-center px-3 text-text-faint hover:text-text"
           >
             {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
         {form.confirmPassword.length > 0 && !passwordsMatch && (
-          <p className="mt-1.5 text-xs text-error">Mật khẩu xác nhận không khớp.</p>
+          <p className="mt-1.5 text-xs text-error">Passwords do not match.</p>
         )}
       </div>
 
@@ -182,10 +175,10 @@ export default function RegisterClient() {
           className="mt-0.5 h-4 w-4 rounded border-border text-brand focus:ring-brand"
         />
         <span>
-          Tôi đã đọc kỹ và đồng ý với{' '}
-          <Link href="/terms" target="_blank" className="text-brand hover:underline font-medium">Điều khoản &amp; Điều kiện</Link>{' '}
-          và{' '}
-          <Link href="/policies" target="_blank" className="text-brand hover:underline font-medium">Chính sách cửa hàng</Link>.
+          I have read and agree to the{' '}
+          <Link href="/terms" target="_blank" className="text-brand hover:underline font-medium">Terms &amp; Conditions</Link>{' '}
+          and{' '}
+          <Link href="/policies" target="_blank" className="text-brand hover:underline font-medium">Store Policies</Link>.
         </span>
       </label>
 
