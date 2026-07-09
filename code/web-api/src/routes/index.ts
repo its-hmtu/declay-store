@@ -25,7 +25,7 @@ import { createApplicationRouter } from '@/modules/job-application/job-applicati
 // Admin modules
 import { createAdminAuthRouter } from '@/modules/admin-auth/admin-auth.route';
 import { createAdminUserRouter } from '@/modules/admin-user/admin-user.route';
-import { createUploadRouter } from '@/modules/upload/upload.route';
+import { createUploadRouter, createCvUploadRouter } from '@/modules/upload/upload.route';
 import { createAdminArticleRouter } from '@/modules/article/artical.route';
 import { createAdminCategoryRouter } from '@/modules/category/category.route';
 import { createAdminProductRouter } from '@/modules/product/product.route';
@@ -61,6 +61,7 @@ export function createRoutes(): Router {
   router.use('/pages', createPageRouter());
   router.use('/shipping-methods', createShippingMethodRouter());
   router.use('/notifications', createNotificationRouter());
+  router.use('/careers/cv', createCvUploadRouter());
   router.use('/settings', createSettingRouter());
   router.use('/chat', createChatRouter());
   router.use('/orders', createOrderRouter());

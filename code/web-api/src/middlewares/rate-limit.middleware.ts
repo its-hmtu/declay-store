@@ -25,6 +25,15 @@ export const chatLimiter = rateLimit({
 });
 
 // Admin assistant — also Claude-backed. Keyed by admin id (runs after adminProtect).
+// Public file uploads (e.g. applicant CVs) — bound abuse of the disk-writing endpoint.
+export const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: Number(process.env.RATE_LIMIT_UPLOAD_MAX) || 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many uploads. Please try again later.' },
+});
+
 export const assistantLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: Number(process.env.RATE_LIMIT_ASSISTANT_MAX) || 30,

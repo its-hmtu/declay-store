@@ -329,6 +329,19 @@ export async function uploadImage(file: File, token: string): Promise<string> {
   return (json as ApiResponse<{ url: string }>).data.url;
 }
 
+/* Public multipart CV upload for job applicants. Returns the URL. */
+export async function uploadCv(file: File): Promise<string> {
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch(`${BASE_URL}/careers/cv`, { method: 'POST', body: fd });
+  const json = await res.json();
+  if (!res.ok) {
+    const err = json as ApiError;
+    throw new ApiRequestError(err.message || 'Upload failed', res.status, err.errorCode);
+  }
+  return (json as ApiResponse<{ url: string }>).data.url;
+}
+
 export const addressApi = {
   list:   (token: string) => api.get<import('./types').Address[]>('/addresses', { token }),
   create: (token: string, data: Partial<import('./types').Address>) =>
