@@ -2,6 +2,8 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const cloudinaryUrl = /^cloudinary:\/\/([^:]+):([^@]+)@(.+)$/.exec(process.env.CLOUDINARY_URL || '');
+
 const config = {
   database: {
     host: process.env.DB_HOST || 'localhost',
@@ -56,6 +58,11 @@ const config = {
     port: Number(process.env.PORT) || 3000,
     // Public base URL for serving uploaded files (used to build absolute image URLs)
     publicUrl: process.env.APP_PUBLIC_URL || `http://localhost:${Number(process.env.PORT) || 3000}`,
+  },
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME || (cloudinaryUrl ? cloudinaryUrl[3] : ''),
+    apiKey: process.env.CLOUDINARY_API_KEY || (cloudinaryUrl ? cloudinaryUrl[1] : ''),
+    apiSecret: process.env.CLOUDINARY_API_SECRET || (cloudinaryUrl ? cloudinaryUrl[2] : ''),
   },
   email: {
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
