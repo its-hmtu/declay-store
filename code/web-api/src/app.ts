@@ -7,6 +7,7 @@ import { errorHandler } from './middlewares/error-handler';
 import { createRoutes } from './routes';
 import { auditAdminWrites } from './middlewares/audit.middleware';
 import { createWebhookRouter } from './modules/payment/payment.route';
+import { createHealthRouter } from './modules/health/health.route';
 import passport from './config/passport-google';
 import config from './config/env';
 
@@ -36,7 +37,20 @@ export function createApp(): Express {
   app.use(cors());
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
-  app.use(morgan('dev'));
+  // Structured request logging (JSON in production, readable in development).
+  if (config.server.env === 'production') {
+    app.use(morgan(
+      (tokens, req, res) => JSON.stringify({
+        level: 'info', type: 'request', time: new Date().toISOString(),
+        method: tokens.method(req, res), url: tokens.url(req, res),
+        status: Number(tokens.status(req, res)),
+        responseTimeMs: Number(tokens['response-time'](req, res)),
+      }),
+      { stream: { write: (line: string) => console.log(line.trim()) } },
+    ));
+  } else {
+    app.use(morgan('dev'));
+  }
 
   // Public assets (uploaded images) are loaded by the frontend on a different
   // origin, so relax Helmet's default Cross-Origin-Resource-Policy for them only.
@@ -49,6 +63,7 @@ export function createApp(): Express {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  app.use(`${apiPrefix}/health`, createHealthRouter());
   app.use(apiPrefix, auditAdminWrites);
   app.use(apiPrefix, createRoutes());
 
