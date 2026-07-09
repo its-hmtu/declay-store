@@ -75,25 +75,29 @@ export default class ProductService implements IProductService {
   }
 
   async create(data: ICreateProductData): Promise<IProduct> {
-    const existing = await Product.findOne({ where: { slug: data.slug } });
+    const { tagIds, ...attrs } = data;
+    const existing = await Product.findOne({ where: { slug: attrs.slug } });
     if (existing) throw httpError(409, 'A product with this slug already exists');
 
-    const product = await Product.create(data);
+    const product = await Product.create(attrs);
+    if (tagIds) await (product as unknown as { setTags: (ids: number[]) => Promise<void> }).setTags(tagIds);
     await invalidateCache(`${cacheKey.PRODUCT_LIST}*`);
     return product.toJSON() as IProduct;
   }
 
   async update(id: number, data: IUpdateProductData): Promise<IProduct> {
+    const { tagIds, ...attrs } = data;
     const product = await Product.findByPk(id);
     if (!product) throw httpError(404, 'Product not found');
 
-    if (data.slug && data.slug !== product.slug) {
-      const conflict = await Product.findOne({ where: { slug: data.slug } });
+    if (attrs.slug && attrs.slug !== product.slug) {
+      const conflict = await Product.findOne({ where: { slug: attrs.slug } });
       if (conflict) throw httpError(409, 'A product with this slug already exists');
     }
 
     const previousSlug = product.slug;
-    await product.update(data);
+    await product.update(attrs);
+    if (tagIds) await (product as unknown as { setTags: (ids: number[]) => Promise<void> }).setTags(tagIds);
 
     await invalidateCache(`${cacheKey.PRODUCT_LIST}*`);
     await invalidateCache(`${cacheKey.PRODUCT_DETAIL}:${id}`);

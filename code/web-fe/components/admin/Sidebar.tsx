@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Package, Tag, ShoppingBag,
   FileText, Briefcase, LogOut, ChevronRight,
-  Ticket, Image as ImageIcon, Star, Users, Settings, ScrollText, Truck,
+  Ticket, Image as ImageIcon, Star, Users, Settings, ScrollText, Truck, Tags,
 } from 'lucide-react';
 import { adminAuth } from '@/lib/auth';
 import { toast } from 'sonner';
@@ -20,6 +20,7 @@ const NAV = [
   { href: '/admin/banners',     label: 'Banners',     icon: ImageIcon       },
   { href: '/admin/reviews',     label: 'Reviews',     icon: Star            },
   { href: '/admin/articles',    label: 'Articles',    icon: FileText        },
+  { href: '/admin/tags',        label: 'Tags',        icon: Tags            },
   { href: '/admin/pages',       label: 'Pages',       icon: ScrollText      },
   { href: '/admin/jobs',        label: 'Jobs',        icon: Briefcase       },
   { href: '/admin/users',       label: 'Admin Users', icon: Users           },

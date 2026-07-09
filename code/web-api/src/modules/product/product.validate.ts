@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PRODUCT_SORTS } from './product.interface';
 
 export const createProductSchema = z.object({
   categoryId: z.number().int().positive('Category is required'),
@@ -9,6 +10,8 @@ export const createProductSchema = z.object({
     .max(280)
     .regex(/^[a-z0-9-]+$/, 'Slug must be lowercase letters, numbers, and hyphens only'),
   description: z.string().max(5000).nullable().optional(),
+  isActive: z.boolean().optional(),
+  tagIds: z.array(z.number().int().positive()).optional(),
 });
 
 export const updateProductSchema = z
@@ -23,6 +26,7 @@ export const updateProductSchema = z
       .optional(),
     description: z.string().max(5000).nullable().optional(),
     isActive: z.boolean().optional(),
+    tagIds: z.array(z.number().int().positive()).optional(),
   })
   .refine((data) => Object.keys(data).length > 0, { message: 'At least one field must be provided' });
 
@@ -43,6 +47,7 @@ export const productListQuerySchema = z.object({
   page: z.string().regex(/^\d+$/).transform(Number).default(1).optional(),
   limit: z.string().regex(/^\d+$/).transform(Number).default(20).optional(),
   search: z.string().max(100).optional(),
+  sort: z.enum(PRODUCT_SORTS).optional(),
 });
 
 export type CreateProductRequest = z.infer<typeof createProductSchema>;

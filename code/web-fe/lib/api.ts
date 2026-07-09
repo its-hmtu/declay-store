@@ -179,6 +179,10 @@ export const notificationsApi = {
   markAllRead: (token: string) => api.post<void>('/notifications/read-all', {}, { token }),
 };
 
+export const tagsApi = {
+  list: () => api.get<import('./types').Tag[]>('/tags', { next: { revalidate: 300 } }),
+};
+
 export const wishlistApi = {
   get:    (token: string) => api.get<import('./types').Wishlist>('/wishlist', { token }),
   add:    (token: string, variantId: number) =>
@@ -261,6 +265,13 @@ export const adminNotificationsApi = {
   list:        (token: string) => api.get<import('./types').NotificationList>('/admin/notifications', { token }),
   markRead:    (token: string, id: number) => api.patch<void>(`/admin/notifications/${id}/read`, {}, { token }),
   markAllRead: (token: string) => api.post<void>('/admin/notifications/read-all', {}, { token }),
+};
+
+export const adminTagsApi = {
+  list:   (token: string) => api.get<import('./types').Tag[]>('/admin/tags', { token }),
+  create: (token: string, data: unknown) => api.post<import('./types').Tag>('/admin/tags', data, { token }),
+  update: (token: string, id: number, data: unknown) => api.put<import('./types').Tag>(`/admin/tags/${id}`, data, { token }),
+  remove: (token: string, id: number) => api.delete<void>(`/admin/tags/${id}`, { token }),
 };
 
 export const adminUsersApi = {

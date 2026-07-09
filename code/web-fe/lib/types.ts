@@ -393,3 +393,11 @@ export interface NotificationList {
   count: number;
   unread: number;
 }
+
+export interface Tag {
+  id: number;
+  name: string;
+  slug: string;
+  createdAt: string;
+  updatedAt: string;
+}
