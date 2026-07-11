@@ -1,24 +1,30 @@
 # Tests
 
-## Chạy nhanh (unit — không cần DB/Redis)
+## Unit tests (no DB/Redis — fast, run everywhere)
 ```
 npm install
-npm test           # vitest run (tests/unit/**)
+npm test          # vitest run (tests/unit/**)
 npm run test:watch
 ```
-Bao phủ: `requireRole` (W-05/W-06), `sanitizeAuditBody` (W-09), rate limiters (W-10).
+25 tests covering the pure business logic:
+- `order.pricing` — shipping zone, fee + free-over, order total, forward-only status transitions (W-14/W-15/W-21)
+- `requireRole` — admin/super_admin gating (W-05/W-06)
+- `sanitizeAuditBody` — audit redaction (W-09)
+- rate limiters exist (W-10)
+- `slugify` — tag slugs incl. Vietnamese diacritics (W-23)
 
-## Integration (cần Postgres test)
-Luồng tiền/kho nhạy cảm nên chạy trên một DB dùng-một-lần, không phải DB dev.
+## Integration tests (throwaway Postgres; some need Redis)
 ```
-# 1) Trỏ DB_* vào một Postgres test rỗng, rồi chạy migration:
-DB_NAME=declay_test npm run migrate
-# 2) Chạy suite integration (opt-in tường minh):
+# point DB_* at an empty test DB, migrate, then:
+RUN_DB_TESTS=true DB_NAME=declay_test npm run migrate
 RUN_DB_TESTS=true DB_NAME=declay_test npm run test:integration
 ```
-Hiện có: `stock-oversell.integration.test.ts` — kiểm bất biến chống oversell (W-02/W-03)
-bằng hai lần trừ tồn đồng thời trên đơn vị cuối cùng: chỉ một thành công, tồn không âm.
+- `stock-oversell` / `stock-reservation` — anti-oversell invariant + reserve/release (W-02/W-03), Postgres only
+- `discount-validation` — validateCode percent / min-order / unknown code, Postgres only
 
-> Mở rộng gợi ý (theo `docs/business-analysis/06-uat-test-cases.md`): idempotency webhook
-> (TC-PAY-03), reservation hết hạn (TC-PAY-05), phân quyền qua HTTP bằng supertest
-> (TC-ADM-*). Các test HTTP cần thêm Redis + Stripe test key.
+## Flows best covered end-to-end by a running stack
+Idempotent Stripe webhook (W-01), full reservation expiry job (W-03), notifications
+(W-16/W-17), fulfillment (W-08) and role/AI gating over HTTP need Postgres + Redis +
+Stripe test keys. See `docs/business-analysis/06-uat-test-cases.md` for the manual/UAT
+scenarios and the traceability matrix (hardening item → test case). Extend the
+integration suite with supertest against `createApp()` in that environment.

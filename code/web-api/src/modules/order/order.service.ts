@@ -13,16 +13,11 @@ import { Payment, Refund } from '@/modules/payment/payment.entity';
 import ShippingMethod from '@/modules/shipping-method/shipping-method.entity';
 import Address from '@/modules/address/address.entity';
 import NotificationService from '@/modules/notification/notification.service';
+import { resolveShippingZone, methodAppliesToZone, computeShippingFee, computeOrderTotal, statusTransitionError } from './order.pricing';
 import { queueOrderStatusEmail } from '@/lib/email-queue';
 import type { IOrder, IOrderService, ICreateOrderData } from './order.interface';
 
 const stripe = new Stripe(config.stripe.secretKey);
-
-function resolveShippingZone(country?: string | null): 'domestic' | 'international' {
-  const c = (country ?? '').trim().toLowerCase();
-  if (c === '' || c === 'vn' || c === 'vietnam' || c === 'viet nam' || c === 'việt nam') return 'domestic';
-  return 'international';
-}
 
 export default class OrderService implements IOrderService {
   private discountService = new DiscountService();
@@ -76,16 +71,15 @@ export default class OrderService implements IOrderService {
       if (!method || !method.isActive) throw httpError(400, 'Selected shipping method is not available');
       const address = shippingAddressId ? await Address.findByPk(shippingAddressId) : null;
       const zone = resolveShippingZone(address?.country);
-      if (method.zone !== 'all' && method.zone !== zone) {
+      if (!methodAppliesToZone(method.zone, zone)) {
         throw httpError(400, 'Selected shipping method is not available for your address');
       }
-      const freeOver = method.freeOver != null ? Number(method.freeOver) : null;
-      shippingFee = freeOver != null && subtotal >= freeOver ? 0 : Number(method.fee);
+      shippingFee = computeShippingFee(subtotal, method);
       resolvedShippingMethodId = method.id;
     }
 
     // totalAmount is the final amount charged (subtotal - discount + shipping)
-    const totalAmount = Math.round((subtotal - discountAmount + shippingFee) * 100) / 100;
+    const totalAmount = computeOrderTotal(subtotal, discountAmount, shippingFee);
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(totalAmount * 100), // cents
@@ -200,15 +194,8 @@ export default class OrderService implements IOrderService {
     }
 
     // W-21: order status is forward-only; terminal states are locked.
-    const STATUS_RANK: Record<string, number> = {
-      pending_payment: 0, paid: 1, processing: 2, shipped: 3, delivered: 4, cancelled: 5,
-    };
-    if (order.status === 'delivered' || order.status === 'cancelled') {
-      throw httpError(400, `Order is already ${order.status} and its status can no longer change.`);
-    }
-    if (status !== 'cancelled' && STATUS_RANK[status] <= STATUS_RANK[order.status]) {
-      throw httpError(400, `Cannot move an order from ${order.status} back to ${status}.`);
-    }
+    const transitionError = statusTransitionError(order.status, status);
+    if (transitionError) throw httpError(400, transitionError);
 
     const previousStatus = order.status;
     await order.update({ status });
