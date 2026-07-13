@@ -7,6 +7,12 @@ import { Search, X } from 'lucide-react';
 import type { Product } from '@/lib/types';
 import { productsApi } from '@/lib/api';
 
+const SEARCH_PHRASES = [
+  'Search handmade figures…',
+  'Find your next collectible…',
+  'Search by product name…',
+];
+
 export default function SearchBox({
   variant = 'desktop',
   onNavigate,
@@ -19,6 +25,7 @@ export default function SearchBox({
   const [results, setResults] = useState<Product[]>([]);
   const [open, setOpen]       = useState(false);
   const [loading, setLoading] = useState(false);
+  const [placeholder, setPlaceholder] = useState('');
   const ref = useRef<HTMLDivElement>(null);
 
   // Debounced product suggestions (search by name) as the user types.
@@ -47,6 +54,31 @@ export default function SearchBox({
     }
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
+
+  // Typewriter placeholder cycling through example searches.
+  useEffect(() => {
+    let phrase = 0;
+    let char = 0;
+    let deleting = false;
+    let timer: ReturnType<typeof setTimeout>;
+    function tick() {
+      const current = SEARCH_PHRASES[phrase];
+      char += deleting ? -1 : 1;
+      setPlaceholder(current.slice(0, char));
+      if (!deleting && char === current.length) {
+        deleting = true;
+        timer = setTimeout(tick, 1600);
+        return;
+      }
+      if (deleting && char === 0) {
+        deleting = false;
+        phrase = (phrase + 1) % SEARCH_PHRASES.length;
+      }
+      timer = setTimeout(tick, deleting ? 45 : 95);
+    }
+    timer = setTimeout(tick, 500);
+    return () => clearTimeout(timer);
   }, []);
 
   function goToResults() {
@@ -78,7 +110,7 @@ export default function SearchBox({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => { if (results.length) setOpen(true); }}
-          placeholder="Search products…"
+          placeholder={placeholder || 'Search products…'}
           aria-label="Search products"
           className="w-full pl-9 pr-8 py-2 text-sm border border-border rounded-full bg-surface-alt focus:bg-surface focus:outline-none focus:border-brand text-text placeholder:text-text-faint"
         />
@@ -142,3 +174,5 @@ export default function SearchBox({
 }
 
 // Storefront navigation product search box.
+// v1
+// v2
