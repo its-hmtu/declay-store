@@ -173,6 +173,5 @@ export default function SearchBox({
   );
 }
 
-// Storefront navigation product search box.
-// v1
-// v2
+
+
