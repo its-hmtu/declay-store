@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { auth } from '@/lib/auth';
 import { authApi, cartApi } from '@/lib/api';
 import NotificationBell from '@/components/NotificationBell';
+import SearchBox from '@/components/storefront/SearchBox';
 import type { Category } from '@/lib/types';
 
 const NAV = [
@@ -98,6 +99,11 @@ export default function Header({ categories = [] }: { categories?: Category[] })
             );
           })}
         </nav>
+
+        {/* Desktop search */}
+        <div className="hidden md:flex flex-1 justify-center px-4">
+          <SearchBox variant="desktop" />
+        </div>
 
         {/* Actions */}
         <div className="flex items-center gap-2" onMouseEnter={closeShop}>
@@ -212,6 +218,7 @@ export default function Header({ categories = [] }: { categories?: Category[] })
       {/* Mobile nav */}
       {open && (
         <div className="md:hidden border-t border-border bg-surface px-4 py-4 flex flex-col gap-4">
+          <SearchBox variant="mobile" onNavigate={() => setOpen(false)} />
           {NAV.map(({ href, label }) => (
             <div key={href}>
               <Link
