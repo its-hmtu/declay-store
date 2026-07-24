@@ -2,8 +2,10 @@ import { Op, fn, col } from 'sequelize';
 import Product from './product.entity';
 import ProductVariant from '@/modules/product-variant/product-variant.entity';
 import { OrderItem } from '@/modules/order/order.entity';
+import { CollectionProduct } from '@/modules/collection/collection.entity';
 import { httpError } from '@/utils/http-error';
 import { invalidateCache } from '@/middlewares/cache.middleware';
+import CampaignService from '@/modules/campaign/campaign.service';
 import { cacheKey } from '@/config/redis';
 import type {
   IProduct,
@@ -34,8 +36,10 @@ interface Metrics {
 }
 
 export default class ProductService implements IProductService {
+  private campaignService = new CampaignService();
+
   async list(query: IProductListQuery): Promise<{ rows: IProduct[]; count: number }> {
-    const { categoryId, page = 1, limit = 20, search, sort = 'newest', includeInactive = false } = query;
+    const { categoryId, collectionId, minPrice, maxPrice, page = 1, limit = 20, search, sort = 'newest', includeInactive = false } = query;
     const offset = (page - 1) * limit;
 
     // Storefront sees active products only; admin opts into the full catalogue.
@@ -43,6 +47,13 @@ export default class ProductService implements IProductService {
     if (!includeInactive) where.isActive = true;
     if (categoryId) where.categoryId = categoryId;
     if (search) where.name = { [Op.iLike]: `%${search}%` };
+
+    // Restrict to products that belong to the requested collection.
+    if (collectionId) {
+      const links = await CollectionProduct.findAll({ where: { collectionId }, attributes: ['productId'] });
+      const memberIds = links.map((l) => l.productId);
+      where.id = { [Op.in]: memberIds.length ? memberIds : [-1] };
+    }
 
     // Pull the full candidate set (ids + the columns the sort needs), then rank
     // and paginate in memory. Sorting by computed metrics (sales, rating, price)
@@ -57,11 +68,23 @@ export default class ProductService implements IProductService {
     const ids = candidates.map((c) => c.id);
     const metrics = await this.buildMetrics(ids, sort);
 
-    const ranked = [...candidates].sort(this.comparator(sort, metrics));
+    let ranked = [...candidates].sort(this.comparator(sort, metrics));
+
+    // Price filter (Nike-style buckets): keep products whose lowest active variant price is in range.
+    if (minPrice != null || maxPrice != null) {
+      ranked = ranked.filter((c) => {
+        const mp = metrics.minPrice.get(c.id);
+        if (mp == null) return false;
+        if (minPrice != null && mp < minPrice) return false;
+        if (maxPrice != null && mp > maxPrice) return false;
+        return true;
+      });
+    }
+
     const pageIds = ranked.slice(offset, offset + limit).map((c) => c.id);
 
     const products = await this.hydrate(pageIds, metrics);
-    return { rows: products, count: candidates.length };
+    return { rows: products, count: ranked.length };
   }
 
   async findById(id: number): Promise<IProductWithVariants> {
@@ -165,6 +188,8 @@ export default class ProductService implements IProductService {
     const result = product.toJSON() as IProductWithVariants;
     result.rating = ratings.get(product.id) ?? { average: 0, count: 0 };
     result.salesCount = salesCount;
+    const detailPct = await this.campaignService.getActiveDiscountPercents([product.id]);
+    result.campaignDiscountPercent = detailPct.get(product.id) ?? null;
     if (countView) result.views = (result.views ?? 0) + 1; // reflect the increment we just issued
     return result;
   }
@@ -184,6 +209,7 @@ export default class ProductService implements IProductService {
     });
 
     const byId = new Map(rows.map((p) => [p.id, p]));
+    const campaignPct = await this.campaignService.getActiveDiscountPercents(orderedIds);
 
     // Preserve the ranked order the IN-query doesn't guarantee.
     return orderedIds.flatMap((id) => {
@@ -192,6 +218,7 @@ export default class ProductService implements IProductService {
       const product = row.toJSON() as IProduct;
       product.rating = metrics.ratings.get(id) ?? { average: 0, count: 0 };
       product.salesCount = metrics.salesAll.get(id) ?? 0;
+      product.campaignDiscountPercent = campaignPct.get(id) ?? null;
       return [product];
     });
   }

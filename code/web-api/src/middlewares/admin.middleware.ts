@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { verifyAdminAccessToken, type AuthenticatedAdmin } from '@/utils/jwt';
 import { httpError } from '@/utils/http-error';
+import { isTokenDenylisted, isIssuedBeforeRevocation } from '@/lib/token-revocation';
 
 declare global {
   namespace Express {
@@ -10,7 +11,8 @@ declare global {
   }
 }
 
-export function adminProtect(req: Request, res: Response, next: NextFunction): void {
+export async function adminProtect(req: Request, res: Response, next: NextFunction): Promise<void> {
+  let decoded;
   try {
     const authHeader = req.headers.authorization;
 
@@ -19,12 +21,20 @@ export function adminProtect(req: Request, res: Response, next: NextFunction): v
     }
 
     const token = authHeader.substring(7);
-    const decoded = verifyAdminAccessToken(token);
-    req.admin = decoded;
-    next();
+    decoded = verifyAdminAccessToken(token);
   } catch (error) {
-    next(httpError(401, 'Invalid or expired admin token'));
+    return next(httpError(401, 'Invalid or expired admin token'));
   }
+
+  if (decoded.jti && (await isTokenDenylisted(decoded.jti))) {
+    return next(httpError(401, 'Admin token has been revoked'));
+  }
+  if (decoded.iat && (await isIssuedBeforeRevocation('admin', decoded.adminId, decoded.iat))) {
+    return next(httpError(401, 'Admin session has been revoked, please log in again'));
+  }
+
+  req.admin = decoded;
+  next();
 }
 
 export function requireRole(...roles: string[]) {

@@ -8,6 +8,7 @@ import {
   orderIdParamSchema,
   createShipmentSchema,
   updateShipmentSchema,
+  simulateTrackingSchema,
 } from './order-shipment.validate';
 
 // Customer: GET /api/orders/:orderId/shipment (own order only)
@@ -30,6 +31,8 @@ export function createAdminShipmentRouter(): Router {
 
   router.get('/', validate(orderIdParamSchema, 'params'), controller.adminGet);
   router.post('/', validate(orderIdParamSchema, 'params'), validate(createShipmentSchema), controller.adminCreate);
+  router.post('/provider', validate(orderIdParamSchema, 'params'), controller.adminCreateViaProvider);
+  router.post('/simulate', validate(orderIdParamSchema, 'params'), validate(simulateTrackingSchema), controller.adminSimulate);
   router.put('/', validate(orderIdParamSchema, 'params'), validate(updateShipmentSchema), controller.adminUpdate);
   router.delete('/', validate(orderIdParamSchema, 'params'), controller.adminRemove);
 

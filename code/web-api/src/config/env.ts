@@ -38,12 +38,28 @@ const config = {
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
     publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
   },
+  easyship: {
+    apiKey: process.env.EASYSHIP_API_KEY || '',
+    webhookSecret: process.env.EASYSHIP_WEBHOOK_SECRET || '',
+    baseUrl: process.env.EASYSHIP_BASE_URL || 'https://public-api.easyship.com',
+    sandbox: (process.env.EASYSHIP_SANDBOX ?? 'true') !== 'false',
+    incotermDefault: (process.env.EASYSHIP_INCOTERM || 'DDP') as 'DDP' | 'DDU',
+  },
   shipping: {
     // Simulated durations so the order lifecycle is observable in development.
     // In production set dayMs to 86400000 (a real day) and raise the delays.
     processingDelayMs: Number(process.env.SHIPPING_PROCESSING_DELAY_MS) || 15000, // paid -> processing
     dispatchDelayMs: Number(process.env.SHIPPING_DISPATCH_DELAY_MS) || 15000,     // processing -> shipped
     dayMs: Number(process.env.SHIPPING_DAY_MS) || 15000,                          // simulated length of one shipping day
+  },
+  bankTransfer: {
+    bankId: process.env.BANK_ID || '',            // VietQR bank code/BIN, e.g. 'vietcombank'
+    accountNo: process.env.BANK_ACCOUNT_NO || '',
+    accountName: process.env.BANK_ACCOUNT_NAME || '',
+  },
+  payments: {
+    enabledDomestic: (process.env.PAYMENTS_DOMESTIC || 'bank_transfer,cod').split(',').map((x) => x.trim()).filter(Boolean),
+    enabledInternational: (process.env.PAYMENTS_INTERNATIONAL || 'stripe').split(',').map((x) => x.trim()).filter(Boolean),
   },
   reservation: {
     // Auto-expire unpaid orders and release their reserved stock after this window (W-03).

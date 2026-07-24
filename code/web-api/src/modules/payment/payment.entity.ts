@@ -15,6 +15,9 @@ export class Payment extends Model<InferAttributes<Payment>, InferCreationAttrib
   declare id: CreationOptional<number>;
   declare orderId: number;
   declare stripePaymentIntentId: CreationOptional<string | null>;
+  declare method: CreationOptional<string | null>;
+  declare provider: CreationOptional<string | null>;
+  declare providerRef: CreationOptional<string | null>;
   declare amount: number;
   declare currency: CreationOptional<string>;
   declare status: CreationOptional<PaymentStatus>;
@@ -27,6 +30,9 @@ Payment.init(
     id: { type: DataTypes.BIGINT, autoIncrement: true, primaryKey: true },
     orderId: { type: DataTypes.INTEGER, allowNull: false, field: 'order_id' },
     stripePaymentIntentId: { type: DataTypes.STRING(255), allowNull: true, field: 'stripe_payment_intent_id' },
+    method: { type: DataTypes.STRING(30), allowNull: true },
+    provider: { type: DataTypes.STRING(30), allowNull: true },
+    providerRef: { type: DataTypes.STRING(255), allowNull: true, field: 'provider_ref' },
     amount: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
     currency: { type: DataTypes.STRING(10), allowNull: false, defaultValue: 'usd' },
     status: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'pending' },

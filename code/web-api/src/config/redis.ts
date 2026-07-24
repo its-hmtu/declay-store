@@ -34,6 +34,8 @@ export const cacheKey = {
   ARTICLE_DETAIL: 'article_detail',
   JOB_LIST: 'job_list',
   JOB_DETAIL: 'job_detail',
+  BANNER_LIST: 'banner_list',
+  SITE_SETTINGS: 'site_settings',
 }
 
 export default redisConfig;

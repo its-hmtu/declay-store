@@ -162,8 +162,18 @@ export class OrderShipment extends Model<
 > {
   declare id: CreationOptional<number>;
   declare orderId: number;
-  declare carrier: string;
-  declare trackingNumber: string;
+  declare provider: CreationOptional<string>;
+  declare providerShipmentId: CreationOptional<string | null>;
+  declare carrier: CreationOptional<string | null>;
+  declare trackingNumber: CreationOptional<string | null>;
+  declare status: CreationOptional<string>;
+  declare incoterm: CreationOptional<string | null>;
+  declare labelUrl: CreationOptional<string | null>;
+  declare cost: CreationOptional<number | null>;
+  declare currency: CreationOptional<string | null>;
+  declare lastEvent: CreationOptional<string | null>;
+  declare lastEventAt: CreationOptional<Date | null>;
+  declare podUrl: CreationOptional<string | null>;
   declare shippedAt: CreationOptional<Date>;
   declare estimatedDeliveryAt: CreationOptional<Date | null>;
   declare deliveredAt: CreationOptional<Date | null>;
@@ -182,12 +192,18 @@ OrderShipment.init(
       references: { model: 'orders', key: 'id' },
       onDelete: 'CASCADE',
     },
-    carrier: { type: DataTypes.STRING(100), allowNull: false },
-    trackingNumber: {
-      type: DataTypes.STRING(255),
-      allowNull: false,
-      field: 'tracking_number',
-    },
+    provider: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'manual' },
+    providerShipmentId: { type: DataTypes.STRING(120), allowNull: true, field: 'provider_shipment_id' },
+    carrier: { type: DataTypes.STRING(100), allowNull: true },
+    trackingNumber: { type: DataTypes.STRING(255), allowNull: true, field: 'tracking_number' },
+    status: { type: DataTypes.STRING(40), allowNull: false, defaultValue: 'created' },
+    incoterm: { type: DataTypes.STRING(10), allowNull: true },
+    labelUrl: { type: DataTypes.STRING(500), allowNull: true, field: 'label_url' },
+    cost: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
+    currency: { type: DataTypes.STRING(3), allowNull: true },
+    lastEvent: { type: DataTypes.STRING(255), allowNull: true, field: 'last_event' },
+    lastEventAt: { type: DataTypes.DATE, allowNull: true, field: 'last_event_at' },
+    podUrl: { type: DataTypes.STRING(500), allowNull: true, field: 'pod_url' },
     shippedAt: {
       type: DataTypes.DATE,
       allowNull: false,

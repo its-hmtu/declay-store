@@ -7,6 +7,7 @@ import type { Article } from '@/lib/types';
 import { api } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
+import ImageUploader from '@/components/admin/ImageUploader';
 
 interface Props { article?: Article }
 
@@ -75,8 +76,13 @@ export default function ArticleForm({ article }: Props) {
       </div>
 
       <div>
-        <label className={labelCls} htmlFor="coverImage">Cover Image URL</label>
-        <input id="coverImage" name="coverImage" type="url" value={form.coverImage} onChange={handleChange} className={inputCls} placeholder="https://…" />
+        <label className={labelCls}>Cover Image</label>
+        <ImageUploader
+          value={form.coverImage ? [form.coverImage] : []}
+          onChange={(urls) => setForm((f) => ({ ...f, coverImage: urls[0] ?? '' }))}
+          multiple={false}
+          max={1}
+        />
       </div>
 
       <div>

@@ -18,6 +18,8 @@ export interface IProduct {
   rating?: IRatingSummary;
   /** Total units sold across completed orders. */
   salesCount?: number;
+  /** Deepest active campaign discount % applied to this product, if any. */
+  campaignDiscountPercent?: number | null;
 }
 
 export const PRODUCT_SORTS = [
@@ -63,6 +65,9 @@ export interface IUpdateProductData {
 
 export interface IProductListQuery {
   categoryId?: number;
+  collectionId?: number;
+  minPrice?: number;
+  maxPrice?: number;
   page?: number;
   limit?: number;
   search?: string;

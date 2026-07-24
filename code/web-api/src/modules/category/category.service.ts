@@ -13,6 +13,12 @@ export default class CategoryService implements ICategoryService {
     return categories.map((c) => c.toJSON() as ICategory);
   }
 
+  // Admin view: include inactive (hidden) categories so they remain manageable
+  async listAll(): Promise<ICategory[]> {
+    const categories = await Category.findAll({ order: [['name', 'ASC']] });
+    return categories.map((c) => c.toJSON() as ICategory);
+  }
+
   async findById(id: number): Promise<ICategory> {
     const category = await Category.findByPk(id);
     if (!category) throw httpError(404, 'Category not found');
@@ -22,6 +28,13 @@ export default class CategoryService implements ICategoryService {
   async findBySlug(slug: string): Promise<ICategory> {
     const category = await Category.findOne({ where: { slug } });
     if (!category) throw httpError(404, 'Category not found');
+    return category.toJSON() as ICategory;
+  }
+
+  // Return category by exact name, or null if not found (non-throwing helper)
+  async findByName(name: string): Promise<ICategory | null> {
+    const category = await Category.findOne({ where: { name } });
+    if (!category) return null;
     return category.toJSON() as ICategory;
   }
 

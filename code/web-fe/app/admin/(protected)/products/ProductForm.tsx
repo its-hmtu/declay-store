@@ -73,7 +73,7 @@ export default function ProductForm({ product }: Props) {
   const labelCls = 'block text-sm font-medium text-text mb-1.5';
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-2xl space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div className="grid sm:grid-cols-2 gap-5">
         <div>
           <label className={labelCls} htmlFor="name">Name *</label>
@@ -97,7 +97,7 @@ export default function ProductForm({ product }: Props) {
 
       <div>
         <label className={labelCls} htmlFor="description">Description</label>
-        <textarea id="description" name="description" rows={5} value={form.description} onChange={handleChange} className={`${inputCls} resize-none`} placeholder="Describe the product…" />
+        <textarea id="description" name="description" rows={10} value={form.description} onChange={handleChange} className={`${inputCls} resize-none`} placeholder="Describe the product…" />
       </div>
 
       <label className="flex items-center gap-3 cursor-pointer">

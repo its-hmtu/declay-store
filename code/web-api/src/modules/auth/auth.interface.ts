@@ -7,6 +7,7 @@ export interface IUserData {
   fullName?: string;
   username?: string;
   phoneNumber?: string;
+  dateOfBirth?: string | null;
 }
 
 export interface IAuthService {
@@ -20,6 +21,7 @@ export interface IAuthService {
   forgotPassword(email: string): Promise<void>;
   resetPassword(token: string, newPassword: string): Promise<void>;
   verifyEmail(token: string): Promise<void>;
+  logout(accessJti?: string, accessExp?: number, refreshToken?: string): Promise<void>;
 }
 
 export interface IAuthController {

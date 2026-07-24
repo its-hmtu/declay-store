@@ -1,13 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { CheckCircle } from 'lucide-react';
-import type { Order } from '@/lib/types';
-import { ordersApi } from '@/lib/api';
+import { CheckCircle, Truck } from 'lucide-react';
+import type { Order, Shipment } from '@/lib/types';
+import { ordersApi, shipmentApi } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import Badge from '@/components/ui/Badge';
+import OrderProgress from '@/components/storefront/OrderProgress';
+
+const TERMINAL = ['delivered', 'cancelled'];
 
 const STATUS_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'error' | 'info'> = {
   pending_payment: 'warning',
@@ -20,18 +23,37 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function OrderDetailClient({ orderId }: { orderId: number }) {
-  const [order,   setOrder]   = useState<Order | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [order,    setOrder]    = useState<Order | null>(null);
+  const [shipment, setShipment] = useState<Shipment | null>(null);
+  const [loading,  setLoading]  = useState(true);
   const searchParams = useSearchParams();
   const paymentSuccess = searchParams.get('payment') === 'success';
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const token = auth.getToken();
     if (!token) { setLoading(false); return; }
-    ordersApi.detail(token, orderId)
-      .then((res) => setOrder(res.data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+
+    async function refresh() {
+      try {
+        const res = await ordersApi.detail(token!, orderId);
+        setOrder(res.data);
+        // Shipment exists only once shipped — ignore the 404 before then
+        if (['shipped', 'delivered'].includes(res.data.status)) {
+          shipmentApi.getMine(token!, orderId).then((s) => setShipment(s.data)).catch(() => undefined);
+        }
+        // Stop polling once the order reaches a terminal state
+        if (TERMINAL.includes(res.data.status) && pollRef.current) {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+        }
+      } catch { /* keep last known state */ }
+    }
+
+    refresh().finally(() => setLoading(false));
+    // Live-update while the order is still moving through fulfillment
+    pollRef.current = setInterval(refresh, 8000);
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [orderId]);
 
   if (loading) return <div className="max-w-3xl mx-auto px-4 sm:px-6 py-20 text-center text-text-muted">Loading…</div>;
@@ -59,6 +81,33 @@ export default function OrderDetailClient({ orderId }: { orderId: number }) {
         <Badge variant={STATUS_VARIANT[order.status] ?? 'default'}>
           {STATUS_LABEL[order.status] ?? order.status}
         </Badge>
+      </div>
+
+      {/* Progress */}
+      <div className="rounded-xl border border-border bg-surface p-5 sm:p-6 mb-6">
+        <OrderProgress status={order.status} />
+
+        {shipment && (
+          <div className="mt-6 pt-5 border-t border-border grid sm:grid-cols-3 gap-4 text-sm">
+            <div>
+              <p className="text-text-faint text-xs uppercase tracking-wider mb-0.5 flex items-center gap-1"><Truck size={12} /> Carrier</p>
+              <p className="text-text font-medium">{shipment.carrier}</p>
+            </div>
+            <div>
+              <p className="text-text-faint text-xs uppercase tracking-wider mb-0.5">Tracking #</p>
+              <p className="text-text font-mono text-xs">{shipment.trackingNumber}</p>
+            </div>
+            <div>
+              <p className="text-text-faint text-xs uppercase tracking-wider mb-0.5">
+                {shipment.deliveredAt ? 'Delivered' : 'Est. delivery'}
+              </p>
+              <p className="text-text font-medium">
+                {new Date(shipment.deliveredAt ?? shipment.estimatedDeliveryAt ?? shipment.shippedAt)
+                  .toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Items */}

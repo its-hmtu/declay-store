@@ -3,6 +3,7 @@ import Product from '@/modules/product/product.entity';
 import { httpError } from '@/utils/http-error';
 import { invalidateCache } from '@/middlewares/cache.middleware';
 import { cacheKey } from '@/config/redis';
+import { deleteFile } from '@/lib/storage';
 import type {
   IProductVariant,
   IProductVariantService,
@@ -41,7 +42,14 @@ export default class ProductVariantService implements IProductVariantService {
     const variant = await ProductVariant.findByPk(id);
     if (!variant) throw httpError(404, 'Variant not found');
 
+    const oldImages = Array.isArray(variant.images) ? [...variant.images] : [];
     await variant.update(data);
+
+    // Remove images that were dropped in this edit from object storage (avoid orphans).
+    if (data.images !== undefined) {
+      const newImages = Array.isArray(data.images) ? data.images : [];
+      for (const url of oldImages.filter((u) => !newImages.includes(u))) await deleteFile(url);
+    }
     await invalidateCache(`${cacheKey.PRODUCT_DETAIL}:${variant.productId}`);
     return variant.toJSON() as IProductVariant;
   }
@@ -50,7 +58,9 @@ export default class ProductVariantService implements IProductVariantService {
     const variant = await ProductVariant.findByPk(id);
     if (!variant) throw httpError(404, 'Variant not found');
     const productId = variant.productId;
+    const images = Array.isArray(variant.images) ? [...variant.images] : [];
     await variant.destroy();
+    for (const url of images) await deleteFile(url);
     await invalidateCache(`${cacheKey.PRODUCT_DETAIL}:${productId}`);
   }
 }

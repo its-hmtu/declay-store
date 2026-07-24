@@ -9,6 +9,7 @@ export const createCategorySchema = z.object({
     .regex(/^[a-z0-9-]+$/, 'Slug must be lowercase letters, numbers, and hyphens only'),
   description: z.string().max(1000).nullable().optional(),
   parentId: z.number().int().positive().nullable().optional(),
+  isActive: z.boolean().optional(),
 });
 
 export const updateCategorySchema = z

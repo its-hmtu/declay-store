@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -9,24 +9,36 @@ import { api } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import AdminToolbar, { FilterSelect } from '@/components/admin/AdminToolbar';
+import Pagination from '@/components/admin/Pagination';
+import { usePagination } from '@/lib/usePagination';
 
 export default function AdminJobsClient() {
   const [jobs,    setJobs]    = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Job | null>(null);
+  const [search,  setSearch]  = useState('');
+  const [status,  setStatus]  = useState('all');
 
   async function load() {
     const token = adminAuth.getToken();
     if (!token) return;
     try {
-      const res = await api.get<Job[]>('/admin/jobs', { token });
+      const res = await api.get<Job[]>('/admin/jobs?limit=100', { token });
       setJobs(res.data);
     } catch { /* empty */ }
     setLoading(false);
   }
 
   useEffect(() => { load(); }, []);
+
+  const filtered = useMemo(() => jobs.filter((j) =>
+    (search === '' || j.title.toLowerCase().includes(search.toLowerCase()) || (j.location ?? '').toLowerCase().includes(search.toLowerCase())) &&
+    (status === 'all' || (status === 'open' ? j.isOpen : !j.isOpen)),
+  ), [jobs, search, status]);
+
+  const { page, setPage, totalPages, total, paged } = usePagination(filtered, 10);
 
   async function deleteJob(id: number) {
     if (!confirm('Delete this job listing?')) return;
@@ -60,6 +72,15 @@ export default function AdminJobsClient() {
         />
       )}
 
+      <AdminToolbar search={search} onSearch={(v) => { setSearch(v); setPage(1); }} placeholder="Search jobs…">
+        <FilterSelect
+          value={status}
+          onChange={(v) => { setStatus(v); setPage(1); }}
+          label="Status"
+          options={[{ value: 'all', label: 'All status' }, { value: 'open', label: 'Open' }, { value: 'closed', label: 'Closed' }]}
+        />
+      </AdminToolbar>
+
       <div className="rounded-xl border border-border bg-surface overflow-hidden">
         <table className="w-full text-sm">
           <thead>
@@ -72,10 +93,10 @@ export default function AdminJobsClient() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {jobs.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-text-muted">No job listings yet.</td></tr>
+            {paged.length === 0 ? (
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-text-muted">No jobs found.</td></tr>
             ) : (
-              jobs.map((job) => (
+              paged.map((job) => (
                 <tr key={job.id} className="hover:bg-surface-alt/50 transition-colors">
                   <td className="px-4 py-3 font-medium text-text">{job.title}</td>
                   <td className="px-4 py-3 text-text-muted">{job.location ?? '—'}</td>
@@ -99,6 +120,8 @@ export default function AdminJobsClient() {
           </tbody>
         </table>
       </div>
+
+      <Pagination page={page} totalPages={totalPages} total={total} onChange={setPage} />
     </div>
   );
 }

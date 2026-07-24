@@ -1,10 +1,13 @@
 import { Cart, CartItem } from './cart.entity';
 import ProductVariant from '@/modules/product-variant/product-variant.entity';
 import Product from '@/modules/product/product.entity';
+import CampaignService from '@/modules/campaign/campaign.service';
 import { httpError } from '@/utils/http-error';
 import type { ICart, ICartService } from './cart.interface';
 
 export default class CartService implements ICartService {
+  private campaignService = new CampaignService();
+
   private async findOrCreateCart(userId: number): Promise<Cart> {
     const [cart] = await Cart.findOrCreate({ where: { userId } });
     return cart;
@@ -29,7 +32,23 @@ export default class CartService implements ICartService {
       ],
     });
 
-    return cartWithItems!.toJSON() as unknown as ICart;
+    const json = cartWithItems!.toJSON() as unknown as ICart;
+
+    // Attach the active campaign % to each item's product so the storefront cart
+    // and checkout estimate match the price the order will actually be charged.
+    const items = (json as unknown as { items?: Array<{ variant?: { product?: { id: number; campaignDiscountPercent?: number | null } } }> }).items ?? [];
+    const productIds = items
+      .map((i) => i.variant?.product?.id)
+      .filter((id): id is number => typeof id === 'number');
+    if (productIds.length) {
+      const campaignPct = await this.campaignService.getActiveDiscountPercents(productIds);
+      for (const item of items) {
+        const product = item.variant?.product;
+        if (product) product.campaignDiscountPercent = campaignPct.get(product.id) ?? null;
+      }
+    }
+
+    return json;
   }
 
   async addItem(userId: number, variantId: number, quantity: number): Promise<ICart> {

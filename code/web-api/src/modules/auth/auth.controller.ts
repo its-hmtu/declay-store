@@ -10,8 +10,8 @@ export default class AuthController implements IAuthController {
   ) {}
 
   register = asyncHandler(async (req: Request, res: Response) => {
-    const { email, password, username, fullName, phoneNumber } = req.body;
-    const result = await this.authService.register({ email, password, username, fullName, phoneNumber });
+    const { email, password, username, fullName, phoneNumber, dateOfBirth } = req.body;
+    const result = await this.authService.register({ email, password, username, fullName, phoneNumber, dateOfBirth });
 
     if (result) {
       const { access_token, refresh_token, user } = result;
@@ -46,6 +46,9 @@ export default class AuthController implements IAuthController {
   });
 
   logout = asyncHandler(async (req: Request, res: Response) => {
+    const user = req.user as { jti?: string; exp?: number } | undefined;
+    await this.authService.logout(user?.jti, user?.exp, req.body?.refreshToken);
+
     res.clearCookie('access_token');
     res.clearCookie('refresh_token');
     sendSuccess(res, null, 'Logged out successfully');

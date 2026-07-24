@@ -2,42 +2,38 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, X } from 'lucide-react';
 import type { Product } from '@/lib/types';
 import { productsApi } from '@/lib/api';
-
-const SEARCH_PHRASES = [
-  'Search handmade figures…',
-  'Find your next collectible…',
-  'Search by product name…',
-];
+import { cn } from '@/lib/utils';
 
 export default function SearchBox({
   variant = 'desktop',
   onNavigate,
+  popularTerms = [],
 }: {
   variant?: 'desktop' | 'mobile';
   onNavigate?: () => void;
+  popularTerms?: string[];
 }) {
   const router = useRouter();
   const [query, setQuery]     = useState('');
   const [results, setResults] = useState<Product[]>([]);
-  const [open, setOpen]       = useState(false);
   const [loading, setLoading] = useState(false);
-  const [placeholder, setPlaceholder] = useState('');
-  const ref = useRef<HTMLDivElement>(null);
+  const [active, setActive]   = useState(false); // overlay open (desktop)
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Debounced product suggestions (search by name) as the user types.
   useEffect(() => {
     const q = query.trim();
-    if (q.length < 2) { setResults([]); setOpen(false); return; }
+    if (q.length < 2) { setResults([]); return; }
     setLoading(true);
     const id = setTimeout(async () => {
       try {
-        const { data } = await productsApi.list({ search: q, limit: 6 });
+        const { data } = await productsApi.list({ search: q, limit: 8 });
         setResults(data);
-        setOpen(true);
       } catch {
         setResults([]);
       } finally {
@@ -47,131 +43,182 @@ export default function SearchBox({
     return () => clearTimeout(id);
   }, [query]);
 
-  // Close the dropdown on outside click.
+  // Esc closes the overlay.
   useEffect(() => {
-    function onDoc(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
-  }, []);
+    if (!active) return;
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') close(); }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [active]);
 
-  // Typewriter placeholder cycling through example searches.
-  useEffect(() => {
-    let phrase = 0;
-    let char = 0;
-    let deleting = false;
-    let timer: ReturnType<typeof setTimeout>;
-    function tick() {
-      const current = SEARCH_PHRASES[phrase];
-      char += deleting ? -1 : 1;
-      setPlaceholder(current.slice(0, char));
-      if (!deleting && char === current.length) {
-        deleting = true;
-        timer = setTimeout(tick, 1600);
-        return;
-      }
-      if (deleting && char === 0) {
-        deleting = false;
-        phrase = (phrase + 1) % SEARCH_PHRASES.length;
-      }
-      timer = setTimeout(tick, deleting ? 45 : 95);
-    }
-    timer = setTimeout(tick, 500);
-    return () => clearTimeout(timer);
-  }, []);
+  function open() {
+    setActive(true);
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }
+  function close() {
+    setActive(false);
+    setQuery('');
+    setResults([]);
+  }
 
-  function goToResults() {
-    const q = query.trim();
+  function goToResults(term?: string) {
+    const q = (term ?? query).trim();
     if (!q) return;
-    setOpen(false);
+    close();
     onNavigate?.();
     router.push(`/products?search=${encodeURIComponent(q)}`);
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    goToResults();
-  }
-
   function pick(slug: string) {
-    setOpen(false);
-    setQuery('');
+    close();
     onNavigate?.();
     router.push(`/products/${slug}`);
   }
 
-  return (
-    <div ref={ref} className={variant === 'desktop' ? 'relative w-full max-w-sm' : 'relative w-full'}>
-      <form onSubmit={handleSubmit} className="relative">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-faint pointer-events-none" />
+  const showResults = query.trim().length >= 2;
+
+  const resultsList = (
+    <>
+      {loading && results.length === 0 ? (
+        <p className="px-1 py-3 text-sm text-text-muted">Searching…</p>
+      ) : results.length === 0 ? (
+        <p className="px-1 py-3 text-sm text-text-muted">No products found.</p>
+      ) : (
+        <ul className="flex flex-col gap-1">
+          {results.map((p) => {
+            const v0 = p.variants?.[0];
+            const image = v0?.images?.[0];
+            const base = v0 ? parseFloat(v0.price) : null;
+            const special = v0?.specialPrice ? parseFloat(v0.specialPrice) : null;
+            const onSale = base !== null && special !== null && special >= 0 && special < base;
+            const price = onSale ? special : base;
+            return (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  onClick={() => pick(p.slug)}
+                  className="w-full flex items-center gap-3 px-2 py-2 rounded-lg text-left hover:bg-surface-alt transition-colors"
+                >
+                  <span className="relative size-11 shrink-0 rounded-md overflow-hidden bg-surface-alt border border-border">
+                    {image && <Image src={image} alt="" fill sizes="44px" className="object-cover" />}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm text-text truncate">{p.name}</span>
+                    {price !== null && (
+                      <span className="block font-mono text-xs text-text-muted">
+                        {onSale ? (<><span className="text-error">${price.toFixed(2)}</span> <span className="line-through">${(base as number).toFixed(2)}</span></>) : `$${price.toFixed(2)}`}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {query.trim() && (
+        <button
+          type="button"
+          onClick={() => goToResults()}
+          className="mt-2 inline-flex items-center gap-1.5 text-sm text-brand hover:underline"
+        >
+          <Search size={14} /> See all results for “{query.trim()}”
+        </button>
+      )}
+    </>
+  );
+
+  // ── Mobile: simple inline field inside the drawer ──────────
+  if (variant === 'mobile') {
+    return (
+      <form onSubmit={(e) => { e.preventDefault(); goToResults(); }} className="flex items-center gap-2 rounded-full border border-border bg-surface-alt px-4 h-11">
+        <Search size={18} className="text-text-faint shrink-0" />
         <input
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => { if (results.length) setOpen(true); }}
-          placeholder={placeholder || 'Search products…'}
+          placeholder="Search products…"
           aria-label="Search products"
-          className="w-full pl-9 pr-8 py-2 text-sm border border-border rounded-full bg-surface-alt focus:bg-surface focus:outline-none focus:border-brand text-text placeholder:text-text-faint"
+          className="flex-1 min-w-0 bg-transparent text-sm text-text placeholder:text-text-faint focus:outline-none"
         />
-        {query && (
-          <button
-            type="button"
-            onClick={() => { setQuery(''); setResults([]); setOpen(false); }}
-            aria-label="Clear search"
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-faint hover:text-text"
-          >
-            <X size={15} />
-          </button>
-        )}
       </form>
+    );
+  }
 
-      {open && (
-        <div className="absolute left-0 right-0 mt-2 rounded-xl border border-border bg-surface shadow-lg z-50 overflow-hidden">
-          {loading && results.length === 0 ? (
-            <p className="px-4 py-3 text-sm text-text-muted">Searching…</p>
-          ) : results.length === 0 ? (
-            <p className="px-4 py-3 text-sm text-text-muted">No products found.</p>
-          ) : (
-            <ul className="max-h-80 overflow-auto py-1">
-              {results.map((p) => {
-                const v0 = p.variants?.[0];
-                const image = v0?.images?.[0];
-                const price = v0 ? parseFloat(v0.price) : null;
-                return (
-                  <li key={p.id}>
-                    <button
-                      type="button"
-                      onClick={() => pick(p.slug)}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-surface-alt transition-colors"
-                    >
-                      <span className="relative size-10 shrink-0 rounded-md overflow-hidden bg-surface-alt border border-border">
-                        {image && <Image src={image} alt="" fill sizes="40px" className="object-cover" />}
-                      </span>
-                      <span className="flex-1 min-w-0">
-                        <span className="block text-sm text-text truncate">{p.name}</span>
-                        {price !== null && <span className="block font-mono text-xs text-text-muted">${price.toFixed(2)}</span>}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          {query.trim() && (
-            <button
-              type="button"
-              onClick={goToResults}
-              className="w-full border-t border-border px-4 py-2.5 text-left text-sm text-brand hover:bg-surface-alt transition-colors"
-            >
-              See all results for “{query.trim()}”
-            </button>
-          )}
-        </div>
+  // ── Desktop: Nike-style trigger pill + full-width overlay ──
+  return (
+    <>
+      <button
+        type="button"
+        onClick={open}
+        aria-label="Search"
+        className="inline-flex items-center gap-2 h-9 pl-3 pr-4 rounded-full bg-surface-alt text-text-muted hover:bg-border/60 transition-colors"
+      >
+        <Search size={18} />
+        <span className="hidden lg:inline text-sm">Search</span>
+      </button>
+
+      {active && (
+        <>
+          {/* Scrim */}
+          <div className="fixed inset-0 z-50 bg-black/30 animate-in fade-in-0" onClick={close} aria-hidden />
+
+          {/* Full-width search bar + panel */}
+          <div className="fixed top-0 inset-x-0 z-[60] bg-surface border-b border-border shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
+              <Link href="/" onClick={close} className="shrink-0" aria-label="Declay Store — home">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/DeCLAYStudioLogo.avif" alt="Declay" className="h-8 w-auto" />
+              </Link>
+
+              <form onSubmit={(e) => { e.preventDefault(); goToResults(); }} className="flex-1 flex items-center gap-2.5 rounded-full bg-surface-alt px-4 h-11 focus-within:ring-2 focus-within:ring-accent/30">
+                <Search size={18} className="text-text-faint shrink-0" />
+                <input
+                  ref={inputRef}
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search products…"
+                  aria-label="Search products"
+                  className="flex-1 min-w-0 bg-transparent text-base text-text placeholder:text-text-faint focus:outline-none"
+                />
+                {query && (
+                  <button type="button" onClick={() => { setQuery(''); setResults([]); inputRef.current?.focus(); }} aria-label="Clear search" className="text-text-faint hover:text-text">
+                    <X size={16} />
+                  </button>
+                )}
+              </form>
+
+              <button type="button" onClick={close} className="shrink-0 text-sm font-medium text-text-muted hover:text-text px-1">
+                Cancel
+              </button>
+            </div>
+
+            {/* Panel */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-6 max-h-[70vh] overflow-auto">
+              {showResults ? (
+                resultsList
+              ) : popularTerms.length > 0 ? (
+                <div className="pt-1">
+                  <p className="eyebrow mb-3">Popular Search Terms</p>
+                  <div className="flex flex-wrap gap-2">
+                    {popularTerms.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => goToResults(t)}
+                        className="px-4 py-2 rounded-full border border-border text-sm text-text-muted hover:border-brand hover:text-brand transition-colors"
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </>
       )}
-    </div>
+    </>
   );
 }
-
-
-

@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type Request, type Response, type RequestHandler } from 'express';
 import multer from 'multer';
 import asyncHandler from 'express-async-handler';
 import { adminProtect } from '@/middlewares/admin.middleware';
@@ -8,6 +8,21 @@ import { httpError } from '@/utils/http-error';
 import { storeFile } from '@/lib/storage';
 
 const storage = multer.memoryStorage();
+
+/** Translate multer rejections (bad type / too large) into clean 400s instead of 500s. */
+function handleUpload(mw: RequestHandler): RequestHandler {
+  return (req, res, next) => {
+    mw(req, res, (err: unknown) => {
+      if (err) {
+        const msg = err instanceof multer.MulterError
+          ? (err.code === 'LIMIT_FILE_SIZE' ? 'File is too large' : err.message)
+          : (err instanceof Error ? err.message : 'Upload failed');
+        return next(httpError(400, msg));
+      }
+      next();
+    });
+  };
+}
 
 const ALLOWED_IMAGES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 const imageUpload = multer({
@@ -39,7 +54,7 @@ export function createUploadRouter(): Router {
   router.post(
     '/',
     adminProtect,
-    imageUpload.single('file'),
+    handleUpload(imageUpload.single('file')),
     asyncHandler(async (req: Request, res: Response) => {
       if (!req.file) throw httpError(400, 'No file provided');
       const url = await storeFile(req.file, { folder: 'declay/products', resourceType: 'image' });
@@ -55,7 +70,7 @@ export function createCvUploadRouter(): Router {
   router.post(
     '/',
     uploadLimiter,
-    cvUpload.single('file'),
+    handleUpload(cvUpload.single('file')),
     asyncHandler(async (req: Request, res: Response) => {
       if (!req.file) throw httpError(400, 'No file provided');
       const url = await storeFile(req.file, { folder: 'declay/cvs', resourceType: 'raw' });

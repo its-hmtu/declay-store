@@ -56,6 +56,7 @@ export interface ProductVariant {
   productId: number;
   name: string;
   price: string;
+  specialPrice: string | null;
   stock: number;
   images: string[];
   isActive: boolean;
@@ -78,6 +79,36 @@ export interface Product {
   variants?: ProductVariant[];
   rating?: ProductRating;
   salesCount?: number;
+  campaignDiscountPercent?: number | null;
+}
+
+export interface Collection {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  createdBy: number | null;
+  createdAt: string;
+  updatedAt: string;
+  productIds?: number[];
+  products?: Product[];
+  productCount?: number;
+}
+
+export interface Campaign {
+  id: number;
+  name: string;
+  description: string | null;
+  discountPercent: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  isActive: boolean;
+  createdBy: number | null;
+  createdAt: string;
+  updatedAt: string;
+  productIds?: number[];
 }
 
 export const PRODUCT_SORTS = [
@@ -332,8 +363,18 @@ export interface AdminUser {
 export interface Shipment {
   id: number;
   orderId: number;
-  carrier: string;
-  trackingNumber: string;
+  provider: string;
+  providerShipmentId: string | null;
+  carrier: string | null;
+  trackingNumber: string | null;
+  status: string;
+  incoterm: string | null;
+  labelUrl: string | null;
+  cost: number | null;
+  currency: string | null;
+  lastEvent: string | null;
+  lastEventAt: string | null;
+  podUrl: string | null;
   shippedAt: string;
   estimatedDeliveryAt: string | null;
   deliveredAt: string | null;

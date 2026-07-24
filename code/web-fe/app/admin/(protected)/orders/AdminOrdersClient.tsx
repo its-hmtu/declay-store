@@ -1,12 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import type { Order } from '@/lib/types';
 import { api } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Badge from '@/components/ui/Badge';
+import AdminToolbar, { FilterSelect } from '@/components/admin/AdminToolbar';
+import Pagination from '@/components/admin/Pagination';
+import { usePagination } from '@/lib/usePagination';
 
 const STATUS_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'error' | 'info'> = {
   pending_payment: 'warning',
@@ -22,21 +25,30 @@ const STATUS_OPTS = ['pending_payment', 'paid', 'processing', 'shipped', 'delive
 export default function AdminOrdersClient() {
   const [orders,  setOrders]  = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search,  setSearch]  = useState('');
+  const [status,  setStatus]  = useState('all');
 
   useEffect(() => {
     const token = adminAuth.getToken();
     if (!token) return;
-    api.get<Order[]>('/admin/orders', { token })
+    api.get<Order[]>('/admin/orders?limit=100', { token })
       .then((res) => setOrders(res.data))
       .catch(() => toast.error('Failed to load orders.'))
       .finally(() => setLoading(false));
   }, []);
 
+  const filtered = useMemo(() => orders.filter((o) =>
+    (search === '' || String(o.id).includes(search.replace('#', ''))) &&
+    (status === 'all' || o.status === status),
+  ), [orders, search, status]);
+
+  const { page, setPage, totalPages, total, paged } = usePagination(filtered, 10);
+
   async function updateStatus(orderId: number, status: string) {
     const token = adminAuth.getToken();
     if (!token) return;
     try {
-      await api.patch(`/admin/orders/${orderId}/status`, { status }, { token });
+      await api.put(`/admin/orders/${orderId}/status`, { status }, { token });
       setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: status as Order['status'] } : o));
       toast.success('Status updated.');
     } catch (err: unknown) {
@@ -49,6 +61,15 @@ export default function AdminOrdersClient() {
   return (
     <div>
       <h1 className="font-serif text-3xl font-bold text-text mb-6">Orders</h1>
+
+      <AdminToolbar search={search} onSearch={(v) => { setSearch(v); setPage(1); }} placeholder="Search by order #…">
+        <FilterSelect
+          value={status}
+          onChange={(v) => { setStatus(v); setPage(1); }}
+          label="Status"
+          options={[{ value: 'all', label: 'All status' }, ...STATUS_OPTS.map((s) => ({ value: s, label: s.replace('_', ' ') }))]}
+        />
+      </AdminToolbar>
 
       <div className="rounded-xl border border-border bg-surface overflow-hidden">
         <table className="w-full text-sm">
@@ -63,10 +84,10 @@ export default function AdminOrdersClient() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {orders.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-text-muted">No orders yet.</td></tr>
+            {paged.length === 0 ? (
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-text-muted">No orders found.</td></tr>
             ) : (
-              orders.map((order) => (
+              paged.map((order) => (
                 <tr key={order.id} className="hover:bg-surface-alt/50 transition-colors">
                   <td className="px-4 py-3 font-medium text-text">#{order.id}</td>
                   <td className="px-4 py-3 text-text-muted">{new Date(order.createdAt).toLocaleDateString()}</td>
@@ -85,8 +106,10 @@ export default function AdminOrdersClient() {
                       {STATUS_OPTS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
                     </select>
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    <Link href={`/orders/${order.id}`} target="_blank" className="text-xs text-brand hover:underline">View</Link>
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <Link href={`/admin/orders/${order.id}`} className="text-xs text-brand hover:underline">Manage</Link>
+                    <span className="text-text-faint mx-1.5">·</span>
+                    <Link href={`/orders/${order.id}`} target="_blank" className="text-xs text-text-muted hover:underline">View</Link>
                   </td>
                 </tr>
               ))
@@ -94,6 +117,8 @@ export default function AdminOrdersClient() {
           </tbody>
         </table>
       </div>
+
+      <Pagination page={page} totalPages={totalPages} total={total} onChange={setPage} />
     </div>
   );
 }

@@ -2,21 +2,22 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingCart, User, LogOut, Menu, X, ChevronDown, ArrowRight, Heart, Package } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Menu, X, ChevronDown, Heart, Package } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { auth } from '@/lib/auth';
 import { authApi, cartApi } from '@/lib/api';
 import NotificationBell from '@/components/NotificationBell';
 import SearchBox from '@/components/storefront/SearchBox';
-import type { Category } from '@/lib/types';
+import type { Category, Collection } from '@/lib/types';
 
 const NAV = [
-  { href: '/products', label: 'Shop' },
+  { href: '/products',    label: 'Shop' },
+  { href: '/collections', label: 'Collections' },
   { href: '/blog',     label: 'Journal' },
   { href: '/careers',  label: 'Careers' },
 ];
 
-export default function Header({ categories = [] }: { categories?: Category[] }) {
+export default function Header({ categories = [], collections = [] }: { categories?: Category[]; collections?: Collection[] }) {
   const pathname   = usePathname();
   const router     = useRouter();
   const [open, setOpen] = useState(false);       // mobile drawer
@@ -63,6 +64,9 @@ export default function Header({ categories = [] }: { categories?: Category[] })
     { label: 'New This Season', href: '/products?sort=newest' },
   ];
 
+  const collectionLinks = collections.map((c) => ({ label: c.name, href: `/products?collectionId=${c.id}` }));
+  const popularTerms = [...categories.map((c) => c.name), ...collections.map((c) => c.name)].slice(0, 8);
+
   const closeShop = () => setShopOpen(false);
 
   return (
@@ -78,7 +82,7 @@ export default function Header({ categories = [] }: { categories?: Category[] })
         </Link>
 
         {/* Desktop nav (monospace) */}
-        <nav className="hidden md:flex items-center gap-7">
+        <nav className="hidden md:flex items-center gap-7 flex-1 justify-center">
           {NAV.map(({ href, label }) => {
             const active = pathname.startsWith(href);
             const isShop = href === '/products' && categories.length > 0;
@@ -100,13 +104,12 @@ export default function Header({ categories = [] }: { categories?: Category[] })
           })}
         </nav>
 
-        {/* Desktop search */}
-        <div className="hidden md:flex flex-1 justify-center px-4">
-          <SearchBox variant="desktop" />
-        </div>
 
         {/* Actions */}
         <div className="flex items-center gap-2" onMouseEnter={closeShop}>
+          <div className="hidden md:block">
+            <SearchBox variant="desktop" popularTerms={popularTerms} />
+          </div>
           <Link
             href="/wishlist"
             className="p-2 text-text-muted hover:text-text transition-colors"
@@ -174,13 +177,13 @@ export default function Header({ categories = [] }: { categories?: Category[] })
         }`}
         onMouseEnter={() => setShopOpen(true)}
       >
-        <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-12 gap-8">
+        <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-5 gap-4">
           <MegaColumn title="Featured" links={featuredLinks} onNavigate={closeShop} accent />
           <MegaColumn title="Best Sellers" links={bestSellerLinks} onNavigate={closeShop} />
           <MegaColumn title="Trending" links={trendingLinks} onNavigate={closeShop} />
 
           {/* By Category — the real catalogue */}
-          <div className="col-span-3">
+          <div className="col-span-1">
             <p className="eyebrow mb-4">By Category</p>
             <ul className="space-y-2.5">
               {categories.map((cat) => (
@@ -197,21 +200,26 @@ export default function Header({ categories = [] }: { categories?: Category[] })
             </ul>
           </div>
 
-          {/* Promo tile */}
-          <div className="col-span-3">
-            <Link
-              href="/products"
-              onClick={closeShop}
-              className="group relative flex flex-col justify-end h-full min-h-44 rounded-2xl overflow-hidden border border-border bg-linear-to-br from-brand-faint to-surface-alt p-5"
-            >
-              <p className="eyebrow mb-1">New Collection</p>
-              <p className="font-serif text-xl font-bold text-text leading-tight">Handcrafted, one of a kind.</p>
-              <span className="mt-3 inline-flex items-center gap-1.5 font-mono text-xs text-brand">
-                Explore all
-                <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
-              </span>
-            </Link>
-          </div>
+          {/* By Collection */}
+          {collectionLinks.length > 0 && (
+            <div className="col-span-1">
+              <p className="eyebrow mb-4">By Collection</p>
+              <ul className="space-y-2.5">
+                {collectionLinks.map((l) => (
+                  <li key={l.href}>
+                    <Link
+                      href={l.href}
+                      onClick={closeShop}
+                      className="text-sm text-text-muted hover:text-text transition-colors"
+                    >
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
         </div>
       </div>
 
@@ -238,6 +246,16 @@ export default function Header({ categories = [] }: { categories?: Category[] })
                       className="text-sm text-text-muted hover:text-text py-0.5"
                     >
                       {cat.name}
+                    </Link>
+                  ))}
+                  {collectionLinks.map((l) => (
+                    <Link
+                      key={l.href}
+                      href={l.href}
+                      onClick={() => setOpen(false)}
+                      className="text-sm text-text-muted hover:text-text py-0.5"
+                    >
+                      {l.label}
                     </Link>
                   ))}
                 </div>
@@ -280,7 +298,7 @@ function MegaColumn({
   accent?: boolean;
 }) {
   return (
-    <div className="col-span-3">
+    <div className="col-span-1">
       <p className="eyebrow mb-4">{title}</p>
       <ul className="space-y-2.5">
         {links.map((l) => (

@@ -5,6 +5,7 @@ export interface IProductVariant {
   productId: number;
   name: string;
   price: number;
+  specialPrice: number | null;
   stock: number;
   images: string[];
   isActive: boolean;
@@ -16,6 +17,7 @@ export interface ICreateVariantData {
   productId: number;
   name: string;
   price: number;
+  specialPrice?: number | null;
   stock?: number;
   images?: string[];
 }
@@ -23,6 +25,7 @@ export interface ICreateVariantData {
 export interface IUpdateVariantData {
   name?: string;
   price?: number;
+  specialPrice?: number | null;
   stock?: number;
   images?: string[];
   isActive?: boolean;

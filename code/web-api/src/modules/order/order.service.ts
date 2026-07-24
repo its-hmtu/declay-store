@@ -14,6 +14,8 @@ import ShippingMethod from '@/modules/shipping-method/shipping-method.entity';
 import Address from '@/modules/address/address.entity';
 import NotificationService from '@/modules/notification/notification.service';
 import { resolveShippingZone, methodAppliesToZone, computeShippingFee, computeOrderTotal, statusTransitionError } from './order.pricing';
+import { effectiveUnitPrice } from '@/lib/pricing';
+import CampaignService from '@/modules/campaign/campaign.service';
 import { queueOrderStatusEmail } from '@/lib/email-queue';
 import type { IOrder, IOrderService, ICreateOrderData } from './order.interface';
 
@@ -22,6 +24,7 @@ const stripe = new Stripe(config.stripe.secretKey);
 export default class OrderService implements IOrderService {
   private discountService = new DiscountService();
   private notificationService = new NotificationService();
+  private campaignService = new CampaignService();
 
   async createFromCart(data: ICreateOrderData): Promise<{ order: IOrder; clientSecret: string }> {
     const { userId, shippingAddressId, notes, discountCode, shippingMethodId } = data;
@@ -49,8 +52,13 @@ export default class OrderService implements IOrderService {
       }
     }
 
+    // Pricing (increments 1 & 2): effective unit price = best of base / special / active campaign.
+    const productIds = items.map((i: any) => i.variant.product?.id).filter((id: any): id is number => !!id);
+    const campaignPct = await this.campaignService.getActiveDiscountPercents(productIds);
+    const unitPriceOf = (item: any) => effectiveUnitPrice(item.variant.price, item.variant.specialPrice, campaignPct.get(item.variant.product?.id) ?? null);
+
     const subtotal = items.reduce(
-      (sum: number, item: any) => sum + Number(item.variant.price) * item.quantity,
+      (sum: number, item: any) => sum + unitPriceOf(item) * item.quantity,
       0,
     );
 
@@ -131,7 +139,7 @@ export default class OrderService implements IOrderService {
           orderId: newOrder.id,
           variantId: item.variantId,
           quantity: item.quantity,
-          priceAtPurchase: Number(item.variant.price),
+          priceAtPurchase: unitPriceOf(item),
           variantNameAtPurchase: item.variant.name,
           productNameAtPurchase: item.variant.product?.name ?? '',
         })),

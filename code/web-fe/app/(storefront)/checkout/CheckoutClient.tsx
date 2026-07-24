@@ -7,6 +7,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import type { Address, Cart, DiscountPreview, ShippingMethod } from '@/lib/types';
 import { cartApi, ordersApi, addressApi, discountsApi, shippingMethodsApi } from '@/lib/api';
+import { effectivePrice } from '@/lib/utils';
 import { auth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 
@@ -106,7 +107,7 @@ export default function CheckoutClient() {
   );
 
   const items    = cart?.items ?? [];
-  const subtotal = items.reduce((s, i) => s + parseFloat(i.variant?.price ?? '0') * i.quantity, 0);
+  const subtotal = items.reduce((s, i) => s + effectivePrice(i.variant?.price, i.variant?.specialPrice, i.variant?.product?.campaignDiscountPercent) * i.quantity, 0);
   const selectedAddress   = addresses.find((a) => a.id === addressId) ?? null;
   const zone              = shippingZone(selectedAddress?.country);
   const applicableMethods = shippingMethods.filter((m) => m.zone === 'all' || m.zone === zone);
@@ -190,7 +191,7 @@ export default function CheckoutClient() {
             {items.map((item) => (
               <div key={item.id} className="flex justify-between text-text-muted">
                 <span>{item.variant?.product?.name} × {item.quantity}</span>
-                <span>${(parseFloat(item.variant?.price ?? '0') * item.quantity).toFixed(2)}</span>
+                <span>${(effectivePrice(item.variant?.price, item.variant?.specialPrice, item.variant?.product?.campaignDiscountPercent) * item.quantity).toFixed(2)}</span>
               </div>
             ))}
             <div className="flex justify-between text-text-muted">

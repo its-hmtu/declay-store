@@ -1,30 +1,40 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Category } from '@/lib/types';
 import { api } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
+import AdminToolbar from '@/components/admin/AdminToolbar';
+import Pagination from '@/components/admin/Pagination';
+import { usePagination } from '@/lib/usePagination';
 
 export default function CategoriesClient() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [editing,    setEditing]    = useState<Category | null>(null);
   const [showForm,   setShowForm]   = useState(false);
+  const [search,     setSearch]     = useState('');
 
   async function load() {
     const token = adminAuth.getToken();
     if (!token) return;
     try {
-      const res = await api.get<Category[]>('/categories', { token });
+      const res = await api.get<Category[]>('/admin/categories?limit=100', { token });
       setCategories(res.data);
     } catch { /* empty */ }
     setLoading(false);
   }
 
   useEffect(() => { load(); }, []);
+
+  const filtered = useMemo(() => categories.filter((c) =>
+    search === '' || c.name.toLowerCase().includes(search.toLowerCase()) || c.slug.toLowerCase().includes(search.toLowerCase()),
+  ), [categories, search]);
+
+  const { page, setPage, totalPages, total, paged } = usePagination(filtered, 10);
 
   async function deleteCategory(id: number) {
     if (!confirm('Delete this category?')) return;
@@ -59,10 +69,13 @@ export default function CategoriesClient() {
         />
       )}
 
+      <AdminToolbar search={search} onSearch={(v) => { setSearch(v); setPage(1); }} placeholder="Search categories…" />
+
       <div className="rounded-xl border border-border bg-surface overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-alt text-text-muted text-xs uppercase tracking-wider">
+              <th className="px-4 py-3 text-left">ID</th>
               <th className="px-4 py-3 text-left">Name</th>
               <th className="px-4 py-3 text-left">Slug</th>
               <th className="px-4 py-3 text-left">Parent</th>
@@ -71,11 +84,12 @@ export default function CategoriesClient() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {categories.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-text-muted">No categories yet.</td></tr>
+            {paged.length === 0 ? (
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-text-muted">No categories found.</td></tr>
             ) : (
-              categories.map((cat) => (
+              paged.map((cat) => (
                 <tr key={cat.id} className="hover:bg-surface-alt/50 transition-colors">
+                  <td className="px-4 py-3 font-mono text-text-muted text-xs">{cat.id}</td>
                   <td className="px-4 py-3 font-medium text-text">{cat.name}</td>
                   <td className="px-4 py-3 text-text-muted font-mono text-xs">{cat.slug}</td>
                   <td className="px-4 py-3 text-text-muted">{categories.find((c) => c.id === cat.parentId)?.name ?? '—'}</td>
@@ -92,6 +106,8 @@ export default function CategoriesClient() {
           </tbody>
         </table>
       </div>
+
+      <Pagination page={page} totalPages={totalPages} total={total} onChange={setPage} />
     </div>
   );
 }

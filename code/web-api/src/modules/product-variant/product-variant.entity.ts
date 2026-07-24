@@ -13,6 +13,7 @@ class ProductVariant extends Model<InferAttributes<ProductVariant>, InferCreatio
   declare productId: number;
   declare name: string;
   declare price: number;
+  declare specialPrice: CreationOptional<number | null>;
   declare stock: CreationOptional<number>;
   declare images: CreationOptional<string[]>;
   declare isActive: CreationOptional<boolean>;
@@ -41,6 +42,11 @@ ProductVariant.init(
     price: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
+    },
+    specialPrice: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      field: 'special_price',
     },
     stock: {
       type: DataTypes.INTEGER,

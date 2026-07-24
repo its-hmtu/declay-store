@@ -3,6 +3,9 @@ import { Order, OrderShipment } from '@/modules/order/order.entity';
 import { httpError } from '@/utils/http-error';
 import { queueOrderStatusEmail } from '@/lib/email-queue';
 import NotificationService from '@/modules/notification/notification.service';
+import config from '@/config/env';
+import { getShippingProvider } from '@/modules/shipping-provider';
+import ShipmentTrackingService from '@/modules/shipment/shipment.service';
 import type {
   IOrderShipment,
   IOrderShipmentService,
@@ -102,6 +105,52 @@ export default class OrderShipmentService implements IOrderShipmentService {
     }
 
     return updated.toJSON() as IOrderShipment;
+  }
+
+  /** Create a shipment/label through the active shipping provider (mock or Easyship). */
+  async createViaProvider(orderId: number): Promise<IOrderShipment> {
+    const order = await Order.findByPk(orderId);
+    if (!order) throw httpError(404, 'Order not found');
+    if (!SHIPPABLE_STATUSES.includes(order.status)) {
+      throw httpError(400, `Cannot create a shipment for an order with status "${order.status}"`);
+    }
+    const existing = await OrderShipment.findOne({ where: { orderId } });
+    if (existing) throw httpError(409, 'This order already has a shipment');
+
+    const provider = getShippingProvider();
+    const created = await provider.createShipment({ id: order.id });
+
+    const shipment = await OrderShipment.create({
+      orderId,
+      provider: created.provider,
+      providerShipmentId: created.providerShipmentId,
+      carrier: created.carrier,
+      trackingNumber: created.trackingNumber,
+      labelUrl: created.labelUrl,
+      cost: created.cost,
+      currency: created.currency,
+      incoterm: created.incoterm,
+      status: 'label_created',
+    });
+    return shipment.toJSON() as IOrderShipment;
+  }
+
+  /** Simulate a carrier tracking event (mock provider / non-production only). */
+  async simulate(orderId: number, rawStatus: string): Promise<IOrderShipment> {
+    const provider = getShippingProvider();
+    if (!provider.isMock && config.server.env === 'production') {
+      throw httpError(403, 'Tracking simulation is only available with the mock provider / non-production.');
+    }
+    const shipment = await OrderShipment.findOne({ where: { orderId } });
+    if (!shipment) throw httpError(404, 'Shipment not found');
+    if (!shipment.providerShipmentId) throw httpError(400, 'Shipment has no provider id to simulate against');
+    await new ShipmentTrackingService().applyTrackingUpdate({
+      providerShipmentId: shipment.providerShipmentId,
+      rawStatus,
+      event: `simulated:${rawStatus}`,
+    });
+    const fresh = await OrderShipment.findOne({ where: { orderId } });
+    return fresh!.toJSON() as IOrderShipment;
   }
 
   async remove(orderId: number): Promise<void> {

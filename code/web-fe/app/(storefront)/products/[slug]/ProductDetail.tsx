@@ -8,6 +8,9 @@ import { cartApi } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import { ShoppingCart } from 'lucide-react';
+import WishlistButton from '@/components/storefront/WishlistButton';
+import ProductReviews from '@/components/storefront/ProductReviews';
+import RelatedProducts from '@/components/storefront/RelatedProducts';
 
 export default function ProductDetail({ product }: { product: Product }) {
   const variants = product.variants?.filter((v) => v.isActive) ?? [];
@@ -56,7 +59,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                     i === imgIdx ? 'border-brand' : 'border-border hover:border-brand-lighter'
                   }`}
                 >
-                  <Image src={src} alt="" width={64} height={64} className="w-full h-full object-cover" />
+                  <Image src={src} alt="" width={64} height={64} className="w-full h-full object-contain" />
                 </button>
               ))}
             </div>
@@ -71,7 +74,26 @@ export default function ProductDetail({ product }: { product: Product }) {
           <h1 className="font-serif text-4xl font-bold text-text leading-tight">{product.name}</h1>
 
           {selected && (
-            <p className="mt-4 text-2xl font-semibold text-brand">${parseFloat(selected.price).toFixed(2)}</p>
+            (() => {
+              const base = parseFloat(selected.price);
+              const special = selected.specialPrice ? parseFloat(selected.specialPrice) : null;
+              const campaign = product.campaignDiscountPercent ?? null;
+              // Best price for the customer: lowest of special price and active campaign %.
+              const cands = [base];
+              if (special !== null && special >= 0) cands.push(special);
+              if (campaign != null && campaign > 0 && campaign <= 100) cands.push(base * (1 - campaign / 100));
+              const best = Math.min(...cands);
+              const onSale = best < base;
+              return onSale ? (
+                <p className="mt-4 flex items-baseline gap-2">
+                  <span className="text-2xl font-semibold text-error">${best.toFixed(2)}</span>
+                  <span className="text-lg text-text-faint line-through">${base.toFixed(2)}</span>
+                  <span className="text-xs font-bold text-white bg-error rounded px-1.5 py-0.5">-{Math.round((1 - best / base) * 100)}%</span>
+                </p>
+              ) : (
+                <p className="mt-4 text-2xl font-semibold text-brand">${base.toFixed(2)}</p>
+              );
+            })()
           )}
 
           {product.description && (
@@ -126,18 +148,26 @@ export default function ProductDetail({ product }: { product: Product }) {
                 +
               </button>
             </div>
+          </div>
             <Button
               onClick={addToCart}
               loading={loading}
               disabled={!selected || selected.stock === 0}
-              className="flex-1"
+              className="flex-1 mt-3 w-full"
             >
               <ShoppingCart size={18} />
               Add to Cart
             </Button>
-          </div>
+
+          {/* Wishlist */}
+          {selected && (
+            <WishlistButton variantId={selected.id} className="mt-3 w-full" />
+          )}
         </div>
       </div>
+
+      <ProductReviews productId={product.id} />
+      <RelatedProducts product={product} />
     </div>
   );
 }

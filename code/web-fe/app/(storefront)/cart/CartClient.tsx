@@ -7,6 +7,7 @@ import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Cart } from '@/lib/types';
 import { cartApi } from '@/lib/api';
+import { effectivePrice } from '@/lib/utils';
 import { auth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 
@@ -68,7 +69,7 @@ export default function CartClient() {
 
   const items   = cart?.items ?? [];
   const subtotal = items.reduce((sum, item) => {
-    const price = parseFloat(item.variant?.price ?? '0');
+    const price = effectivePrice(item.variant?.price, item.variant?.specialPrice, item.variant?.product?.campaignDiscountPercent);
     return sum + price * item.quantity;
   }, 0);
 
@@ -93,7 +94,9 @@ export default function CartClient() {
             const variant = item.variant;
             const product = variant?.product;
             const image   = variant?.images?.[0];
-            const price   = parseFloat(variant?.price ?? '0');
+            const base    = parseFloat(variant?.price ?? '0');
+            const price   = effectivePrice(variant?.price, variant?.specialPrice, product?.campaignDiscountPercent);
+            const onSale  = price < base;
 
             return (
               <div key={item.id} className="flex gap-4 p-4 rounded-xl border border-border bg-surface">
@@ -107,7 +110,9 @@ export default function CartClient() {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-text truncate">{product?.name}</p>
                   <p className="text-sm text-text-muted">{variant?.name}</p>
-                  <p className="mt-1 text-brand font-semibold">${price.toFixed(2)}</p>
+                  <p className="mt-1 font-semibold">
+                    {onSale ? (<><span className="text-error">${price.toFixed(2)}</span> <span className="text-text-faint line-through text-sm">${base.toFixed(2)}</span></>) : <span className="text-brand">${price.toFixed(2)}</span>}
+                  </p>
                 </div>
                 <div className="flex flex-col items-end justify-between gap-2">
                   <button onClick={() => removeItem(item.id)} className="text-text-faint hover:text-error transition-colors">

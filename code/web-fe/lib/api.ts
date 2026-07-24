@@ -112,11 +112,14 @@ export const api = {
 
 /* ── Domain helpers (server-side, pass token from cookies) ─ */
 export const productsApi = {
-  list: (params?: { page?: number; limit?: number; categoryId?: number; search?: string; sort?: string }) => {
+  list: (params?: { page?: number; limit?: number; categoryId?: number; collectionId?: number; search?: string; sort?: string; minPrice?: number; maxPrice?: number }) => {
     const qs = new URLSearchParams();
     if (params?.page)       qs.set('page',       String(params.page));
     if (params?.limit)      qs.set('limit',      String(params.limit));
     if (params?.categoryId) qs.set('categoryId', String(params.categoryId));
+    if (params?.collectionId) qs.set('collectionId', String(params.collectionId));
+    if (params?.minPrice != null) qs.set('minPrice', String(params.minPrice));
+    if (params?.maxPrice != null) qs.set('maxPrice', String(params.maxPrice));
     if (params?.search)     qs.set('search',     params.search);
     if (params?.sort)       qs.set('sort',       params.sort);
     return api.get<import('./types').Product[]>(`/products?${qs}`, { next: { revalidate: 60 } });
@@ -274,6 +277,27 @@ export const adminTagsApi = {
   remove: (token: string, id: number) => api.delete<void>(`/admin/tags/${id}`, { token }),
 };
 
+export const collectionsApi = {
+  list:   () => api.get<import('./types').Collection[]>('/collections', { next: { revalidate: 0 } }),
+  detail: (slug: string) => api.get<import('./types').Collection>(`/collections/${slug}`, { next: { revalidate: 120 } }),
+};
+
+export const adminCollectionsApi = {
+  list:   (token: string) => api.get<import('./types').Collection[]>('/admin/collections', { token }),
+  detail: (token: string, id: number) => api.get<import('./types').Collection>(`/admin/collections/${id}`, { token }),
+  create: (token: string, data: unknown) => api.post<import('./types').Collection>('/admin/collections', data, { token }),
+  update: (token: string, id: number, data: unknown) => api.put<import('./types').Collection>(`/admin/collections/${id}`, data, { token }),
+  remove: (token: string, id: number) => api.delete<void>(`/admin/collections/${id}`, { token }),
+};
+
+export const adminCampaignsApi = {
+  list:   (token: string) => api.get<import('./types').Campaign[]>('/admin/campaigns', { token }),
+  detail: (token: string, id: number) => api.get<import('./types').Campaign>(`/admin/campaigns/${id}`, { token }),
+  create: (token: string, data: unknown) => api.post<import('./types').Campaign>('/admin/campaigns', data, { token }),
+  update: (token: string, id: number, data: unknown) => api.put<import('./types').Campaign>(`/admin/campaigns/${id}`, data, { token }),
+  remove: (token: string, id: number) => api.delete<void>(`/admin/campaigns/${id}`, { token }),
+};
+
 export const adminUsersApi = {
   list:   (token: string) => api.get<import('./types').AdminUser[]>('/admin/users?limit=100', { token }),
   create: (token: string, data: unknown) => api.post<import('./types').AdminUser>('/admin/users', data, { token }),
@@ -301,6 +325,8 @@ export const adminShipmentApi = {
   get:    (token: string, orderId: number) => api.get<import('./types').Shipment>(`/admin/orders/${orderId}/shipment`, { token }),
   create: (token: string, orderId: number, data: unknown) => api.post<import('./types').Shipment>(`/admin/orders/${orderId}/shipment`, data, { token }),
   update: (token: string, orderId: number, data: unknown) => api.put<import('./types').Shipment>(`/admin/orders/${orderId}/shipment`, data, { token }),
+  createViaProvider: (token: string, orderId: number) => api.post<import('./types').Shipment>(`/admin/orders/${orderId}/shipment/provider`, {}, { token }),
+  simulate: (token: string, orderId: number, status: string) => api.post<import('./types').Shipment>(`/admin/orders/${orderId}/shipment/simulate`, { status }, { token }),
   remove: (token: string, orderId: number) => api.delete<void>(`/admin/orders/${orderId}/shipment`, { token }),
 };
 

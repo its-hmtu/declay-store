@@ -28,8 +28,11 @@ export interface IUpdateCategoryData {
 
 export interface ICategoryService {
   list(): Promise<ICategory[]>;
+  listAll(): Promise<ICategory[]>;
   findById(id: number): Promise<ICategory>;
   findBySlug(slug: string): Promise<ICategory>;
+  // Return a category by exact name, or null if not found. Used by admin tools.
+  findByName?(name: string): Promise<ICategory | null>;
   create(data: ICreateCategoryData): Promise<ICategory>;
   update(id: number, data: IUpdateCategoryData): Promise<ICategory>;
   delete(id: number): Promise<void>;
@@ -37,6 +40,7 @@ export interface ICategoryService {
 
 export interface ICategoryController {
   list: RequestHandler;
+  adminList: RequestHandler;
   findById: RequestHandler;
   create: RequestHandler;
   update: RequestHandler;

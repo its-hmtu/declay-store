@@ -4,6 +4,11 @@ import { httpError } from '@/utils/http-error';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '@/utils/jwt';
 import { emailQueue } from '@/lib/email-queue';
 import {
+  denylistToken,
+  revokeAllForPrincipal,
+  TokenTTL,
+} from '@/lib/token-revocation';
+import {
   createEmailVerificationToken,
   consumeEmailVerificationToken,
   createPasswordResetToken,
@@ -12,13 +17,13 @@ import {
 
 export default class AuthService implements IAuthService {
   async register(userData: IUserData): Promise<{ access_token: string; refresh_token: string; user: any }> {
-    const { email, password, username, phoneNumber, fullName } = userData;
+    const { email, password, username, phoneNumber, fullName, dateOfBirth } = userData;
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       throw httpError(400, 'Email is already registered');
     }
 
-    const newUser = await User.create({ email, password, username, phoneNumber, fullName });
+    const newUser = await User.create({ email, password, username, phoneNumber, fullName, dateOfBirth });
 
     const token = await createEmailVerificationToken(newUser.id);
     await emailQueue.add('verify-email', { to: email, token });
@@ -98,6 +103,26 @@ export default class AuthService implements IAuthService {
     }
 
     await user.update({ password: newPassword });
+
+    // Kill any sessions a compromised account may have left open
+    await revokeAllForPrincipal('user', userId, TokenTTL.USER_MAX);
+  }
+
+  async logout(accessJti?: string, accessExp?: number, refreshToken?: string): Promise<void> {
+    if (accessJti && accessExp) {
+      await denylistToken(accessJti, accessExp);
+    }
+
+    if (refreshToken) {
+      try {
+        const decoded = verifyRefreshToken(refreshToken);
+        if (decoded.jti && decoded.exp) {
+          await denylistToken(decoded.jti, decoded.exp);
+        }
+      } catch {
+        // Invalid/expired refresh token — nothing to revoke
+      }
+    }
   }
 
   async verifyEmail(token: string): Promise<void> {

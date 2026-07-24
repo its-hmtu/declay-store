@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -9,22 +9,34 @@ import { api } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import AdminToolbar, { FilterSelect } from '@/components/admin/AdminToolbar';
+import Pagination from '@/components/admin/Pagination';
+import { usePagination } from '@/lib/usePagination';
 
 export default function AdminArticlesClient() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading,  setLoading]  = useState(true);
+  const [search,   setSearch]   = useState('');
+  const [status,   setStatus]   = useState('all');
 
   async function load() {
     const token = adminAuth.getToken();
     if (!token) return;
     try {
-      const res = await api.get<Article[]>('/admin/articles', { token });
+      const res = await api.get<Article[]>('/admin/articles?limit=100', { token });
       setArticles(res.data);
     } catch { /* empty */ }
     setLoading(false);
   }
 
   useEffect(() => { load(); }, []);
+
+  const filtered = useMemo(() => articles.filter((a) =>
+    (search === '' || a.title.toLowerCase().includes(search.toLowerCase())) &&
+    (status === 'all' || (status === 'published' ? a.isPublished : !a.isPublished)),
+  ), [articles, search, status]);
+
+  const { page, setPage, totalPages, total, paged } = usePagination(filtered, 10);
 
   async function deleteArticle(id: number) {
     if (!confirm('Delete this article?')) return;
@@ -50,6 +62,15 @@ export default function AdminArticlesClient() {
         </Link>
       </div>
 
+      <AdminToolbar search={search} onSearch={(v) => { setSearch(v); setPage(1); }} placeholder="Search articles…">
+        <FilterSelect
+          value={status}
+          onChange={(v) => { setStatus(v); setPage(1); }}
+          label="Status"
+          options={[{ value: 'all', label: 'All status' }, { value: 'published', label: 'Published' }, { value: 'draft', label: 'Draft' }]}
+        />
+      </AdminToolbar>
+
       <div className="rounded-xl border border-border bg-surface overflow-hidden">
         <table className="w-full text-sm">
           <thead>
@@ -62,10 +83,10 @@ export default function AdminArticlesClient() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {articles.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-text-muted">No articles yet.</td></tr>
+            {paged.length === 0 ? (
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-text-muted">No articles found.</td></tr>
             ) : (
-              articles.map((article) => (
+              paged.map((article) => (
                 <tr key={article.id} className="hover:bg-surface-alt/50 transition-colors">
                   <td className="px-4 py-3 font-medium text-text">{article.title}</td>
                   <td className="px-4 py-3 text-text-muted font-mono text-xs">{article.slug}</td>
@@ -91,6 +112,8 @@ export default function AdminArticlesClient() {
           </tbody>
         </table>
       </div>
+
+      <Pagination page={page} totalPages={totalPages} total={total} onChange={setPage} />
     </div>
   );
 }

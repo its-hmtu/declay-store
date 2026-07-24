@@ -29,11 +29,12 @@ export default class UserController implements IUserController {
       throw httpError(401, 'User ID not found in request');
     }
 
-    const { username, fullName, phoneNumber } = req.body;
+    const { username, fullName, phoneNumber, dateOfBirth } = req.body;
     const updatedUser = await this.userService.updateUserInfo(userId, {
       username,
       fullName,
       phoneNumber,
+      dateOfBirth,
     });
 
     sendSuccess(res, updatedUser.toSafeJSON(), 'User info updated successfully');

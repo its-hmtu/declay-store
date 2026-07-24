@@ -42,7 +42,7 @@ export async function enqueueReservationExpiry(
   orderId: number,
   delayMs: number = config.reservation.ttlMs,
 ): Promise<void> {
-  await reservationQueue.add('expire', { orderId }, { delay: delayMs, jobId: `reserve-expire:${orderId}` });
+  await reservationQueue.add('expire', { orderId }, { delay: delayMs, jobId: `reserve-expire-${orderId}` });
 }
 
 /**

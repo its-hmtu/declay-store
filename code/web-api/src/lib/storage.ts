@@ -1,7 +1,7 @@
-import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { v2 as cloudinary, type UploadApiResponse } from 'cloudinary';
 import config from '@/config/env';
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
@@ -17,44 +17,37 @@ export interface StoreOptions {
   resourceType: 'image' | 'raw';
 }
 
+let configured = false;
+function ensureConfigured(): void {
+  if (configured) return;
+  const { cloudName, apiKey, apiSecret } = config.cloudinary;
+  cloudinary.config({ cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret, secure: true });
+  configured = true;
+}
+
 export function isCloudinaryEnabled(): boolean {
   const { cloudName, apiKey, apiSecret } = config.cloudinary;
   return Boolean(cloudName && apiKey && apiSecret);
 }
 
 /**
- * W-18: store a file in object storage (Cloudinary) when configured, otherwise
- * fall back to the local public/uploads disk (dev / single-instance). Returns a URL.
+ * W-18: store a file in Cloudinary when configured, otherwise fall back to the local
+ * public/uploads disk (dev / single-instance). Returns a served URL.
  */
 export async function storeFile(file: UploadFile, opts: StoreOptions): Promise<string> {
   return isCloudinaryEnabled() ? uploadToCloudinary(file, opts) : saveToDisk(file);
 }
 
 async function uploadToCloudinary(file: UploadFile, opts: StoreOptions): Promise<string> {
-  const { cloudName, apiKey, apiSecret } = config.cloudinary;
-  const timestamp = Math.floor(Date.now() / 1000);
-
-  // Sign only the non-file params, alphabetically, per Cloudinary's signed-upload spec.
-  const signParams: Record<string, string | number> = { folder: opts.folder, timestamp };
-  const toSign = Object.keys(signParams).sort().map((k) => `${k}=${signParams[k]}`).join('&');
-  const signature = crypto.createHash('sha1').update(`${toSign}${apiSecret}`).digest('hex');
-
-  const form = new FormData();
-  form.append('file', new Blob([new Uint8Array(file.buffer)], { type: file.mimetype }), file.originalname);
-  form.append('api_key', apiKey);
-  form.append('timestamp', String(timestamp));
-  form.append('folder', opts.folder);
-  form.append('signature', signature);
-
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${opts.resourceType}/upload`, {
-    method: 'POST',
-    body: form,
+  ensureConfigured();
+  const result = await new Promise<UploadApiResponse>((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: opts.folder, resource_type: opts.resourceType },
+      (err, res) => (err || !res ? reject(err ?? new Error('Cloudinary upload failed')) : resolve(res)),
+    );
+    stream.end(file.buffer);
   });
-  const json = (await res.json()) as { secure_url?: string; error?: { message?: string } };
-  if (!res.ok || !json.secure_url) {
-    throw new Error(json.error?.message || 'Cloudinary upload failed');
-  }
-  return json.secure_url;
+  return result.secure_url;
 }
 
 function saveToDisk(file: UploadFile): string {
@@ -63,4 +56,29 @@ function saveToDisk(file: UploadFile): string {
   const filename = `${Date.now()}-${randomUUID()}${ext}`;
   fs.writeFileSync(path.join(UPLOAD_DIR, filename), file.buffer);
   return `${config.server.publicUrl}/uploads/${filename}`;
+}
+
+/**
+ * Best-effort deletion of a previously stored file. Cloudinary assets are removed via
+ * the SDK's destroy (public_id + resource_type parsed from the URL); local files are
+ * unlinked. Never throws for the caller — cleanup failures must not block the operation.
+ */
+export async function deleteFile(url: string): Promise<void> {
+  if (!url) return;
+  try {
+    if (url.includes('res.cloudinary.com')) {
+      if (!isCloudinaryEnabled()) return;
+      ensureConfigured();
+      const m = /res\.cloudinary\.com\/[^/]+\/(image|raw|video)\/upload\/(?:v\d+\/)?(.+)$/.exec(url);
+      if (!m) return;
+      const resourceType = m[1] as 'image' | 'raw' | 'video';
+      const publicId = m[2].replace(/\.[^./]+$/, '');
+      await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+    } else {
+      const m = /\/uploads\/([^/?#]+)$/.exec(url);
+      if (m) fs.rmSync(path.join(UPLOAD_DIR, m[1]), { force: true });
+    }
+  } catch {
+    // swallow — orphan cleanup is non-critical
+  }
 }

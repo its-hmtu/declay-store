@@ -7,6 +7,7 @@ import {
 } from 'sequelize';
 import { sequelize } from '@/config/sequelize';
 import User from '@/modules/user/user.entity';
+import ProductVariant from '@/modules/product-variant/product-variant.entity';
 
 export class Cart extends Model<InferAttributes<Cart>, InferCreationAttributes<Cart>> {
   declare id: CreationOptional<number>;
@@ -75,3 +76,5 @@ User.hasOne(Cart, { foreignKey: 'userId', as: 'cart' });
 Cart.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 Cart.hasMany(CartItem, { foreignKey: 'cartId', as: 'items', onDelete: 'CASCADE' });
 CartItem.belongsTo(Cart, { foreignKey: 'cartId', as: 'cart' });
+// Cart/discount services eager-load the variant (and its product) on each item
+CartItem.belongsTo(ProductVariant, { foreignKey: 'variantId', as: 'variant' });

@@ -1,4 +1,5 @@
 import jwt, { type SignOptions } from 'jsonwebtoken';
+import { randomUUID } from 'node:crypto';
 import { AppError } from './http-error';
 
 export interface AuthTokenPayload {
@@ -10,6 +11,10 @@ export interface AuthTokenPayload {
 export interface AuthenticatedUser {
   userId: number;
   email: string;
+  // Present on tokens verified from a request; used for revocation checks
+  jti?: string;
+  iat?: number;
+  exp?: number;
 }
 
 function getRequiredEnv(name: string): string {
@@ -36,6 +41,7 @@ function parseDuration(value: string): SignOptions['expiresIn'] {
 function signToken(payload: AuthTokenPayload, secret: string, expiresIn: string): string {
   return jwt.sign(payload, secret, {
     expiresIn: parseDuration(expiresIn),
+    jwtid: randomUUID(),
   });
 }
 
@@ -73,6 +79,9 @@ function verifyToken(token: string, secret: string, expectedType: 'access' | 're
   return {
     userId,
     email: decoded.email,
+    jti: decoded.jti,
+    iat: decoded.iat,
+    exp: decoded.exp,
   };
 }
 
@@ -84,7 +93,7 @@ export function signAccessToken(user: AuthenticatedUser): string {
       tokenType: 'access',
     },
     getRequiredEnv('JWT_ACCESS_SECRET'),
-    process.env.JWT_ACCESS_EXPIRES_IN ?? '15m',
+    process.env.JWT_ACCESS_EXPIRED_IN ?? '15m',
   );
 }
 
@@ -96,7 +105,7 @@ export function signRefreshToken(user: AuthenticatedUser): string {
       tokenType: 'refresh',
     },
     getRequiredEnv('JWT_REFRESH_SECRET'),
-    process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
+    process.env.JWT_REFRESH_EXPIRED_IN ?? '7d',
   );
 }
 
@@ -112,13 +121,17 @@ export interface AuthenticatedAdmin {
   adminId: number;
   email: string;
   role: string;
+  // Present on tokens verified from a request; used for revocation checks
+  jti?: string;
+  iat?: number;
+  exp?: number;
 }
 
 export function signAdminAccessToken(admin: AuthenticatedAdmin): string {
   return jwt.sign(
     { sub: String(admin.adminId), email: admin.email, role: admin.role, tokenType: 'admin' },
     getRequiredEnv('JWT_ADMIN_SECRET'),
-    { expiresIn: (process.env.JWT_ADMIN_EXPIRED_IN ?? '8h') as SignOptions['expiresIn'] },
+    { expiresIn: (process.env.JWT_ADMIN_EXPIRED_IN ?? '8h') as SignOptions['expiresIn'], jwtid: randomUUID() },
   );
 }
 
@@ -140,5 +153,12 @@ export function verifyAdminAccessToken(token: string): AuthenticatedAdmin {
     throw new AppError('Invalid admin token payload', { statusCode: 401, code: 'UNAUTHORIZED' });
   }
 
-  return { adminId, email: decoded.email, role: decoded.role as string };
+  return {
+    adminId,
+    email: decoded.email,
+    role: decoded.role as string,
+    jti: decoded.jti,
+    iat: decoded.iat,
+    exp: decoded.exp,
+  };
 }

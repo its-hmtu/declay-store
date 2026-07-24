@@ -12,6 +12,11 @@ export default class CategoryController implements ICategoryController {
     sendSuccess(res, categories, 'Categories retrieved successfully');
   });
 
+  adminList = asyncHandler(async (req: Request, res: Response) => {
+    const categories = await this.categoryService.listAll();
+    sendSuccess(res, categories, 'Categories retrieved successfully');
+  });
+
   findById = asyncHandler(async (req: Request, res: Response) => {
     const id = Number(req.params.id);
     const category = await this.categoryService.findById(id);

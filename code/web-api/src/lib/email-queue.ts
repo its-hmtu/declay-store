@@ -1,8 +1,10 @@
 import { Queue, Worker, type Job } from 'bullmq';
 import { redisConfig } from '@/config/redis';
-import { sendVerificationEmail, sendPasswordResetEmail } from '@/lib/email';
+import { sendVerificationEmail, sendPasswordResetEmail, sendOrderStatusEmail } from '@/lib/email';
+import { Order, type OrderStatus } from '@/modules/order/order.entity';
+import User from '@/modules/user/user.entity';
 
-export type EmailJobName = 'verify-email' | 'reset-password';
+export type EmailJobName = 'verify-email' | 'reset-password' | 'order-status-update';
 
 export interface VerifyEmailJobData {
   to: string;
@@ -14,7 +16,15 @@ export interface ResetPasswordJobData {
   token: string;
 }
 
-export type EmailJobData = VerifyEmailJobData | ResetPasswordJobData;
+export interface OrderStatusUpdateJobData {
+  orderId: number;
+  status: OrderStatus;
+  carrier?: string | null;
+  trackingNumber?: string | null;
+  estimatedDeliveryAt?: string | null;
+}
+
+export type EmailJobData = VerifyEmailJobData | ResetPasswordJobData | OrderStatusUpdateJobData;
 
 // BullMQ requires maxRetriesPerRequest: null — already set in redisConfig
 const connection = {
@@ -41,11 +51,25 @@ export function startEmailWorker(): void {
   const worker = new Worker<EmailJobData, void, EmailJobName>(
     'email',
     async (job: Job<EmailJobData, void, EmailJobName>) => {
-      const { to, token } = job.data as VerifyEmailJobData;
       if (job.name === 'verify-email') {
+        const { to, token } = job.data as VerifyEmailJobData;
         await sendVerificationEmail(to, token);
       } else if (job.name === 'reset-password') {
+        const { to, token } = job.data as ResetPasswordJobData;
         await sendPasswordResetEmail(to, token);
+      } else if (job.name === 'order-status-update') {
+        const { orderId, status, carrier, trackingNumber, estimatedDeliveryAt } = job.data as OrderStatusUpdateJobData;
+        const order = await Order.findByPk(orderId, {
+          include: [{ model: User, as: 'user', attributes: ['email'] }],
+        });
+        const userEmail = (order as any)?.user?.email as string | undefined;
+        if (!order || !userEmail) return;
+
+        await sendOrderStatusEmail(userEmail, orderId, status, {
+          carrier: carrier ?? null,
+          trackingNumber: trackingNumber ?? null,
+          estimatedDeliveryAt: estimatedDeliveryAt ?? null,
+        });
       }
     },
     { connection, concurrency: 5 },
@@ -69,4 +93,8 @@ export async function closeEmailWorker(): Promise<void> {
     emailWorker = null;
     console.log('✅ Email worker closed');
   }
+}
+
+export async function queueOrderStatusEmail(data: OrderStatusUpdateJobData): Promise<void> {
+  await emailQueue.add('order-status-update', data);
 }
