@@ -5,6 +5,7 @@ import { OrderItem } from '@/modules/order/order.entity';
 import { CollectionProduct } from '@/modules/collection/collection.entity';
 import { httpError } from '@/utils/http-error';
 import { invalidateCache } from '@/middlewares/cache.middleware';
+import { PUBLIC_VARIANT_ATTRIBUTES } from '@/modules/product-variant/variant.fields';
 import CampaignService from '@/modules/campaign/campaign.service';
 import { cacheKey } from '@/config/redis';
 import type {
@@ -167,7 +168,7 @@ export default class ProductService implements IProductService {
     const product = await Product.findOne({
       where,
       include: [
-        { model: ProductVariant, as: 'variants' },
+        { model: ProductVariant, as: 'variants', attributes: PUBLIC_VARIANT_ATTRIBUTES },
         { model: Category, as: 'category', attributes: ['id', 'name', 'slug'] },
       ],
     });
@@ -203,7 +204,7 @@ export default class ProductService implements IProductService {
     const rows = await Product.findAll({
       where: { id: { [Op.in]: orderedIds } },
       include: [
-        { model: ProductVariant, as: 'variants' },
+        { model: ProductVariant, as: 'variants', attributes: PUBLIC_VARIANT_ATTRIBUTES },
         { model: Category, as: 'category', attributes: ['id', 'name', 'slug'] },
       ],
     });

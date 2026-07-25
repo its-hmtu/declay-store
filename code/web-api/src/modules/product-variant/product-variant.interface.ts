@@ -6,6 +6,14 @@ export interface IProductVariant {
   name: string;
   price: number;
   specialPrice: number | null;
+  /** Admin-only (BR-09). */
+  costPrice?: number | null;
+  weightGram?: number | null;
+  lengthCm?: number | null;
+  widthCm?: number | null;
+  heightCm?: number | null;
+  margin?: number | null;
+  marginPercent?: number | null;
   stock: number;
   images: string[];
   isActive: boolean;
@@ -18,6 +26,11 @@ export interface ICreateVariantData {
   name: string;
   price: number;
   specialPrice?: number | null;
+  costPrice?: number | null;
+  weightGram?: number | null;
+  lengthCm?: number | null;
+  widthCm?: number | null;
+  heightCm?: number | null;
   stock?: number;
   images?: string[];
 }
@@ -26,6 +39,11 @@ export interface IUpdateVariantData {
   name?: string;
   price?: number;
   specialPrice?: number | null;
+  costPrice?: number | null;
+  weightGram?: number | null;
+  lengthCm?: number | null;
+  widthCm?: number | null;
+  heightCm?: number | null;
   stock?: number;
   images?: string[];
   isActive?: boolean;

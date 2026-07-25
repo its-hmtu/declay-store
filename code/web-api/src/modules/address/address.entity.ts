@@ -9,7 +9,7 @@ import { sequelize } from '@/config/sequelize';
 
 class Address extends Model<InferAttributes<Address>, InferCreationAttributes<Address>> {
   declare id: CreationOptional<number>;
-  declare userId: number;
+  declare userId: CreationOptional<number | null>;
   declare receiverName: string;
   declare receiverPhone: string;
   declare addressLine: string;
@@ -26,7 +26,7 @@ class Address extends Model<InferAttributes<Address>, InferCreationAttributes<Ad
 
   toJSON(): {
     id: number;
-    userId: number;
+    userId: number | null;
     receiverName: string;
     receiverPhone: string;
     addressLine: string;
@@ -70,7 +70,7 @@ Address.init(
     },
     userId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       field: 'user_id',
       references: {
         model: 'users',

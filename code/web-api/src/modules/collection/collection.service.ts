@@ -4,6 +4,7 @@ import Product from '@/modules/product/product.entity';
 import ProductVariant from '@/modules/product-variant/product-variant.entity';
 import { slugify } from '@/modules/tag/tag.service';
 import { httpError } from '@/utils/http-error';
+import { PUBLIC_VARIANT_ATTRIBUTES } from '@/modules/product-variant/variant.fields';
 import type {
   ICollection, ICollectionService, ICreateCollectionData, IUpdateCollectionData,
 } from './collection.interface';
@@ -46,7 +47,7 @@ export default class CollectionService implements ICollectionService {
           through: { attributes: [] },
           where: { isActive: true },
           required: false,
-          include: [{ model: ProductVariant, as: 'variants' }],
+          include: [{ model: ProductVariant, as: 'variants', attributes: PUBLIC_VARIANT_ATTRIBUTES }],
         },
       ],
     });

@@ -59,7 +59,7 @@ export default class ShipmentService {
         await order.update({ status: target });
         orderStatus = target;
         await queueOrderStatusEmail({ orderId: order.id, status: target });
-        await this.notificationService.notifyUser(order.userId, {
+        if (order.userId) await this.notificationService.notifyUser(order.userId, {
           type: 'order_status',
           title: `Order #${order.id} is now ${target}`,
           link: `/orders/${order.id}`,

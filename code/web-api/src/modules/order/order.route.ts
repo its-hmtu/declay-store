@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { validate } from '@/middlewares/validate';
-import { routeProtect } from '@/middlewares/auth.middleware';
+import { routeProtect, optionalAuth } from '@/middlewares/auth.middleware';
 import { adminProtect, requireRole } from '@/middlewares/admin.middleware';
 import OrderService from './order.service';
 import OrderController from './order.controller';
@@ -10,9 +10,12 @@ export function createOrderRouter(): Router {
   const router = Router();
   const controller = new OrderController(new OrderService());
 
+  // M-01: guests can check out and track an order by token; everything else needs a login.
+  router.post('/checkout', optionalAuth, validate(createOrderSchema), controller.createCheckout);
+  router.get('/lookup', controller.lookupGuestOrder);
+
   router.use(routeProtect);
 
-  router.post('/checkout', validate(createOrderSchema), controller.createCheckout);
   router.get('/', controller.listMyOrders);
   router.get('/:id', validate(orderIdSchema, 'params'), controller.getOrder);
   router.post('/:id/cancel', validate(orderIdSchema, 'params'), controller.cancelOrder);

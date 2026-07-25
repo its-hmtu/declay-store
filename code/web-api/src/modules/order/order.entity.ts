@@ -19,7 +19,11 @@ export type OrderStatus =
 
 export class Order extends Model<InferAttributes<Order>, InferCreationAttributes<Order>> {
   declare id: CreationOptional<number>;
-  declare userId: number;
+  declare userId: CreationOptional<number | null>;
+  declare guestName: CreationOptional<string | null>;
+  declare guestEmail: CreationOptional<string | null>;
+  declare guestPhone: CreationOptional<string | null>;
+  declare guestToken: CreationOptional<string | null>;
   declare status: CreationOptional<OrderStatus>;
   declare totalAmount: number;
   declare stripePaymentIntentId: CreationOptional<string | null>;
@@ -39,11 +43,15 @@ Order.init(
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     userId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       field: 'user_id',
       references: { model: 'users', key: 'id' },
       onDelete: 'RESTRICT',
     },
+    guestName: { type: DataTypes.STRING(120), allowNull: true, field: 'guest_name' },
+    guestEmail: { type: DataTypes.STRING(160), allowNull: true, field: 'guest_email' },
+    guestPhone: { type: DataTypes.STRING(32), allowNull: true, field: 'guest_phone' },
+    guestToken: { type: DataTypes.STRING(64), allowNull: true, field: 'guest_token' },
     status: {
       type: DataTypes.ENUM('pending_payment', 'paid', 'processing', 'shipped', 'delivered', 'cancelled'),
       allowNull: false,

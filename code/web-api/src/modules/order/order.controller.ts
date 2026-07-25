@@ -14,15 +14,28 @@ export default class OrderController implements IOrderController {
   }
 
   createCheckout = asyncHandler(async (req: Request, res: Response) => {
-    const { shippingAddressId, notes, discountCode, shippingMethodId } = req.body;
+    const { shippingAddressId, shippingAddress, notes, discountCode, shippingMethodId, paymentMethod, guest } = req.body;
+    const user = req.user as { userId?: number } | undefined;
     const result = await this.orderService.createFromCart({
-      userId: this.getUserId(req),
+      userId: user?.userId ?? null,
+      guestSessionId: req.header('X-Guest-Session') ?? null,
+      guest,
       shippingAddressId,
+      shippingAddress,
       notes,
       discountCode,
       shippingMethodId,
+      paymentMethod,
     });
     sendSuccess(res, result, 'Checkout initiated', 201);
+  });
+
+  /** M-01: let a guest track their order with the opaque token issued at checkout. */
+  lookupGuestOrder = asyncHandler(async (req: Request, res: Response) => {
+    const token = typeof req.query.token === 'string' ? req.query.token : '';
+    if (!token) throw httpError(400, 'Order token is required');
+    const order = await this.orderService.findByGuestToken(token);
+    sendSuccess(res, order, 'Order retrieved successfully');
   });
 
   listMyOrders = asyncHandler(async (req: Request, res: Response) => {

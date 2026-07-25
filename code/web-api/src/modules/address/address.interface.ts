@@ -2,7 +2,8 @@ import type { RequestHandler } from "express";
 
 export interface IAddress {
   id: number;
-  userId: number;
+  /** Null for guest checkout addresses (M-01). */
+  userId: number | null;
   receiverName: string;
   receiverPhone: string;
   addressLine: string;

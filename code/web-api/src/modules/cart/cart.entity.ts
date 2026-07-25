@@ -11,7 +11,8 @@ import ProductVariant from '@/modules/product-variant/product-variant.entity';
 
 export class Cart extends Model<InferAttributes<Cart>, InferCreationAttributes<Cart>> {
   declare id: CreationOptional<number>;
-  declare userId: number;
+  declare userId: CreationOptional<number | null>;
+  declare sessionId: CreationOptional<string | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 }
@@ -21,12 +22,13 @@ Cart.init(
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     userId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       unique: true,
       field: 'user_id',
       references: { model: 'users', key: 'id' },
       onDelete: 'CASCADE',
     },
+    sessionId: { type: DataTypes.STRING(64), allowNull: true, field: 'session_id' },
     createdAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'created_at' },
     updatedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'updated_at' },
   },

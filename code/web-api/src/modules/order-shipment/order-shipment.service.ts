@@ -69,7 +69,7 @@ export default class OrderShipmentService implements IOrderShipmentService {
       estimatedDeliveryAt: shipment.estimatedDeliveryAt ? shipment.estimatedDeliveryAt.toISOString() : null,
     });
 
-    await this.notifications.notifyUser(order.userId, {
+    if (order.userId) await this.notifications.notifyUser(order.userId, {
       type: 'order_status', title: `Order #${orderId} has shipped`,
       body: `Tracking: ${shipment.carrier} ${shipment.trackingNumber}`, link: `/orders/${orderId}`,
     });
@@ -98,7 +98,7 @@ export default class OrderShipmentService implements IOrderShipmentService {
       await queueOrderStatusEmail({ orderId, status: 'delivered' });
       const deliveredOrder = await Order.findByPk(orderId);
       if (deliveredOrder) {
-        await this.notifications.notifyUser(deliveredOrder.userId, {
+        if (deliveredOrder.userId) await this.notifications.notifyUser(deliveredOrder.userId, {
           type: 'order_status', title: `Order #${orderId} has been delivered`, link: `/orders/${orderId}`,
         });
       }

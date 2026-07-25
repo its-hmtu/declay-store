@@ -15,6 +15,9 @@ import Address from '@/modules/address/address.entity';
 import NotificationService from '@/modules/notification/notification.service';
 import { resolveShippingZone, methodAppliesToZone, computeShippingFee, computeOrderTotal, statusTransitionError } from './order.pricing';
 import { effectiveUnitPrice } from '@/lib/pricing';
+import { initialOrderStatusFor } from './order.payment';
+import { normalizeGuestContact, generateGuestToken } from './order.guest';
+import { resolveCartOwner, ownerWhere } from '@/modules/cart/cart.owner';
 import CampaignService from '@/modules/campaign/campaign.service';
 import { queueOrderStatusEmail } from '@/lib/email-queue';
 import type { IOrder, IOrderService, ICreateOrderData } from './order.interface';
@@ -26,11 +29,22 @@ export default class OrderService implements IOrderService {
   private notificationService = new NotificationService();
   private campaignService = new CampaignService();
 
-  async createFromCart(data: ICreateOrderData): Promise<{ order: IOrder; clientSecret: string }> {
-    const { userId, shippingAddressId, notes, discountCode, shippingMethodId } = data;
+  async createFromCart(data: ICreateOrderData): Promise<{ order: IOrder; clientSecret: string | null }> {
+    const { userId, guestSessionId, guest, shippingAddressId, shippingAddress, notes, discountCode, shippingMethodId, paymentMethod } = data;
+    const method = paymentMethod ?? 'stripe';
+    const isCod = method === 'cod';
+
+    // M-01: the buyer is either a signed-in user or a guest session.
+    const owner = resolveCartOwner(userId ?? null, guestSessionId ?? null);
+    if (!owner) throw httpError(401, 'Sign in or provide a guest session to check out');
+    const isGuest = !userId;
+    const guestContact = isGuest ? normalizeGuestContact(guest) : null;
+    if (isGuest && !guestContact) {
+      throw httpError(400, 'Guest checkout requires a valid name, email and phone number');
+    }
 
     const cart = await Cart.findOne({
-      where: { userId },
+      where: ownerWhere(owner),
       include: [
         {
           model: CartItem,
@@ -43,6 +57,25 @@ export default class OrderService implements IOrderService {
     if (!cart) throw httpError(400, 'Cart is empty');
     const items = (cart as any).items as any[];
     if (!items || items.length === 0) throw httpError(400, 'Cart is empty');
+
+    // Resolve the shipping address: saved address for members, inline address for guests.
+    let resolvedAddressId: number | null = shippingAddressId ?? null;
+    if (!resolvedAddressId) {
+      if (!shippingAddress) throw httpError(400, 'A shipping address is required');
+      // The buyer is the recipient by default — no separate receiver fields to fill in.
+      const receiverName = shippingAddress.receiverName ?? guestContact?.name;
+      const receiverPhone = shippingAddress.receiverPhone ?? guestContact?.phone;
+      if (!receiverName || !receiverPhone) {
+        throw httpError(400, 'A recipient name and phone number are required');
+      }
+      const created = await Address.create({
+        ...shippingAddress,
+        receiverName,
+        receiverPhone,
+        userId: userId ?? null,
+      });
+      resolvedAddressId = created.id;
+    }
 
     // Validate stock before creating order
     for (const item of items) {
@@ -77,7 +110,7 @@ export default class OrderService implements IOrderService {
     if (shippingMethodId) {
       const method = await ShippingMethod.findByPk(shippingMethodId);
       if (!method || !method.isActive) throw httpError(400, 'Selected shipping method is not available');
-      const address = shippingAddressId ? await Address.findByPk(shippingAddressId) : null;
+      const address = resolvedAddressId ? await Address.findByPk(resolvedAddressId) : null;
       const zone = resolveShippingZone(address?.country);
       if (!methodAppliesToZone(method.zone, zone)) {
         throw httpError(400, 'Selected shipping method is not available for your address');
@@ -89,11 +122,14 @@ export default class OrderService implements IOrderService {
     // totalAmount is the final amount charged (subtotal - discount + shipping)
     const totalAmount = computeOrderTotal(subtotal, discountAmount, shippingFee);
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(totalAmount * 100), // cents
-      currency: 'usd',
-      metadata: { userId: String(userId) },
-    });
+    // COD skips prepayment; only prepaid methods create a Stripe PaymentIntent.
+    const paymentIntent = isCod
+      ? null
+      : await stripe.paymentIntents.create({
+          amount: Math.round(totalAmount * 100), // cents
+          currency: 'usd',
+          metadata: { userId: String(userId ?? ''), guest: String(isGuest) },
+        });
 
     const order = await sequelize.transaction(async (t) => {
       // W-03: reserve stock atomically by decrementing with a floor. 0 rows affected means
@@ -108,16 +144,20 @@ export default class OrderService implements IOrderService {
 
       const newOrder = await Order.create(
         {
-          userId,
-          status: 'pending_payment',
+          userId: userId ?? null,
+          guestName: guestContact?.name ?? null,
+          guestEmail: guestContact?.email ?? null,
+          guestPhone: guestContact?.phone ?? null,
+          guestToken: isGuest ? generateGuestToken() : null,
+          status: initialOrderStatusFor(method),
           subtotal,
           shippingFee,
           shippingMethodId: resolvedShippingMethodId,
           totalAmount,
           discountCodeId,
           discountAmount,
-          stripePaymentIntentId: paymentIntent.id,
-          shippingAddressId,
+          stripePaymentIntentId: paymentIntent?.id ?? null,
+          shippingAddressId: resolvedAddressId,
           notes,
         },
         { transaction: t },
@@ -126,7 +166,9 @@ export default class OrderService implements IOrderService {
       await Payment.create(
         {
           orderId: newOrder.id,
-          stripePaymentIntentId: paymentIntent.id,
+          stripePaymentIntentId: paymentIntent?.id ?? null,
+          method,
+          provider: isCod ? 'cod' : 'stripe',
           amount: totalAmount,
           currency: 'usd',
           status: 'pending',
@@ -146,11 +188,16 @@ export default class OrderService implements IOrderService {
         { transaction: t },
       );
 
+      // COD is committed immediately, so empty the cart here — no payment webhook
+      // will fire later to do it (prepaid orders are cleared in markAsPaid).
+      if (isCod) await CartItem.destroy({ where: { cartId: cart.id }, transaction: t });
+
       return newOrder;
     });
 
     // Start the reservation-expiry timer so abandoned checkouts release their stock (W-03).
-    await enqueueReservationExpiry(order.id);
+    // COD orders are already committed (processing), so they must not auto-expire.
+    if (!isCod) await enqueueReservationExpiry(order.id);
 
     // W-17: alert admins about variants that dropped to/below the low-stock threshold.
     const lowStock = await ProductVariant.findAll({
@@ -163,7 +210,15 @@ export default class OrderService implements IOrderService {
       });
     }
 
-    return { order: order.toJSON() as IOrder, clientSecret: paymentIntent.client_secret! };
+    // COD has no payment webhook — notify admins of the new order to prepare/ship.
+    if (isCod) {
+      await this.notificationService.notifyAdmins({
+        type: 'new_order', title: `New COD order #${order.id}`,
+        body: `Total ${totalAmount}. Please prepare and ship.`, link: '/admin/orders',
+      });
+    }
+
+    return { order: order.toJSON() as IOrder, clientSecret: paymentIntent?.client_secret ?? null };
   }
 
   async listByUser(userId: number, page: number, limit: number): Promise<{ rows: IOrder[]; count: number }> {
@@ -210,11 +265,21 @@ export default class OrderService implements IOrderService {
 
     if (previousStatus !== status) {
       await queueOrderStatusEmail({ orderId: order.id, status });
-      await this.notificationService.notifyUser(order.userId, {
+      if (order.userId) await this.notificationService.notifyUser(order.userId, {
         type: 'order_status', title: `Order #${order.id} is now ${status}`, link: `/orders/${order.id}`,
       });
     }
 
+    return order.toJSON() as IOrder;
+  }
+
+  /** M-01: guest order tracking — the token is the only credential a guest has. */
+  async findByGuestToken(token: string): Promise<IOrder> {
+    const order = await Order.findOne({
+      where: { guestToken: token },
+      include: [{ model: OrderItem, as: 'items' }],
+    });
+    if (!order) throw httpError(404, 'Order not found');
     return order.toJSON() as IOrder;
   }
 
@@ -241,8 +306,12 @@ export default class OrderService implements IOrderService {
       }
 
       // Clear the buyer's cart
-      const cart = await Cart.findOne({ where: { userId: locked.userId }, transaction: t });
-      if (cart) await CartItem.destroy({ where: { cartId: cart.id }, transaction: t });
+      // Guest carts are emptied when the COD order is created, so only signed-in
+      // buyers still need their cart cleared here.
+      if (locked.userId) {
+        const cart = await Cart.findOne({ where: { userId: locked.userId }, transaction: t });
+        if (cart) await CartItem.destroy({ where: { cartId: cart.id }, transaction: t });
+      }
 
       // The reservation becomes a firm sale.
       await locked.update({ status: 'paid' }, { transaction: t });
@@ -258,7 +327,7 @@ export default class OrderService implements IOrderService {
       type: 'order_paid', title: `New paid order #${order.id}`,
       body: 'A new order has been paid and is ready to prepare.', link: `/admin/orders/${order.id}`,
     });
-    await this.notificationService.notifyUser(order.userId, {
+    if (order.userId) await this.notificationService.notifyUser(order.userId, {
       type: 'order_status', title: `Payment received for order #${order.id}`, link: `/orders/${order.id}`,
     });
   }

@@ -3,18 +3,20 @@ import ProductVariant from '@/modules/product-variant/product-variant.entity';
 import Product from '@/modules/product/product.entity';
 import CampaignService from '@/modules/campaign/campaign.service';
 import { httpError } from '@/utils/http-error';
+import { PUBLIC_VARIANT_ATTRIBUTES } from '@/modules/product-variant/variant.fields';
 import type { ICart, ICartService } from './cart.interface';
+import { ownerWhere, type CartOwner } from './cart.owner';
 
 export default class CartService implements ICartService {
   private campaignService = new CampaignService();
 
-  private async findOrCreateCart(userId: number): Promise<Cart> {
-    const [cart] = await Cart.findOrCreate({ where: { userId } });
+  private async findOrCreateCart(owner: CartOwner): Promise<Cart> {
+    const [cart] = await Cart.findOrCreate({ where: ownerWhere(owner) });
     return cart;
   }
 
-  async getCart(userId: number): Promise<ICart> {
-    const cart = await this.findOrCreateCart(userId);
+  async getCart(owner: CartOwner): Promise<ICart> {
+    const cart = await this.findOrCreateCart(owner);
 
     const cartWithItems = await Cart.findByPk(cart.id, {
       include: [
@@ -25,6 +27,7 @@ export default class CartService implements ICartService {
             {
               model: ProductVariant,
               as: 'variant',
+              attributes: PUBLIC_VARIANT_ATTRIBUTES,
               include: [{ model: Product, as: 'product', attributes: ['id', 'name', 'slug'] }],
             },
           ],
@@ -51,12 +54,12 @@ export default class CartService implements ICartService {
     return json;
   }
 
-  async addItem(userId: number, variantId: number, quantity: number): Promise<ICart> {
+  async addItem(owner: CartOwner, variantId: number, quantity: number): Promise<ICart> {
     const variant = await ProductVariant.findByPk(variantId);
     if (!variant || !variant.isActive) throw httpError(404, 'Product variant not found');
     if (variant.stock < quantity) throw httpError(400, `Only ${variant.stock} units available`);
 
-    const cart = await this.findOrCreateCart(userId);
+    const cart = await this.findOrCreateCart(owner);
 
     const existingItem = await CartItem.findOne({ where: { cartId: cart.id, variantId } });
 
@@ -68,11 +71,11 @@ export default class CartService implements ICartService {
       await CartItem.create({ cartId: cart.id, variantId, quantity });
     }
 
-    return this.getCart(userId);
+    return this.getCart(owner);
   }
 
-  async updateItem(userId: number, itemId: number, quantity: number): Promise<ICart> {
-    const cart = await this.findOrCreateCart(userId);
+  async updateItem(owner: CartOwner, itemId: number, quantity: number): Promise<ICart> {
+    const cart = await this.findOrCreateCart(owner);
     const item = await CartItem.findOne({ where: { id: itemId, cartId: cart.id } });
     if (!item) throw httpError(404, 'Cart item not found');
 
@@ -82,20 +85,20 @@ export default class CartService implements ICartService {
     }
 
     await item.update({ quantity });
-    return this.getCart(userId);
+    return this.getCart(owner);
   }
 
-  async removeItem(userId: number, itemId: number): Promise<ICart> {
-    const cart = await this.findOrCreateCart(userId);
+  async removeItem(owner: CartOwner, itemId: number): Promise<ICart> {
+    const cart = await this.findOrCreateCart(owner);
     const item = await CartItem.findOne({ where: { id: itemId, cartId: cart.id } });
     if (!item) throw httpError(404, 'Cart item not found');
 
     await item.destroy();
-    return this.getCart(userId);
+    return this.getCart(owner);
   }
 
-  async clearCart(userId: number): Promise<void> {
-    const cart = await this.findOrCreateCart(userId);
+  async clearCart(owner: CartOwner): Promise<void> {
+    const cart = await this.findOrCreateCart(owner);
     await CartItem.destroy({ where: { cartId: cart.id } });
   }
 }

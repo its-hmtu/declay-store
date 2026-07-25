@@ -27,15 +27,23 @@ export interface IOrder {
 }
 
 export interface ICreateOrderData {
-  userId: number;
-  shippingAddressId: number;
+  userId?: number | null;
+  guestSessionId?: string | null;
+  guest?: { name?: string; email?: string; phone?: string } | null;
+  shippingAddressId?: number | null;
+  shippingAddress?: {
+    receiverName?: string; receiverPhone?: string; addressLine: string;
+    ward: string; district: string; city: string; country?: string; postalCode?: string;
+  } | null;
   notes?: string;
   discountCode?: string;
   shippingMethodId?: number;
+  paymentMethod?: 'cod' | 'stripe';
 }
 
 export interface IOrderService {
-  createFromCart(data: ICreateOrderData): Promise<{ order: IOrder; clientSecret: string }>;
+  createFromCart(data: ICreateOrderData): Promise<{ order: IOrder; clientSecret: string | null }>;
+  findByGuestToken(token: string): Promise<IOrder>;
   listByUser(userId: number, page: number, limit: number): Promise<{ rows: IOrder[]; count: number }>;
   findById(id: number, userId?: number): Promise<IOrder>;
   updateStatus(orderId: number, status: OrderStatus): Promise<IOrder>;
@@ -47,6 +55,7 @@ export interface IOrderService {
 
 export interface IOrderController {
   createCheckout: RequestHandler;
+  lookupGuestOrder: RequestHandler;
   listMyOrders: RequestHandler;
   getOrder: RequestHandler;
   cancelOrder: RequestHandler;
