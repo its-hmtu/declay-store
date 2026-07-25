@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useT } from '@/lib/i18n/LocaleProvider';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -10,6 +11,7 @@ import Button from '@/components/ui/Button';
 import GoogleSignInButton from '@/components/storefront/GoogleSignInButton';
 
 export default function LoginClient() {
+  const { t } = useT();
   const router = useRouter();
   const [form,    setForm]    = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
@@ -37,7 +39,7 @@ export default function LoginClient() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label className="block text-sm font-medium text-text mb-1.5" htmlFor="email">Email</label>
+        <label className="block text-sm font-medium text-text mb-1.5" htmlFor="email">{t('auth.email')}</label>
         <input
           id="email" name="email" type="email" required
           value={form.email} onChange={handleChange}
@@ -48,7 +50,7 @@ export default function LoginClient() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-text mb-1.5" htmlFor="password">Password</label>
+        <label className="block text-sm font-medium text-text mb-1.5" htmlFor="password">{t('auth.password')}</label>
         <input
           id="password" name="password" type="password" required
           value={form.password} onChange={handleChange}
@@ -59,7 +61,7 @@ export default function LoginClient() {
       </div>
 
       <div className="-mt-2 text-right">
-        <Link href="/auth/forgot-password" className="text-sm text-brand hover:underline">Forgot password?</Link>
+        <Link href="/auth/forgot-password" className="text-sm text-brand hover:underline">{t('auth.forgotPassword')}</Link>
       </div>
 
       <Button type="submit" loading={loading} className="w-full">Log In</Button>

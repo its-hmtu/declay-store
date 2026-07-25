@@ -5,9 +5,10 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Package, Tag, ShoppingBag,
   FileText, Briefcase, LogOut, ChevronRight,
-  Ticket, Image as ImageIcon, Star, Users, Settings, ScrollText, Truck, Tags, Megaphone, LayoutGrid,
+  Ticket, Image as ImageIcon, Star, Users, Settings, ScrollText, Truck, Tags, Megaphone, LayoutGrid, BarChart3, Banknote,
 } from 'lucide-react';
 import { adminAuth } from '@/lib/auth';
+import { isEnabled } from '@/lib/features';
 import { toast } from 'sonner';
 
 const NAV = [
@@ -15,16 +16,18 @@ const NAV = [
   { href: '/admin/products',    label: 'Products',    icon: Package         },
   { href: '/admin/categories',  label: 'Categories',  icon: Tag             },
   { href: '/admin/orders',      label: 'Orders',      icon: ShoppingBag     },
+  { href: '/admin/reports',     label: 'Reports',     icon: BarChart3       },
+  { href: '/admin/cod',         label: 'COD cash',    icon: Banknote        },
   { href: '/admin/shipping-methods', label: 'Shipping', icon: Truck },
   { href: '/admin/discounts',   label: 'Discounts',   icon: Ticket          },
-  { href: '/admin/campaigns',   label: 'Campaigns',   icon: Megaphone       },
-  { href: '/admin/collections', label: 'Collections', icon: LayoutGrid      },
-  { href: '/admin/banners',     label: 'Banners',     icon: ImageIcon       },
+  { href: '/admin/campaigns',   label: 'Campaigns',   icon: Megaphone,      feature: 'campaigns' as const },
+  { href: '/admin/collections', label: 'Collections', icon: LayoutGrid,     feature: 'collections' as const },
+  { href: '/admin/banners',     label: 'Banners',     icon: ImageIcon,      feature: 'banners' as const },
   { href: '/admin/reviews',     label: 'Reviews',     icon: Star            },
-  { href: '/admin/articles',    label: 'Articles',    icon: FileText        },
+  { href: '/admin/articles',    label: 'Articles',    icon: FileText,       feature: 'articles' as const },
   { href: '/admin/tags',        label: 'Tags',        icon: Tags            },
   { href: '/admin/pages',       label: 'Pages',       icon: ScrollText      },
-  { href: '/admin/jobs',        label: 'Jobs',        icon: Briefcase       },
+  { href: '/admin/jobs',        label: 'Jobs',        icon: Briefcase,      feature: 'jobs' as const },
   { href: '/admin/users',       label: 'Admin Users', icon: Users           },
   { href: '/admin/settings',    label: 'Settings',    icon: Settings        },
 ];
@@ -51,7 +54,7 @@ export default function AdminSidebar() {
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-4">
         <ul className="space-y-0.5 px-3">
-          {NAV.map(({ href, label, icon: Icon }) => {
+          {NAV.filter((n) => isEnabled(('feature' in n ? n.feature : undefined) as any)).map(({ href, label, icon: Icon }) => {
             const active = pathname === href || pathname.startsWith(href + '/');
             return (
               <li key={href}>

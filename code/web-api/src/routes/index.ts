@@ -42,6 +42,8 @@ import { createAdminNotificationRouter } from '@/modules/notification/notificati
 import { createAdminTagRouter } from '@/modules/tag/tag.route';
 import { createAdminCampaignRouter } from '@/modules/campaign/campaign.route';
 import { createAdminCollectionRouter } from '@/modules/collection/collection.route';
+import { createAdminReportRouter } from '@/modules/report/report.route';
+import { createAdminCodRouter } from '@/modules/payment/cod.route';
 import { createAdminSettingRouter } from '@/modules/site-setting/site-setting.route';
 import { createAssistantRouter } from '@/modules/assistant/assistant.route';
 import { createAdminOrderRouter } from '@/modules/order/order.route';
@@ -98,6 +100,8 @@ export function createRoutes(): Router {
   router.use('/admin/tags', createAdminTagRouter());
   router.use('/admin/campaigns', createAdminCampaignRouter());
   router.use('/admin/collections', createAdminCollectionRouter());
+  router.use('/admin/reports', createAdminReportRouter());
+  router.use('/admin/cod', createAdminCodRouter());
   router.use('/admin/settings', createAdminSettingRouter());
   router.use('/admin/assistant', createAssistantRouter());
   router.use('/admin/orders', createAdminOrderRouter());

@@ -50,7 +50,8 @@ export default class ProductController implements IProductController {
   }
 
   findById = asyncHandler(async (req: Request, res: Response) => {
-    const product = await this.productService.findById(Number(req.params.id));
+    // M-04: only admin/super_admin see cost price + margin (BR-09).
+    const product = await this.productService.findById(Number(req.params.id), req.admin?.role);
     sendSuccess(res, product, 'Product retrieved successfully');
   });
 

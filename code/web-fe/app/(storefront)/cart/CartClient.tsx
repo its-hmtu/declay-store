@@ -9,15 +9,19 @@ import type { Cart } from '@/lib/types';
 import { cartApi } from '@/lib/api';
 import { effectivePrice } from '@/lib/utils';
 import { auth } from '@/lib/auth';
+import { guestSession } from '@/lib/guest';
+import { useT } from '@/lib/i18n/LocaleProvider';
 import Button from '@/components/ui/Button';
 
 export default function CartClient() {
+  const { t } = useT();
   const [cart,    setCart]    = useState<Cart | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchCart = useCallback(async () => {
-    const token = auth.getToken();
-    if (!token) { setLoading(false); return; }
+    const token = auth.getToken() ?? undefined;
+    // M-01: guests read their cart via the guest session cookie.
+    if (!token && !guestSession.peek()) { setLoading(false); return; }
     try {
       const res = await cartApi.get(token);
       setCart(res.data);
@@ -31,8 +35,8 @@ export default function CartClient() {
   useEffect(() => { fetchCart(); }, [fetchCart]);
 
   async function updateQty(itemId: number, qty: number) {
-    const token = auth.getToken();
-    if (!token) return;
+    const token = auth.getToken() ?? undefined;
+    if (!token && !guestSession.peek()) return;
     try {
       const res = await cartApi.update(token, itemId, qty);
       setCart(res.data);
@@ -42,8 +46,8 @@ export default function CartClient() {
   }
 
   async function removeItem(itemId: number) {
-    const token = auth.getToken();
-    if (!token) return;
+    const token = auth.getToken() ?? undefined;
+    if (!token && !guestSession.peek()) return;
     try {
       const res = await cartApi.remove(token, itemId);
       setCart(res.data);
@@ -54,18 +58,10 @@ export default function CartClient() {
   }
 
   if (loading) return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-20 text-center text-text-muted">Loading cart…</div>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-20 text-center text-text-muted">{t('common.loading')}</div>
   );
 
-  if (!auth.isLoggedIn()) return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-20 text-center">
-      <h1 className="font-serif text-3xl font-bold text-text mb-4">Your Cart</h1>
-      <p className="text-text-muted mb-6">Please log in to view your cart.</p>
-      <Link href="/login" className="inline-flex items-center px-7 py-3 bg-brand text-white rounded-lg hover:bg-brand-light transition-colors font-medium">
-        Log in
-      </Link>
-    </div>
-  );
+  // M-01: no login wall — an empty cart simply shows the empty state below.
 
   const items   = cart?.items ?? [];
   const subtotal = items.reduce((sum, item) => {
@@ -75,8 +71,8 @@ export default function CartClient() {
 
   if (items.length === 0) return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-20 text-center">
-      <h1 className="font-serif text-3xl font-bold text-text mb-4">Your Cart</h1>
-      <p className="text-text-muted mb-6">Your cart is empty.</p>
+      <h1 className="font-serif text-3xl font-bold text-text mb-4">{t('cart.title')}</h1>
+      <p className="text-text-muted mb-6">{t('cart.empty')}</p>
       <Link href="/products" className="inline-flex items-center px-7 py-3 bg-brand text-white rounded-lg hover:bg-brand-light transition-colors font-medium">
         Shop Now
       </Link>
@@ -85,7 +81,7 @@ export default function CartClient() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
-      <h1 className="font-serif text-3xl font-bold text-text mb-8">Your Cart</h1>
+      <h1 className="font-serif text-3xl font-bold text-text mb-8">{t('cart.title')}</h1>
 
       <div className="grid md:grid-cols-3 gap-8">
         {/* Items */}
@@ -136,7 +132,7 @@ export default function CartClient() {
             <h2 className="font-serif text-lg font-semibold text-text mb-4">Order Summary</h2>
             <div className="space-y-2 text-sm text-text-muted">
               <div className="flex justify-between">
-                <span>Subtotal</span>
+                <span>{t('cart.subtotal')}</span>
                 <span className="text-text font-medium">${subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">

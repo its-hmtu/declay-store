@@ -18,6 +18,11 @@ export class Payment extends Model<InferAttributes<Payment>, InferCreationAttrib
   declare method: CreationOptional<string | null>;
   declare provider: CreationOptional<string | null>;
   declare providerRef: CreationOptional<string | null>;
+  // M-07: COD cash reconciliation (BR-11).
+  declare reconciledAt: CreationOptional<Date | null>;
+  declare reconciledAmount: CreationOptional<number | null>;
+  declare reconciledBy: CreationOptional<number | null>;
+  declare reconcileNote: CreationOptional<string | null>;
   declare amount: number;
   declare currency: CreationOptional<string>;
   declare status: CreationOptional<PaymentStatus>;
@@ -33,6 +38,10 @@ Payment.init(
     method: { type: DataTypes.STRING(30), allowNull: true },
     provider: { type: DataTypes.STRING(30), allowNull: true },
     providerRef: { type: DataTypes.STRING(255), allowNull: true, field: 'provider_ref' },
+    reconciledAt: { type: DataTypes.DATE, allowNull: true, field: 'reconciled_at' },
+    reconciledAmount: { type: DataTypes.DECIMAL(10, 2), allowNull: true, field: 'reconciled_amount' },
+    reconciledBy: { type: DataTypes.INTEGER, allowNull: true, field: 'reconciled_by' },
+    reconcileNote: { type: DataTypes.STRING(500), allowNull: true, field: 'reconcile_note' },
     amount: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
     currency: { type: DataTypes.STRING(10), allowNull: false, defaultValue: 'usd' },
     status: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'pending' },

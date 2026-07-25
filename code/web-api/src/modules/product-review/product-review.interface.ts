@@ -52,6 +52,7 @@ export interface IReviewListQuery {
 
 export interface IProductReviewService {
   listByProduct(productId: number, query: IReviewListQuery): Promise<IReviewListResult>;
+  getEligibility(userId: number | null, productId: number): Promise<{ canReview: boolean; reason: string | null }>;
   create(userId: number, productId: number, data: ICreateReviewData): Promise<IProductReview>;
   update(userId: number, reviewId: number, data: IUpdateReviewData): Promise<IProductReview>;
   remove(userId: number, reviewId: number): Promise<void>;
@@ -61,6 +62,7 @@ export interface IProductReviewService {
 
 export interface IProductReviewController {
   listByProduct: RequestHandler;
+  eligibility: RequestHandler;
   create: RequestHandler;
   update: RequestHandler;
   remove: RequestHandler;

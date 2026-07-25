@@ -40,14 +40,13 @@ export default async function HomePage() {
       <BannerCarousel />
 
       {/* ── Hero ─────────────────────────────────────────── */}
-      <section className="bg-sky-gradient">
+      {/* <section className="bg-sky-gradient">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-16 text-center">
           <div className="flex flex-wrap gap-3 justify-center">
             <Link href="/products" className="btn-ink">Shop the collection</Link>
             <Link href="/blog" className="btn-line">Read the journal</Link>
           </div>
 
-          {/* Showcase card */}
           {featured.length > 0 && (
             <div className="card-soft mt-14 text-left p-5 sm:p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
@@ -60,7 +59,7 @@ export default async function HomePage() {
             </div>
           )}
         </div>
-      </section>
+      </section> */}
 
       {/* ── Featured products ────────────────────────────── */}
       {products.length > 0 && (
@@ -108,12 +107,12 @@ export default async function HomePage() {
               </li>
             ))}
           </ul>
-          <Link href="/products" className="btn-ink mt-8">Shop the collection</Link>
+          <Link href="/blog" className="btn-ink mt-8">About Us</Link>
         </div>
       </section>
 
       {/* ── Values on cream ──────────────────────────────── */}
-      <section className="bg-cream">
+      {/* <section className="bg-cream">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-20">
           <h2 className="text-center text-3xl md:text-5xl leading-tight mb-12">
             <span className="font-display italic font-light">Made by hand.</span>{' '}
@@ -129,7 +128,7 @@ export default async function HomePage() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* ── Journal preview ──────────────────────────────── */}
       {articles.length > 0 && (

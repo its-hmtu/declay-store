@@ -56,7 +56,8 @@ export default class ShipmentService {
     if (target) {
       const order = await Order.findByPk(shipment.orderId);
       if (order && !statusTransitionError(order.status, target)) {
-        await order.update({ status: target });
+        // M-06: record delivery time so the return window can be evaluated.
+        await order.update({ status: target, ...(target === 'delivered' ? { deliveredAt: at } : {}) });
         orderStatus = target;
         await queueOrderStatusEmail({ orderId: order.id, status: target });
         if (order.userId) await this.notificationService.notifyUser(order.userId, {

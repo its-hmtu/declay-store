@@ -44,6 +44,7 @@ export interface ICreateOrderData {
 export interface IOrderService {
   createFromCart(data: ICreateOrderData): Promise<{ order: IOrder; clientSecret: string | null }>;
   findByGuestToken(token: string): Promise<IOrder>;
+  returnOrder(orderId: number, reason: string): Promise<IOrder>;
   listByUser(userId: number, page: number, limit: number): Promise<{ rows: IOrder[]; count: number }>;
   findById(id: number, userId?: number): Promise<IOrder>;
   updateStatus(orderId: number, status: OrderStatus): Promise<IOrder>;
@@ -56,6 +57,7 @@ export interface IOrderService {
 export interface IOrderController {
   createCheckout: RequestHandler;
   lookupGuestOrder: RequestHandler;
+  adminReturnOrder: RequestHandler;
   listMyOrders: RequestHandler;
   getOrder: RequestHandler;
   cancelOrder: RequestHandler;

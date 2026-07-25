@@ -78,7 +78,7 @@ export interface IProductListQuery {
 
 export interface IProductService {
   list(query: IProductListQuery): Promise<{ rows: IProduct[]; count: number }>;
-  findById(id: number): Promise<IProductWithVariants>;
+  findById(id: number, viewerRole?: string | null): Promise<IProductWithVariants>;
   findBySlug(slug: string): Promise<IProductWithVariants>;
   create(data: ICreateProductData): Promise<IProduct>;
   update(id: number, data: IUpdateProductData): Promise<IProduct>;

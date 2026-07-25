@@ -17,6 +17,7 @@ import { resolveShippingZone, methodAppliesToZone, computeShippingFee, computeOr
 import { effectiveUnitPrice } from '@/lib/pricing';
 import { initialOrderStatusFor } from './order.payment';
 import { normalizeGuestContact, generateGuestToken } from './order.guest';
+import { returnRejectionReason } from './order.returns';
 import { resolveCartOwner, ownerWhere } from '@/modules/cart/cart.owner';
 import CampaignService from '@/modules/campaign/campaign.service';
 import { queueOrderStatusEmail } from '@/lib/email-queue';
@@ -261,7 +262,8 @@ export default class OrderService implements IOrderService {
     if (transitionError) throw httpError(400, transitionError);
 
     const previousStatus = order.status;
-    await order.update({ status });
+    // M-06: remember when delivery happened — it starts the 7-day return window.
+    await order.update({ status, ...(status === 'delivered' ? { deliveredAt: new Date() } : {}) });
 
     if (previousStatus !== status) {
       await queueOrderStatusEmail({ orderId: order.id, status });
@@ -270,6 +272,27 @@ export default class OrderService implements IOrderService {
       });
     }
 
+    return order.toJSON() as IOrder;
+  }
+
+  /** M-06: accept a return within the 7-day window after delivery (BR-06). */
+  async returnOrder(orderId: number, reason: string): Promise<IOrder> {
+    const order = await Order.findByPk(orderId);
+    if (!order) throw httpError(404, 'Order not found');
+
+    const rejection = returnRejectionReason(order.status, order.deliveredAt ?? null);
+    if (rejection) throw httpError(400, rejection);
+
+    await order.update({ status: 'returned', returnedAt: new Date(), returnReason: reason });
+
+    // Stock is NOT auto-restored: returned handmade pieces may not be resellable,
+    // so an admin decides whether to put the item back on sale.
+    await queueOrderStatusEmail({ orderId, status: 'returned' });
+    if (order.userId) {
+      await this.notificationService.notifyUser(order.userId, {
+        type: 'order_status', title: `Order #${orderId} was returned`, link: `/orders/${orderId}`,
+      });
+    }
     return order.toJSON() as IOrder;
   }
 

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { validate } from '@/middlewares/validate';
-import { routeProtect } from '@/middlewares/auth.middleware';
+import { routeProtect, optionalAuth } from '@/middlewares/auth.middleware';
 import { adminProtect, requireRole } from '@/middlewares/admin.middleware';
 import ProductReviewService from './product-review.service';
 import ProductReviewController from './product-review.controller';
@@ -18,6 +18,9 @@ export function createProductReviewRouter(): Router {
 
   // Public read
   router.get('/', validate(productIdParamSchema, 'params'), controller.listByProduct);
+
+  // M-10: eligibility check so the UI can explain instead of failing on submit
+  router.get('/eligibility', optionalAuth, validate(productIdParamSchema, 'params'), controller.eligibility);
 
   // Authenticated write
   router.post(

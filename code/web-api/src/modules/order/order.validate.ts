@@ -25,6 +25,10 @@ export const createOrderSchema = z.object({
   }).optional(),
 });
 
+export const returnOrderSchema = z.object({
+  reason: z.string().min(3).max(500),
+});
+
 export const updateOrderStatusSchema = z.object({
   status: z.enum(['paid', 'processing', 'shipped', 'delivered', 'cancelled']),
 });

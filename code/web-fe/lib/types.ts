@@ -57,6 +57,15 @@ export interface ProductVariant {
   name: string;
   price: string;
   specialPrice: string | null;
+  /** M-03: admin-only fields — absent in storefront responses. */
+  costPrice?: string | number | null;
+  weightGram?: number | null;
+  lengthCm?: number | null;
+  widthCm?: number | null;
+  heightCm?: number | null;
+  /** M-04: present only for admin/super_admin. */
+  margin?: number | null;
+  marginPercent?: number | null;
   stock: number;
   images: string[];
   isActive: boolean;
@@ -81,6 +90,38 @@ export interface Product {
   salesCount?: number;
   campaignDiscountPercent?: number | null;
 }
+
+// M-07: COD cash awaiting reconciliation.
+export interface CodPendingRow {
+  paymentId: number;
+  orderId: number;
+  amount: number;
+  status: string;
+  deliveredAt: string | null;
+  customer: string;
+}
+
+// M-05: per-SKU sales report (validation instrument).
+export interface RankedSku {
+  rank: number;
+  variantId: number;
+  productId: number;
+  productName: string;
+  variantName: string;
+  unitsSold: number;
+  revenue: number;
+  orderCount: number;
+  unitShare: number;
+}
+
+export interface TopSkuReport {
+  period: string;
+  from: string | null;
+  rows: RankedSku[];
+  totals: { totalUnits: number; totalRevenue: number; skuCount: number };
+}
+
+export interface ProductViewRow { id: number; name: string; slug: string; views: number }
 
 export interface Collection {
   id: number;
@@ -144,6 +185,7 @@ export type OrderStatus =
   | 'processing'
   | 'shipped'
   | 'delivered'
+  | 'returned'
   | 'cancelled';
 
 export interface OrderItem {
@@ -164,6 +206,10 @@ export interface Order {
   stripePaymentIntentId?: string;
   shippingAddressId?: number;
   notes?: string;
+  // M-06: return window (7 days after delivery).
+  deliveredAt?: string | null;
+  returnedAt?: string | null;
+  returnReason?: string | null;
   items?: OrderItem[];
   createdAt: string;
   updatedAt: string;

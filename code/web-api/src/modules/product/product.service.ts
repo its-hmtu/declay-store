@@ -6,6 +6,9 @@ import { CollectionProduct } from '@/modules/collection/collection.entity';
 import { httpError } from '@/utils/http-error';
 import { invalidateCache } from '@/middlewares/cache.middleware';
 import { PUBLIC_VARIANT_ATTRIBUTES } from '@/modules/product-variant/variant.fields';
+import { canSeeCost } from '@/modules/product-variant/variant.visibility';
+import { computeMargin } from '@/modules/product-variant/variant.margin';
+import { effectiveUnitPrice } from '@/lib/pricing';
 import CampaignService from '@/modules/campaign/campaign.service';
 import { cacheKey } from '@/config/redis';
 import type {
@@ -88,9 +91,10 @@ export default class ProductService implements IProductService {
     return { rows: products, count: ranked.length };
   }
 
-  async findById(id: number): Promise<IProductWithVariants> {
+  async findById(id: number, viewerRole?: string | null): Promise<IProductWithVariants> {
     // Admin lookup (by id) — does not count as a customer view.
-    return this.findOneWithMetrics({ id }, false);
+    // M-04: cost price and margin are attached only for admin/super_admin (BR-09).
+    return this.findOneWithMetrics({ id }, false, viewerRole);
   }
 
   async findBySlug(slug: string): Promise<IProductWithVariants> {
@@ -161,14 +165,16 @@ export default class ProductService implements IProductService {
   private async findOneWithMetrics(
     where: Record<string, unknown>,
     countView: boolean,
+    viewerRole?: string | null,
   ): Promise<IProductWithVariants> {
+    const withCost = canSeeCost(viewerRole);
     const { default: ProductVariant } = await import('@/modules/product-variant/product-variant.entity');
     const { default: Category } = await import('@/modules/category/category.entity');
 
     const product = await Product.findOne({
       where,
       include: [
-        { model: ProductVariant, as: 'variants', attributes: PUBLIC_VARIANT_ATTRIBUTES },
+        { model: ProductVariant, as: 'variants', ...(withCost ? {} : { attributes: PUBLIC_VARIANT_ATTRIBUTES }) },
         { model: Category, as: 'category', attributes: ['id', 'name', 'slug'] },
       ],
     });
@@ -192,6 +198,17 @@ export default class ProductService implements IProductService {
     const detailPct = await this.campaignService.getActiveDiscountPercents([product.id]);
     result.campaignDiscountPercent = detailPct.get(product.id) ?? null;
     if (countView) result.views = (result.views ?? 0) + 1; // reflect the increment we just issued
+
+    // Attach per-variant margin for admins only.
+    if (withCost) {
+      for (const v of (result.variants ?? []) as Array<Record<string, any>>) {
+        const price = effectiveUnitPrice(v.price, v.specialPrice, result.campaignDiscountPercent ?? null);
+        const m = computeMargin(price, v.costPrice);
+        v.margin = m?.margin ?? null;
+        v.marginPercent = m?.marginPercent ?? null;
+      }
+    }
+
     return result;
   }
 

@@ -1,9 +1,13 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
 import { Star } from 'lucide-react';
 import type { Product } from '@/lib/types';
+import { useT } from '@/lib/i18n/LocaleProvider';
 
 export default function ProductCard({ product }: { product: Product }) {
+  const { t } = useT();
   const variant   = product.variants?.[0];
   const image     = variant?.images?.[0];
   const base      = variant ? parseFloat(variant.price) : null;
@@ -65,7 +69,7 @@ export default function ProductCard({ product }: { product: Product }) {
             <p className="font-mono text-sm text-text-faint">&mdash;</p>
           )}
           {!inStock && (
-            <span className="font-mono text-xs text-error">Sold out</span>
+            <span className="font-mono text-xs text-error">{t('product.soldOut')}</span>
           )}
         </div>
 
@@ -80,7 +84,7 @@ export default function ProductCard({ product }: { product: Product }) {
               </span>
             )}
             {sold > 0 && (
-              <span className="text-text-faint">{sold} sold</span>
+              <span className="text-text-faint">{t('product.sold', { count: sold })}</span>
             )}
           </div>
         ) : null}

@@ -5,6 +5,7 @@ import { Star, BadgeCheck, PenLine } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ProductReview, ReviewSummary } from '@/lib/types';
 import { reviewsApi } from '@/lib/api';
+import { useT } from '@/lib/i18n/LocaleProvider';
 import { auth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
@@ -24,11 +25,13 @@ function Stars({ value, size = 14 }: { value: number; size?: number }) {
 }
 
 export default function ProductReviews({ productId }: { productId: number }) {
+  const { t } = useT();
   const [reviews, setReviews] = useState<ProductReview[]>([]);
   const [summary, setSummary] = useState<ReviewSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
-  const loggedIn = auth.isLoggedIn();
+  // M-10: only verified buyers may review — ask the API and explain why if not.
+  const [eligibility, setEligibility] = useState<{ canReview: boolean; reason: string | null } | null>(null);
 
   async function load() {
     try {
@@ -45,12 +48,19 @@ export default function ProductReviews({ productId }: { productId: number }) {
 
   useEffect(() => { load(); }, [productId]);
 
+  useEffect(() => {
+    reviewsApi
+      .eligibility(productId, auth.getToken() ?? undefined)
+      .then((res) => setEligibility(res.data))
+      .catch(() => setEligibility(null));
+  }, [productId]);
+
   const avg = summary?.average ?? 0;
   const total = summary?.total ?? reviews.length;
 
   return (
     <div>
-      <h2 className="font-serif text-2xl font-bold text-text mb-6">Reviews</h2>
+      <h2 className="font-serif text-2xl font-bold text-text mb-6">{t('reviews.title')}</h2>
 
       <div className="grid md:grid-cols-[220px_1fr] gap-10">
         {/* Summary + form */}
@@ -63,15 +73,19 @@ export default function ProductReviews({ productId }: { productId: number }) {
             </div>
           </div>
 
-          {loggedIn ? (
+          {eligibility?.canReview ? (
             <Button size="sm" variant="secondary" className="mt-6" onClick={() => setFormOpen(true)}>
-              <PenLine size={14} /> Write a review
+              <PenLine size={14} /> {t('reviews.write')}
             </Button>
-          ) : (
+          ) : eligibility?.reason ? (
             <p className="mt-6 text-sm text-text-muted">
-              <a href="/login" className="text-brand hover:underline">Sign in</a> to write a review.
+              {eligibility.reason === 'Sign in to review this product.' ? (
+                <><a href="/login" className="text-brand hover:underline">Sign in</a> to write a review.</>
+              ) : (
+                eligibility.reason
+              )}
             </p>
-          )}
+          ) : null}
 
           <Modal open={formOpen} onClose={() => setFormOpen(false)} title="Write a review">
             <ReviewForm productId={productId} onSubmitted={() => { setFormOpen(false); load(); }} />

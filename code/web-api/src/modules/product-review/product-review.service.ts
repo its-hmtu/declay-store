@@ -1,4 +1,5 @@
 import { Op, fn, col } from 'sequelize';
+import { reviewRejectionReason } from './review.eligibility';
 import ProductReview from './product-review.entity';
 import Product from '@/modules/product/product.entity';
 import ProductVariant from '@/modules/product-variant/product-variant.entity';
@@ -142,6 +143,17 @@ export default class ProductReviewService implements IProductReviewService {
       count,
       summary,
     };
+  }
+
+  /** M-10: tell the storefront up-front whether this customer may review. */
+  async getEligibility(userId: number | null, productId: number): Promise<{ canReview: boolean; reason: string | null }> {
+    await this.assertProductExists(productId);
+    const alreadyReviewed = userId
+      ? (await ProductReview.findOne({ where: { userId, productId } })) !== null
+      : false;
+    const hasPurchased = userId ? await this.hasPurchased(userId, productId) : false;
+    const reason = reviewRejectionReason({ isLoggedIn: Boolean(userId), hasPurchased, alreadyReviewed });
+    return { canReview: reason === null, reason };
   }
 
   async create(userId: number, productId: number, data: ICreateReviewData): Promise<IProductReview> {

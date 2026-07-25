@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Toaster } from 'sonner';
+import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
+import { getServerLocale } from '@/lib/i18n/server';
 
 export const metadata: Metadata = {
   title: { default: 'Declay Store', template: '%s | Declay' },
@@ -8,8 +10,11 @@ export const metadata: Metadata = {
 };
 
 // Auth layout — intentionally has no storefront Header/Footer/ChatWidget.
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+export default async function AuthLayout({ children }: { children: React.ReactNode }) {
+  const { locale } = await getServerLocale();
+
   return (
+    <LocaleProvider initialLocale={locale}>
     <div className="min-h-full flex flex-col">
       <header className="p-5 sm:p-6">
         <Link href="/" aria-label="Declay Store — home" className="inline-flex">
@@ -20,5 +25,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <main className="flex-1 flex flex-col">{children}</main>
       <Toaster richColors position="bottom-right" />
     </div>
+    </LocaleProvider>
   );
 }

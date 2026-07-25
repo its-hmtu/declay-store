@@ -11,7 +11,7 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 
 const STATUS_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'error' | 'info'> = {
-  pending_payment: 'warning', paid: 'info', processing: 'info', shipped: 'info', delivered: 'success', cancelled: 'error',
+  pending_payment: 'warning', paid: 'info', processing: 'info', shipped: 'info', delivered: 'success', returned: 'warning', cancelled: 'error',
 };
 
 export default function AdminOrderDetailClient({ orderId }: { orderId: number }) {
@@ -26,6 +26,21 @@ export default function AdminOrderDetailClient({ orderId }: { orderId: number })
       .catch(() => toast.error('Order not found.'))
       .finally(() => setLoading(false));
   }, [orderId]);
+
+  // M-06: returns are accepted for 7 days after delivery (BR-06).
+  async function requestReturn() {
+    const reason = prompt('Reason for the return?')?.trim();
+    if (!reason) return;
+    const token = adminAuth.getToken();
+    if (!token) return;
+    try {
+      const res = await api.post<Order>(`/admin/orders/${orderId}/return`, { reason }, { token });
+      setOrder(res.data);
+      toast.success('Order marked as returned.');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Return failed.');
+    }
+  }
 
   if (loading)  return <div className="text-text-muted">Loading…</div>;
   if (!order)   return <div className="text-text-muted">Order not found.</div>;
@@ -58,6 +73,30 @@ export default function AdminOrderDetailClient({ orderId }: { orderId: number })
           <span>Total</span><span className="text-brand">${parseFloat(order.totalAmount).toFixed(2)}</span>
         </div>
       </div>
+
+      {/* M-06: return window */}
+      {(order.status === 'delivered' || order.status === 'returned') && (
+        <div className="rounded-xl border border-border bg-surface p-5 mb-6">
+          <h2 className="font-medium text-text mb-2">Return</h2>
+          {order.status === 'returned' ? (
+            <p className="text-sm text-text-muted">
+              Returned{order.returnedAt ? ` on ${new Date(order.returnedAt).toLocaleDateString()}` : ''}
+              {order.returnReason ? ` — ${order.returnReason}` : ''}
+            </p>
+          ) : (
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-text-muted">
+                {order.deliveredAt
+                  ? `Returns accepted until ${new Date(new Date(order.deliveredAt).getTime() + 7 * 86400000).toLocaleDateString()} (7 days after delivery).`
+                  : 'No delivery date recorded — returns cannot be processed.'}
+              </p>
+              <Button type="button" size="sm" variant="outline" onClick={requestReturn} disabled={!order.deliveredAt}>
+                Mark as returned
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       <ShipmentManager orderId={orderId} />
     </div>

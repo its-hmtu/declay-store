@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useT } from '@/lib/i18n/LocaleProvider';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -30,6 +31,7 @@ function toYMD(d: Date): string {
 }
 
 export default function RegisterClient() {
+  const { t } = useT();
   const router = useRouter();
   const [form, setForm] = useState({
     fullName: '', email: '', phone: '', dateOfBirth: '', password: '', confirmPassword: '',
@@ -93,7 +95,7 @@ export default function RegisterClient() {
 
       {/* Email */}
       <div>
-        <label className="block text-sm font-medium text-text mb-1.5" htmlFor="email">Email</label>
+        <label className="block text-sm font-medium text-text mb-1.5" htmlFor="email">{t('account.email')}</label>
         <input
           id="email" name="email" type="email" required autoComplete="email"
           value={form.email} onChange={handleChange}
@@ -116,7 +118,7 @@ export default function RegisterClient() {
 
       {/* Date of birth */}
       <div>
-        <label className="block text-sm font-medium text-text mb-1.5" htmlFor="dateOfBirth">Date of Birth</label>
+        <label className="block text-sm font-medium text-text mb-1.5" htmlFor="dateOfBirth">{t('register.dob')}</label>
         <DatePicker
           id="dateOfBirth"
           value={form.dateOfBirth ? new Date(`${form.dateOfBirth}T00:00:00`) : null}
@@ -130,7 +132,7 @@ export default function RegisterClient() {
 
       {/* Password + toggle + live rules */}
       <div>
-        <label className="block text-sm font-medium text-text mb-1.5" htmlFor="password">Password</label>
+        <label className="block text-sm font-medium text-text mb-1.5" htmlFor="password">{t('register.password')}</label>
         <div className="relative">
           <input
             id="password" name="password" required autoComplete="new-password"
@@ -186,7 +188,7 @@ export default function RegisterClient() {
           className="mt-0.5 h-4 w-4 rounded border-border text-brand focus:ring-brand"
         />
         <span>
-          I have read and agree to the{' '}
+          {t('register.acceptTerms')}{' '}
           <Link href="/terms" target="_blank" className="text-brand hover:underline font-medium">Terms &amp; Conditions</Link>{' '}
           and{' '}
           <Link href="/policies" target="_blank" className="text-brand hover:underline font-medium">Store Policies</Link>.

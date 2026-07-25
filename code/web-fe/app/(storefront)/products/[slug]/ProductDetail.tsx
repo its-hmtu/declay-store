@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import type { Product, ProductVariant } from '@/lib/types';
 import { cartApi } from '@/lib/api';
 import { auth } from '@/lib/auth';
+import { guestSession } from '@/lib/guest';
 import Button from '@/components/ui/Button';
 import { ShoppingCart } from 'lucide-react';
 import WishlistButton from '@/components/storefront/WishlistButton';
@@ -23,8 +24,9 @@ export default function ProductDetail({ product }: { product: Product }) {
   const images = (selected?.images ?? []).filter(isValidSrc);
 
   async function addToCart() {
-    const token = auth.getToken();
-    if (!token) { toast.error('Please log in to add items to cart.'); return; }
+    // M-01: guests can add to cart — a guest session is created on first use.
+    const token = auth.getToken() ?? undefined;
+    if (!token) guestSession.get();
     if (!selected) return;
     setLoading(true);
     try {

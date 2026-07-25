@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import ProductCard from '@/components/storefront/ProductCard';
 import { productsApi } from '@/lib/api';
 import type { Product } from '@/lib/types';
+import { useT } from '@/lib/i18n/LocaleProvider';
 
 const LIMIT = 12;
 
@@ -25,6 +26,7 @@ export default function ProductsInfinite({
   total: number;
   params: ProductQuery;
 }) {
+  const { t } = useT();
   const [items, setItems]     = useState<Product[]>(initialItems);
   const [page, setPage]       = useState(1);
   const [loading, setLoading] = useState(false);
@@ -76,10 +78,10 @@ export default function ProductsInfinite({
           {loading ? (
             <span className="inline-flex items-center gap-2 text-sm text-text-muted">
               <span className="size-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              Loading more…
+              {t('shop.loadingMore')}
             </span>
           ) : error ? (
-            <button onClick={loadMore} className="text-sm text-brand hover:underline">Couldn&apos;t load — retry</button>
+            <button onClick={loadMore} className="text-sm text-brand hover:underline">{t('shop.retry')}</button>
           ) : (
             <span className="h-1" />
           )}

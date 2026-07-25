@@ -30,9 +30,20 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
+// M-08: social traffic is the main channel — every shared link needs rich previews.
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "Declay Store",
   description: "Handcrafted figures made with love.",
+  openGraph: {
+    type: "website",
+    siteName: "Declay Store",
+    title: "Declay Store",
+    description: "Handcrafted figures made with love.",
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({

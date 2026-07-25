@@ -90,6 +90,12 @@ function VariantEditor({
   const [price,  setPrice]  = useState(variant ? String(variant.price) : '');
   const [specialPrice, setSpecialPrice] = useState(variant?.specialPrice ? String(variant.specialPrice) : '');
   const [stock,  setStock]  = useState(variant ? String(variant.stock) : '0');
+  // M-03: cost price (admin-only, drives margin) + parcel size for carrier rates.
+  const [costPrice,  setCostPrice]  = useState(variant?.costPrice != null ? String(variant.costPrice) : '');
+  const [weightGram, setWeightGram] = useState(variant?.weightGram != null ? String(variant.weightGram) : '');
+  const [lengthCm,   setLengthCm]   = useState(variant?.lengthCm != null ? String(variant.lengthCm) : '');
+  const [widthCm,    setWidthCm]    = useState(variant?.widthCm != null ? String(variant.widthCm) : '');
+  const [heightCm,   setHeightCm]   = useState(variant?.heightCm != null ? String(variant.heightCm) : '');
   const [images, setImages] = useState<string[]>(variant?.images ?? []);
   const [loading, setLoading] = useState(false);
 
@@ -98,9 +104,15 @@ function VariantEditor({
     const token = adminAuth.getToken();
     if (!token) return;
     setLoading(true);
+    const num = (v: string) => (v.trim() === '' ? null : Number(v));
     const body = {
       name, price: parseFloat(price), stock: parseInt(stock || '0', 10), images,
       specialPrice: specialPrice.trim() === '' ? null : parseFloat(specialPrice),
+      costPrice: num(costPrice),
+      weightGram: num(weightGram),
+      lengthCm: num(lengthCm),
+      widthCm: num(widthCm),
+      heightCm: num(heightCm),
     };
     try {
       if (isEdit) await api.put(`/admin/products/${productId}/variants/${variant.id}`, body, { token });
@@ -134,6 +146,23 @@ function VariantEditor({
         <div>
           <label className="block text-xs font-medium text-text mb-1">Special price</label>
           <input type="number" step="0.01" min="0" value={specialPrice} onChange={(e) => setSpecialPrice(e.target.value)} className={inputCls} placeholder="optional" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-text mb-1">Cost price <span className="text-text-faint">(admin only)</span></label>
+          <input type="number" step="0.01" min="0" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} className={inputCls} placeholder="for margin" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-text mb-1">Weight (g)</label>
+          <input type="number" min="0" value={weightGram} onChange={(e) => setWeightGram(e.target.value)} className={inputCls} placeholder="needed for shipping rates" />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-text mb-1">Parcel size (cm)</label>
+        <div className="grid grid-cols-3 gap-3">
+          <input type="number" min="0" value={lengthCm} onChange={(e) => setLengthCm(e.target.value)} className={inputCls} placeholder="Length" />
+          <input type="number" min="0" value={widthCm} onChange={(e) => setWidthCm(e.target.value)} className={inputCls} placeholder="Width" />
+          <input type="number" min="0" value={heightCm} onChange={(e) => setHeightCm(e.target.value)} className={inputCls} placeholder="Height" />
         </div>
       </div>
       <div>
@@ -191,6 +220,15 @@ function VariantRow({ variant, productId, onChanged }: { variant: ProductVariant
           <span className="font-medium text-text">{variant.name}</span>
           <span className="text-text-muted mx-2">·</span>
           <span className="text-brand">${parseFloat(variant.price).toFixed(2)}</span>
+          {variant.margin != null && (
+            <span
+              className={variant.margin >= 0 ? 'text-success' : 'text-error'}
+              title="Margin — visible to admins only"
+            >
+              {variant.margin >= 0 ? '+' : ''}${variant.margin.toFixed(2)}
+              {variant.marginPercent != null ? ` (${variant.marginPercent}%)` : ''}
+            </span>
+          )}
           <span className="text-text-muted mx-2">·</span>
           <span className="text-text-muted">{variant.stock} in stock</span>
         </div>

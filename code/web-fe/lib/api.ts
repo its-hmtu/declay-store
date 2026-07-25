@@ -35,6 +35,9 @@ async function request<T>(
     'Content-Type': 'application/json',
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
+  // M-01: identify the guest cart/checkout session when the visitor is not signed in.
+  const guestId = readCookie('declay_guest');
+  if (guestId) headers['X-Guest-Session'] = guestId;
 
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
@@ -149,26 +152,35 @@ export const jobsApi = {
   detail: (id: number) => api.get<import('./types').Job>(`/jobs/${id}`),
 };
 
+// M-01: token is optional — guests are identified by the X-Guest-Session header.
 export const cartApi = {
-  get:    (token: string) => api.get<import('./types').Cart>('/cart', { token }),
-  add:    (token: string, variantId: number, quantity: number) =>
+  get:    (token?: string) => api.get<import('./types').Cart>('/cart', { token }),
+  add:    (token: string | undefined, variantId: number, quantity: number) =>
     api.post<import('./types').Cart>('/cart/items', { variantId, quantity }, { token }),
-  update: (token: string, itemId: number, quantity: number) =>
+  update: (token: string | undefined, itemId: number, quantity: number) =>
     api.put<import('./types').Cart>(`/cart/items/${itemId}`, { quantity }, { token }),
-  remove: (token: string, itemId: number) =>
+  remove: (token: string | undefined, itemId: number) =>
     api.delete<import('./types').Cart>(`/cart/items/${itemId}`, { token }),
-  clear:  (token: string) => api.delete<void>('/cart', { token }),
+  clear:  (token?: string) => api.delete<void>('/cart', { token }),
 };
 
 export const ordersApi = {
   list:     (token: string) => api.get<import('./types').Order[]>('/orders', { token }),
   detail:   (token: string, id: number) => api.get<import('./types').Order>(`/orders/${id}`, { token }),
-  checkout: (token: string, shippingAddressId: number, discountCode?: string, shippingMethodId?: number) =>
-    api.post<import('./types').CheckoutResult>(
-      '/orders/checkout',
-      { shippingAddressId, ...(discountCode ? { discountCode } : {}), ...(shippingMethodId ? { shippingMethodId } : {}) },
-      { token },
-    ),
+  checkout: (token: string | undefined, payload: {
+    shippingAddressId?: number;
+    shippingAddress?: {
+      // Recipient defaults to the buyer's own name/phone (see guest below).
+      receiverName?: string; receiverPhone?: string; addressLine: string;
+      ward: string; district: string; city: string; country?: string; postalCode?: string;
+    };
+    guest?: { name: string; email: string; phone: string };
+    discountCode?: string;
+    shippingMethodId?: number;
+    paymentMethod?: 'cod' | 'stripe';
+  }) => api.post<import('./types').CheckoutResult>('/orders/checkout', payload, { token }),
+  lookupGuest: (token: string) =>
+    api.get<import('./types').Order>(`/orders/lookup?token=${encodeURIComponent(token)}`),
 };
 
 /* ── Wishlist (customer) ───────────────────────────────── */
@@ -197,6 +209,9 @@ export const wishlistApi = {
 
 /* ── Product reviews (public read, customer write) ─────── */
 export const reviewsApi = {
+  // M-10: ask the API whether this visitor may review before showing the form.
+  eligibility: (productId: number, token?: string) =>
+    api.get<{ canReview: boolean; reason: string | null }>(`/products/${productId}/reviews/eligibility`, { token }),
   list:   (productId: number) =>
     api.get<import('./types').ProductReview[]>(`/products/${productId}/reviews`),
   create: (token: string, productId: number, data: { rating: number; title?: string; body?: string }) =>
@@ -288,6 +303,21 @@ export const adminCollectionsApi = {
   create: (token: string, data: unknown) => api.post<import('./types').Collection>('/admin/collections', data, { token }),
   update: (token: string, id: number, data: unknown) => api.put<import('./types').Collection>(`/admin/collections/${id}`, data, { token }),
   remove: (token: string, id: number) => api.delete<void>(`/admin/collections/${id}`, { token }),
+};
+
+export const adminCodApi = {
+  pending: (token: string) => api.get<import('./types').CodPendingRow[]>('/admin/cod/pending', { token }),
+  reconcile: (token: string, paymentId: number, collectedAmount: number, note?: string) =>
+    api.post<{ outcome: 'matched' | 'short' | 'over'; difference: number }>(
+      `/admin/cod/${paymentId}/reconcile`, { collectedAmount, ...(note ? { note } : {}) }, { token },
+    ),
+};
+
+export const adminReportsApi = {
+  topSkus: (token: string, period = '30d', limit = 20) =>
+    api.get<import('./types').TopSkuReport>(`/admin/reports/top-skus?period=${period}&limit=${limit}`, { token }),
+  productViews: (token: string, limit = 20) =>
+    api.get<import('./types').ProductViewRow[]>(`/admin/reports/product-views?limit=${limit}`, { token }),
 };
 
 export const adminCampaignsApi = {

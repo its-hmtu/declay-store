@@ -3,6 +3,7 @@ import { productsApi, categoriesApi, collectionsApi } from '@/lib/api';
 import ProductFilters from './ProductFilters';
 import ProductSort from './ProductSort';
 import ProductsInfinite, { type ProductQuery } from './ProductsInfinite';
+import { getServerLocale } from '@/lib/i18n/server';
 
 export const metadata: Metadata = { title: 'Shop All Products' };
 
@@ -11,6 +12,7 @@ export default async function ProductsPage({
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
+  const { t } = await getServerLocale();
   const sp           = await searchParams;
   const categoryId   = sp.categoryId ? Number(sp.categoryId) : undefined;
   const collectionId = sp.collectionId ? Number(sp.collectionId) : undefined;
@@ -38,7 +40,7 @@ export default async function ProductsPage({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-      <h1 className="font-serif text-4xl font-bold text-text mb-8">Shop</h1>
+      <h1 className="font-serif text-4xl font-bold text-text mb-8">{t('shop.title')}</h1>
 
       <div className="flex gap-8 items-start">
         {/* Sidebar filters (sticky) */}
@@ -57,14 +59,14 @@ export default async function ProductsPage({
           {/* Sticky toolbar */}
           <div className="sticky top-16 z-30 -mt-2 mb-4 bg-surface/95 backdrop-blur py-3 flex items-center justify-between gap-4">
             <p className="text-sm text-text-muted">
-              {total} product{total !== 1 ? 's' : ''}
+              {t('shop.productCount', { count: total })}
             </p>
             <ProductSort value={sort} />
           </div>
 
           {products.length === 0 ? (
             <div className="py-24 text-center text-text-muted">
-              <p className="text-lg">No products found.</p>
+              <p className="text-lg">{t('shop.noProducts')}</p>
             </div>
           ) : (
             <ProductsInfinite key={resetKey} initialItems={products} total={total} params={query} />

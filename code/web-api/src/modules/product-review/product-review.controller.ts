@@ -26,6 +26,15 @@ export default class ProductReviewController implements IProductReviewController
     });
   });
 
+  eligibility = asyncHandler(async (req: Request, res: Response) => {
+    const user = req.user as { userId?: number } | undefined;
+    const result = await this.reviewService.getEligibility(
+      user?.userId ?? null,
+      Number(req.params.productId),
+    );
+    sendSuccess(res, result, 'Review eligibility retrieved successfully');
+  });
+
   create = asyncHandler(async (req: Request, res: Response) => {
     const productId = Number(req.params.productId);
     const review = await this.reviewService.create(this.getUserId(req), productId, req.body);

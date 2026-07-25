@@ -38,6 +38,11 @@ export default class OrderController implements IOrderController {
     sendSuccess(res, order, 'Order retrieved successfully');
   });
 
+  adminReturnOrder = asyncHandler(async (req: Request, res: Response) => {
+    const order = await this.orderService.returnOrder(Number(req.params.id), req.body.reason);
+    sendSuccess(res, order, 'Order marked as returned');
+  });
+
   listMyOrders = asyncHandler(async (req: Request, res: Response) => {
     const page = typeof req.query.page === 'string' ? Number(req.query.page) : 1;
     const limit = typeof req.query.limit === 'string' ? Math.min(Number(req.query.limit), 50) : 20;

@@ -4,7 +4,7 @@ import { routeProtect, optionalAuth } from '@/middlewares/auth.middleware';
 import { adminProtect, requireRole } from '@/middlewares/admin.middleware';
 import OrderService from './order.service';
 import OrderController from './order.controller';
-import { createOrderSchema, updateOrderStatusSchema, orderIdSchema } from './order.validate';
+import { createOrderSchema, updateOrderStatusSchema, returnOrderSchema, orderIdSchema } from './order.validate';
 
 export function createOrderRouter(): Router {
   const router = Router();
@@ -32,6 +32,7 @@ export function createAdminOrderRouter(): Router {
   router.get('/', controller.adminListOrders);
   router.get('/:id', validate(orderIdSchema, 'params'), controller.getOrder);
   router.put('/:id/status', validate(orderIdSchema, 'params'), validate(updateOrderStatusSchema), controller.adminUpdateStatus);
+  router.post('/:id/return', validate(orderIdSchema, 'params'), validate(returnOrderSchema), controller.adminReturnOrder);
 
   return router;
 }

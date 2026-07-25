@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useT } from '@/lib/i18n/LocaleProvider';
 
 /* Brand glyphs — lucide dropped social brand icons, so inline them. */
 function IgIcon() {
@@ -76,6 +79,7 @@ const SOCIAL = [
 ];
 
 export default function Footer() {
+  const { t } = useT();
   return (
     <footer className="mt-auto border-t border-border bg-surface-alt">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-14">
@@ -125,12 +129,12 @@ export default function Footer() {
       <div className="border-t border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <p className="font-mono text-xs text-text-faint">
-            &copy; {new Date().getFullYear()} Declay Studio. All rights reserved.
+            &copy; {new Date().getFullYear()} Declay Studio. {t('footer.rights')}
           </p>
           <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-xs text-text-muted">
             <span className="text-text-faint">Vietnam</span>
-            <Link href="/terms" className="hover:text-text transition-colors">Terms of Sale</Link>
-            <Link href="/policies" className="hover:text-text transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-text transition-colors">{t('footer.terms')}</Link>
+            <Link href="/policies" className="hover:text-text transition-colors">{t('footer.privacy')}</Link>
             <Link href="#" className="hover:text-text transition-colors">Cookie Settings</Link>
           </nav>
         </div>

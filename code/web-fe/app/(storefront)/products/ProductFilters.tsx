@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
 import type { Category, Collection } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { useT } from '@/lib/i18n/LocaleProvider';
 
 const PRICE_BUCKETS: { label: string; min?: number; max?: number }[] = [
   { label: 'Under $25', max: 25 },
@@ -27,6 +28,7 @@ export default function ProductFilters({
   selectedCollection?: number;
   search?: string;
 }) {
+  const { t } = useT();
   const router = useRouter();
   const sp = useSearchParams();
 
@@ -54,7 +56,7 @@ export default function ProductFilters({
     <div>
       {/* Search */}
       <div className="pb-4 border-b border-border">
-        <p className="text-xs font-semibold uppercase tracking-widest text-text-muted mb-3">Search</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-text-muted mb-3">{t('shop.filterSearch')}</p>
         <form onSubmit={(e) => {
           e.preventDefault();
           const q = (e.currentTarget.elements.namedItem('q') as HTMLInputElement).value;
@@ -63,15 +65,15 @@ export default function ProductFilters({
           <input
             name="q"
             defaultValue={search}
-            placeholder="Search products…"
+            placeholder={t('common.search')}
             className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-surface focus:outline-none focus:border-brand placeholder:text-text-faint"
           />
         </form>
       </div>
 
       {categories.length > 0 && (
-        <Section title="Category">
-          <button onClick={() => setParams({ categoryId: undefined })} className={rowCls(!selected)}>All</button>
+        <Section title={t('shop.filterCategory')}>
+          <button onClick={() => setParams({ categoryId: undefined })} className={rowCls(!selected)}>{t('shop.all')}</button>
           {categories.map((cat) => (
             <button key={cat.id} onClick={() => setParams({ categoryId: String(cat.id) })} className={rowCls(selected === cat.id)}>
               {cat.name}
@@ -81,8 +83,8 @@ export default function ProductFilters({
       )}
 
       {collections.length > 0 && (
-        <Section title="Collection">
-          <button onClick={() => setParams({ collectionId: undefined })} className={rowCls(!selectedCollection)}>All</button>
+        <Section title={t('shop.filterCollection')}>
+          <button onClick={() => setParams({ collectionId: undefined })} className={rowCls(!selectedCollection)}>{t('shop.all')}</button>
           {collections.map((col) => (
             <button key={col.id} onClick={() => setParams({ collectionId: String(col.id) })} className={rowCls(selectedCollection === col.id)}>
               {col.name}
@@ -91,8 +93,8 @@ export default function ProductFilters({
         </Section>
       )}
 
-      <Section title="Shop By Price">
-        <button onClick={() => setParams({ minPrice: undefined, maxPrice: undefined })} className={rowCls(noPrice)}>All prices</button>
+      <Section title={t('shop.filterPrice')}>
+        <button onClick={() => setParams({ minPrice: undefined, maxPrice: undefined })} className={rowCls(noPrice)}>{t('shop.allPrices')}</button>
         {PRICE_BUCKETS.map((b) => (
           <button
             key={b.label}

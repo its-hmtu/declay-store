@@ -5,19 +5,24 @@ import { usePathname, useRouter } from 'next/navigation';
 import { ShoppingCart, User, LogOut, Menu, X, ChevronDown, Heart, Package } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { auth } from '@/lib/auth';
+import { guestSession } from '@/lib/guest';
 import { authApi, cartApi } from '@/lib/api';
 import NotificationBell from '@/components/NotificationBell';
 import SearchBox from '@/components/storefront/SearchBox';
 import type { Category, Collection } from '@/lib/types';
+import { isEnabled } from '@/lib/features';
+import { useT } from '@/lib/i18n/LocaleProvider';
+import LanguageSwitcher from '@/components/storefront/LanguageSwitcher';
 
 const NAV = [
-  { href: '/products',    label: 'Shop' },
-  { href: '/collections', label: 'Collections' },
-  { href: '/blog',     label: 'Journal' },
-  { href: '/careers',  label: 'Careers' },
+  { href: '/products',    label: 'Shop', i18n: 'nav.shop' as const },
+  { href: '/collections', label: 'Collections', feature: 'collections' as const },
+  { href: '/blog',     label: 'Journal', feature: 'blog' as const },
+  { href: '/careers',  label: 'Careers', feature: 'careers' as const },
 ];
 
 export default function Header({ categories = [], collections = [] }: { categories?: Category[]; collections?: Collection[] }) {
+  const { t } = useT();
   const pathname   = usePathname();
   const router     = useRouter();
   const [open, setOpen] = useState(false);       // mobile drawer
@@ -27,8 +32,9 @@ export default function Header({ categories = [], collections = [] }: { categori
 
   // Keep the cart badge in sync — refetch on navigation (e.g. after add-to-cart)
   useEffect(() => {
-    const token = auth.getToken();
-    if (!token) { setCartCount(0); return; }
+    const token = auth.getToken() ?? undefined;
+    // M-01: guests have a cart too, keyed by their guest session cookie.
+    if (!token && !guestSession.peek()) { setCartCount(0); return; }
     cartApi.get(token)
       .then((res) => setCartCount(res.data.items?.reduce((n, i) => n + i.quantity, 0) ?? 0))
       .catch(() => undefined);
@@ -64,7 +70,8 @@ export default function Header({ categories = [], collections = [] }: { categori
     { label: 'New This Season', href: '/products?sort=newest' },
   ];
 
-  const collectionLinks = collections.map((c) => ({ label: c.name, href: `/products?collectionId=${c.id}` }));
+  const collectionLinks = isEnabled('collections') ? collections.map((c) => ({ label: c.name, href: `/products?collectionId=${c.id}` })) : [];
+  const visibleNav = NAV.filter((n) => isEnabled(('feature' in n ? n.feature : undefined) as any));
   const popularTerms = [...categories.map((c) => c.name), ...collections.map((c) => c.name)].slice(0, 8);
 
   const closeShop = () => setShopOpen(false);
@@ -83,7 +90,8 @@ export default function Header({ categories = [], collections = [] }: { categori
 
         {/* Desktop nav (monospace) */}
         <nav className="hidden md:flex items-center gap-7 flex-1 justify-center">
-          {NAV.map(({ href, label }) => {
+          {visibleNav.map((n) => {
+            const { href, label } = n;
             const active = pathname.startsWith(href);
             const isShop = href === '/products' && categories.length > 0;
             return (
@@ -95,7 +103,7 @@ export default function Header({ categories = [], collections = [] }: { categori
                   active || (isShop && shopOpen) ? 'text-text' : 'text-text-muted hover:text-text'
                 }`}
               >
-                {label}
+                {'i18n' in n && n.i18n ? t(n.i18n) : label}
                 {isShop && (
                   <ChevronDown size={13} className={`transition-transform ${shopOpen ? 'rotate-180' : ''}`} />
                 )}
@@ -110,6 +118,8 @@ export default function Header({ categories = [], collections = [] }: { categori
           <div className="hidden md:block">
             <SearchBox variant="desktop" popularTerms={popularTerms} />
           </div>
+          <div className="hidden md:block ml-1"><LanguageSwitcher /></div>
+          {isEnabled('wishlist') && (
           <Link
             href="/wishlist"
             className="p-2 text-text-muted hover:text-text transition-colors"
@@ -117,6 +127,7 @@ export default function Header({ categories = [], collections = [] }: { categori
           >
             <Heart size={19} />
           </Link>
+          )}
           <Link
             href="/cart"
             className="relative p-2 text-text-muted hover:text-text transition-colors"
@@ -141,21 +152,21 @@ export default function Header({ categories = [], collections = [] }: { categori
               <div className="absolute right-0 top-full pt-2 invisible opacity-0 translate-y-1 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-y-0 transition-all duration-150">
                 <div className="w-48 rounded-xl border border-border bg-surface shadow-lg shadow-black/5 p-1.5">
                   <Link href="/account" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-text-muted hover:text-text hover:bg-surface-alt transition-colors">
-                    <User size={15} /> My Profile
+                    <User size={15} /> {t('nav.profile')}
                   </Link>
                   <Link href="/orders" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-text-muted hover:text-text hover:bg-surface-alt transition-colors">
-                    <Package size={15} /> My Orders
+                    <Package size={15} /> {t('nav.orders')}
                   </Link>
                   <div className="my-1 h-px bg-border" />
                   <button onClick={logout} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-error hover:bg-error/10 transition-colors">
-                    <LogOut size={15} /> Logout
+                    <LogOut size={15} /> {t('nav.logout')}
                   </button>
                 </div>
               </div>
             </div>
           ) : (
             <Link href="/login" className="hidden sm:inline-flex font-mono text-sm text-text-muted hover:text-text transition-colors ml-1">
-              Sign in&nbsp;&rarr;
+              {t('nav.signIn')}&nbsp;&rarr;
             </Link>
           )}
 
@@ -227,14 +238,16 @@ export default function Header({ categories = [], collections = [] }: { categori
       {open && (
         <div className="md:hidden border-t border-border bg-surface px-4 py-4 flex flex-col gap-4">
           <SearchBox variant="mobile" onNavigate={() => setOpen(false)} />
-          {NAV.map(({ href, label }) => (
+          {visibleNav.map((n) => {
+            const { href, label } = n;
+            return (
             <div key={href}>
               <Link
                 href={href}
                 onClick={() => setOpen(false)}
                 className="font-mono text-text-muted hover:text-text py-1 block"
               >
-                {label}
+                {'i18n' in n && n.i18n ? t(n.i18n) : label}
               </Link>
               {href === '/products' && categories.length > 0 && (
                 <div className="mt-2 ml-3 flex flex-col gap-1.5 border-l border-border pl-3">
@@ -261,25 +274,26 @@ export default function Header({ categories = [], collections = [] }: { categori
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
 
           {/* Account section */}
           <div className="mt-2 pt-4 border-t border-border flex flex-col gap-3">
             {isLoggedIn ? (
               <>
                 <Link href="/account" onClick={() => setOpen(false)} className="flex items-center gap-2.5 font-mono text-text-muted hover:text-text py-1">
-                  <User size={16} /> My Profile
+                  <User size={16} /> {t('nav.profile')}
                 </Link>
                 <Link href="/orders" onClick={() => setOpen(false)} className="flex items-center gap-2.5 font-mono text-text-muted hover:text-text py-1">
-                  <Package size={16} /> My Orders
+                  <Package size={16} /> {t('nav.orders')}
                 </Link>
                 <button onClick={() => { setOpen(false); logout(); }} className="flex items-center gap-2.5 font-mono text-error py-1 text-left">
-                  <LogOut size={16} /> Logout
+                  <LogOut size={16} /> {t('nav.logout')}
                 </button>
               </>
             ) : (
               <Link href="/login" onClick={() => setOpen(false)} className="font-mono text-text-muted hover:text-text py-1">
-                Sign in &rarr;
+                {t('nav.signIn')} &rarr;
               </Link>
             )}
           </div>

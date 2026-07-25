@@ -30,11 +30,13 @@ export function computeOrderTotal(subtotal: number, discountAmount: number, ship
 }
 
 const STATUS_RANK: Record<string, number> = {
-  pending_payment: 0, paid: 1, processing: 2, shipped: 3, delivered: 4, cancelled: 5,
+  pending_payment: 0, paid: 1, processing: 2, shipped: 3, delivered: 4, returned: 5, cancelled: 6,
 };
 
 export function isTerminalStatus(status: string): boolean {
-  return status === 'delivered' || status === 'cancelled';
+  // 'delivered' is terminal for the normal flow; returns go through the dedicated
+  // return endpoint (M-06), not the generic status update.
+  return status === 'delivered' || status === 'cancelled' || status === 'returned';
 }
 
 /** Returns a rejection message if the transition is not allowed, otherwise null (W-21). */

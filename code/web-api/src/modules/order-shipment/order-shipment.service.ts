@@ -88,7 +88,11 @@ export default class OrderShipmentService implements IOrderShipmentService {
 
       // Keep the order lifecycle in sync when delivery is recorded
       if (markingDelivered) {
-        await Order.update({ status: 'delivered' }, { where: { id: orderId }, transaction: t });
+        // M-06: stamp the delivery time — it starts the 7-day return window.
+        await Order.update(
+          { status: 'delivered', deliveredAt: data.deliveredAt ?? new Date() },
+          { where: { id: orderId }, transaction: t },
+        );
       }
 
       return shipment;

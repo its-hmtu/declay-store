@@ -15,6 +15,7 @@ export type OrderStatus =
   | 'processing'
   | 'shipped'
   | 'delivered'
+  | 'returned'
   | 'cancelled';
 
 export class Order extends Model<InferAttributes<Order>, InferCreationAttributes<Order>> {
@@ -24,6 +25,9 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
   declare guestEmail: CreationOptional<string | null>;
   declare guestPhone: CreationOptional<string | null>;
   declare guestToken: CreationOptional<string | null>;
+  declare deliveredAt: CreationOptional<Date | null>;
+  declare returnedAt: CreationOptional<Date | null>;
+  declare returnReason: CreationOptional<string | null>;
   declare status: CreationOptional<OrderStatus>;
   declare totalAmount: number;
   declare stripePaymentIntentId: CreationOptional<string | null>;
@@ -52,8 +56,11 @@ Order.init(
     guestEmail: { type: DataTypes.STRING(160), allowNull: true, field: 'guest_email' },
     guestPhone: { type: DataTypes.STRING(32), allowNull: true, field: 'guest_phone' },
     guestToken: { type: DataTypes.STRING(64), allowNull: true, field: 'guest_token' },
+    deliveredAt: { type: DataTypes.DATE, allowNull: true, field: 'delivered_at' },
+    returnedAt: { type: DataTypes.DATE, allowNull: true, field: 'returned_at' },
+    returnReason: { type: DataTypes.STRING(500), allowNull: true, field: 'return_reason' },
     status: {
-      type: DataTypes.ENUM('pending_payment', 'paid', 'processing', 'shipped', 'delivered', 'cancelled'),
+      type: DataTypes.ENUM('pending_payment', 'paid', 'processing', 'shipped', 'delivered', 'returned', 'cancelled'),
       allowNull: false,
       defaultValue: 'pending_payment',
     },
