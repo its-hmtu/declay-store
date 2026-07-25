@@ -1,0 +1,95 @@
+# Render Blueprint — staging cho Declay Store.
+# Deploy: Render Dashboard → New → Blueprint → chọn repo này.
+# Region singapore là gần Việt Nam nhất.
+
+databases:
+  - name: declay-db
+    databaseName: declay_store
+    user: declay_admin
+    plan: free
+    region: singapore
+
+services:
+  # ── Redis (BullMQ + cache) ───────────────────────────────
+  - type: keyvalue
+    name: declay-redis
+    plan: free
+    region: singapore
+    ipAllowList: []          # rỗng = chỉ cho phép kết nối nội bộ trong Render
+
+  # ── API (Node/Express) ───────────────────────────────────
+  - type: web
+    name: declay-api
+    runtime: docker
+    region: singapore
+    plan: free
+    dockerfilePath: ./code/web-api/Dockerfile
+    dockerContext: ./code/web-api
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+
+      # Postgres — Render tự điền từ database ở trên
+      - key: DB_HOST
+        fromDatabase: { name: declay-db, property: host }
+      - key: DB_PORT
+        fromDatabase: { name: declay-db, property: port }
+      - key: DB_USER
+        fromDatabase: { name: declay-db, property: user }
+      - key: DB_PASSWORD
+        fromDatabase: { name: declay-db, property: password }
+      - key: DB_NAME
+        fromDatabase: { name: declay-db, property: database }
+
+      # Redis — lấy host/port nội bộ của Key Value service
+      - key: REDIS_HOST
+        fromService: { type: keyvalue, name: declay-redis, property: host }
+      - key: REDIS_PORT
+        fromService: { type: keyvalue, name: declay-redis, property: port }
+
+      # Secrets — Render tự sinh, không cần nhập tay
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+
+      # MVP chỉ bật COD
+      - key: PAYMENTS_DOMESTIC
+        value: cod
+
+      # Điền trong Dashboard (sync:false = Render không ghi đè)
+      - key: APP_PUBLIC_URL      # https://declay-api.onrender.com
+        sync: false
+      - key: CLOUDINARY_URL      # cloudinary://key:secret@cloud_name
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+  # ── Storefront (Next.js) ─────────────────────────────────
+  - type: web
+    name: declay-web
+    runtime: docker
+    region: singapore
+    plan: free
+    dockerfilePath: ./code/web-fe/Dockerfile
+    dockerContext: ./code/web-fe
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      # QUAN TRỌNG: Next.js "nướng" các biến NEXT_PUBLIC_* vào bundle lúc BUILD.
+      # Điền giá trị trong Dashboard rồi bấm "Clear build cache & deploy" khi đổi.
+      - key: NEXT_PUBLIC_API_URL   # https://declay-api.onrender.com/api
+        sync: false
+      - key: NEXT_PUBLIC_SITE_URL  # https://declay-web.onrender.com
+        sync: false
+      - key: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+        sync: false
