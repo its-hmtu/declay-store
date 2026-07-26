@@ -10,6 +10,7 @@ import Badge from '@/components/ui/Badge';
 import AdminToolbar, { FilterSelect } from '@/components/admin/AdminToolbar';
 import Pagination from '@/components/admin/Pagination';
 import { usePagination } from '@/lib/usePagination';
+import { formatPrice } from '@/lib/utils';
 
 const STATUS_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'error' | 'info'> = {
   pending_payment: 'warning',
@@ -96,7 +97,7 @@ export default function AdminOrdersClient() {
                       {order.status.replace('_', ' ')}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3 font-medium text-brand">${parseFloat(order.totalAmount).toFixed(2)}</td>
+                  <td className="px-4 py-3 font-medium text-brand">{formatPrice(parseFloat(order.totalAmount))}</td>
                   <td className="px-4 py-3">
                     <select
                       value={order.status}

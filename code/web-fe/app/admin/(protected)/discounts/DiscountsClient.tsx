@@ -11,6 +11,7 @@ import Badge from '@/components/ui/Badge';
 import AdminToolbar, { FilterSelect } from '@/components/admin/AdminToolbar';
 import Pagination from '@/components/admin/Pagination';
 import { usePagination } from '@/lib/usePagination';
+import { formatPrice } from '@/lib/utils';
 
 export default function DiscountsClient() {
   const [codes,    setCodes]    = useState<DiscountCode[]>([]);
@@ -100,8 +101,8 @@ export default function DiscountsClient() {
               paged.map((d) => (
                 <tr key={d.id} className="hover:bg-surface-alt/50 transition-colors">
                   <td className="px-4 py-3 font-mono font-medium text-text">{d.code}</td>
-                  <td className="px-4 py-3 text-text">{d.type === 'percent' ? `${d.value}%` : `$${Number(d.value).toFixed(2)}`}</td>
-                  <td className="px-4 py-3 text-text-muted">{d.minOrderAmount ? `$${Number(d.minOrderAmount).toFixed(2)}` : '—'}</td>
+                  <td className="px-4 py-3 text-text">{d.type === 'percent' ? `${d.value}%` : `${formatPrice(Number(d.value))}`}</td>
+                  <td className="px-4 py-3 text-text-muted">{d.minOrderAmount ? `${formatPrice(Number(d.minOrderAmount))}` : '—'}</td>
                   <td className="px-4 py-3 text-text-muted">{d.usedCount}{d.maxUses ? ` / ${d.maxUses}` : ''}</td>
                   <td className="px-4 py-3 text-text-muted">{d.expiresAt ? new Date(d.expiresAt).toLocaleDateString() : '—'}</td>
                   <td className="px-4 py-3"><Badge variant={d.isActive ? 'success' : 'default'}>{d.isActive ? 'Active' : 'Disabled'}</Badge></td>

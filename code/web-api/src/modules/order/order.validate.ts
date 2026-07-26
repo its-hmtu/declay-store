@@ -11,12 +11,19 @@ export const createOrderSchema = z.object({
     ward: z.string().min(1).max(120),
     district: z.string().min(1).max(120),
     city: z.string().min(1).max(120),
+    // M-13: mã địa giới GHN — thứ dùng để tính phí và tạo vận đơn.
+    ghnProvinceId: z.number().int().positive().nullable().optional(),
+    ghnDistrictId: z.number().int().positive().nullable().optional(),
+    ghnWardCode: z.string().max(20).nullable().optional(),
     country: z.string().max(120).optional(),
     postalCode: z.string().max(20).optional(),
   }).optional(),
   notes: z.string().max(500).optional(),
   discountCode: z.string().min(3).max(50).optional(),
   shippingMethodId: z.number().int().positive().optional(),
+  // Điểm đến để hỏi phí GHN. Cố ý KHÔNG nhận số tiền từ client.
+  ghnDistrictId: z.number().int().positive().optional(),
+  ghnWardCode: z.string().max(20).optional(),
   paymentMethod: z.enum(['cod', 'stripe', 'vnpay']).optional(),
   guest: z.object({
     name: z.string().min(2).max(120),

@@ -8,6 +8,7 @@ import { adminShippingMethodsApi } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import { formatPrice } from '@/lib/utils';
 
 export default function ShippingMethodsClient() {
   const [methods, setMethods]   = useState<ShippingMethod[]>([]);
@@ -71,8 +72,8 @@ export default function ShippingMethodsClient() {
               <tr key={m.id} className="hover:bg-surface-alt/50 transition-colors">
                 <td className="px-4 py-3 text-text">{m.name}</td>
                 <td className="px-4 py-3 text-text-muted">{m.zone}</td>
-                <td className="px-4 py-3 text-text-muted">${Number(m.fee).toFixed(2)}</td>
-                <td className="px-4 py-3 text-text-muted">{m.freeOver != null ? `$${Number(m.freeOver).toFixed(2)}` : '—'}</td>
+                <td className="px-4 py-3 text-text-muted">{formatPrice(Number(m.fee))}</td>
+                <td className="px-4 py-3 text-text-muted">{m.freeOver != null ? `${formatPrice(Number(m.freeOver))}` : '—'}</td>
                 <td className="px-4 py-3"><Badge variant={m.isActive ? 'success' : 'default'}>{m.isActive ? 'Active' : 'Hidden'}</Badge></td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-1">

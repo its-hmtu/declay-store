@@ -8,6 +8,7 @@ import type { CodPendingRow } from '@/lib/types';
 import { adminCodApi } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
+import { formatPrice } from '@/lib/utils';
 
 export default function CodClient() {
   const [rows, setRows] = useState<CodPendingRow[]>([]);
@@ -41,7 +42,7 @@ export default function CodClient() {
 
     let note: string | undefined;
     if (Math.abs(amount - row.amount) > 0.01) {
-      note = prompt(`Amount differs from $${row.amount.toFixed(2)}. Add a note explaining the difference:`)?.trim() || undefined;
+      note = prompt(`Amount differs from ${formatPrice(row.amount)}. Add a note explaining the difference:`)?.trim() || undefined;
       if (!note) { toast.error('A note is required when the amount does not match.'); return; }
     }
 
@@ -50,7 +51,7 @@ export default function CodClient() {
       const res = await adminCodApi.reconcile(token, row.paymentId, amount, note);
       const { outcome, difference } = res.data;
       if (outcome === 'matched') toast.success(`Order #${row.orderId} reconciled.`);
-      else toast.warning(`Order #${row.orderId} ${outcome} by $${Math.abs(difference).toFixed(2)} — recorded.`);
+      else toast.warning(`Order #${row.orderId} ${outcome} by ${formatPrice(Math.abs(difference))} — recorded.`);
       load();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Reconcile failed.');
@@ -73,7 +74,7 @@ export default function CodClient() {
       <div className="rounded-xl border border-border bg-surface p-4 mb-6 flex items-center gap-3">
         <Banknote size={18} className="text-brand" />
         <span className="text-sm text-text-muted">Outstanding cash</span>
-        <span className="ml-auto font-serif text-xl font-bold text-text">${totalOutstanding.toFixed(2)}</span>
+        <span className="ml-auto font-serif text-xl font-bold text-text">{formatPrice(totalOutstanding)}</span>
       </div>
 
       <div className="rounded-xl border border-border bg-surface overflow-hidden">
@@ -103,7 +104,7 @@ export default function CodClient() {
                 <td className="px-4 py-3 text-text-muted text-xs">
                   {r.deliveredAt ? new Date(r.deliveredAt).toLocaleDateString() : '—'}
                 </td>
-                <td className="px-4 py-3 text-right text-text">${r.amount.toFixed(2)}</td>
+                <td className="px-4 py-3 text-right text-text">{formatPrice(r.amount)}</td>
                 <td className="px-4 py-3 text-right">
                   <input
                     type="number" step="0.01" min="0"

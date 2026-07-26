@@ -12,6 +12,7 @@ import { ShoppingCart } from 'lucide-react';
 import WishlistButton from '@/components/storefront/WishlistButton';
 import ProductReviews from '@/components/storefront/ProductReviews';
 import RelatedProducts from '@/components/storefront/RelatedProducts';
+import { formatPrice } from '@/lib/utils';
 
 export default function ProductDetail({ product }: { product: Product }) {
   const variants = product.variants?.filter((v) => v.isActive) ?? [];
@@ -88,12 +89,12 @@ export default function ProductDetail({ product }: { product: Product }) {
               const onSale = best < base;
               return onSale ? (
                 <p className="mt-4 flex items-baseline gap-2">
-                  <span className="text-2xl font-semibold text-error">${best.toFixed(2)}</span>
-                  <span className="text-lg text-text-faint line-through">${base.toFixed(2)}</span>
+                  <span className="text-2xl font-semibold text-error">{formatPrice(best)}</span>
+                  <span className="text-lg text-text-faint line-through">{formatPrice(base)}</span>
                   <span className="text-xs font-bold text-white bg-error rounded px-1.5 py-0.5">-{Math.round((1 - best / base) * 100)}%</span>
                 </p>
               ) : (
-                <p className="mt-4 text-2xl font-semibold text-brand">${base.toFixed(2)}</p>
+                <p className="mt-4 text-2xl font-semibold text-brand">{formatPrice(base)}</p>
               );
             })()
           )}

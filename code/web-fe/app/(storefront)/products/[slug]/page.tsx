@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { productsApi } from '@/lib/api';
 import { ApiRequestError } from '@/lib/api';
-import { effectivePrice } from '@/lib/utils';
+import { effectivePrice, formatPrice } from '@/lib/utils';
 import type { Product } from '@/lib/types';
 import ProductDetail from './ProductDetail';
 
@@ -35,7 +35,7 @@ export async function generateMetadata({
     const price = displayPrice(data);
     const image = firstImage(data);
     const description = data.description
-      ?? `${data.name}${price !== null ? ` — $${price.toFixed(2)}` : ''} · Handmade by Declay.`;
+      ?? `${data.name}${price !== null ? ` — ${formatPrice(price)}` : ''} · Handmade by Declay.`;
 
     return {
       title: data.name,

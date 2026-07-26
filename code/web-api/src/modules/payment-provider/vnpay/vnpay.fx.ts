@@ -1,19 +1,15 @@
 /**
- * M-12 FX — quy đổi tiền tệ cho VNPay.
+ * M-12/M-15 — quy tắc số tiền gửi cho VNPay.
  *
- * VNPay CHỈ nhận VND. Cửa hàng đang niêm yết USD, nên mọi đơn thanh toán qua
- * VNPay phải được quy đổi trước khi ký. Module này là hàm thuần để test được
- * và để chỉ tồn tại **một** nơi duy nhất định nghĩa quy tắc quy đổi.
+ * Từ M-15 cửa hàng niêm yết thẳng bằng VND (thị trường trong nước), nên KHÔNG
+ * còn quy đổi tiền tệ nữa. Đây chính là điều làm biến mất cả nhóm lỗi "sai số
+ * tiền": không có tỉ giá thì không có gì để cấu hình sai.
  *
- * Bài học từ lỗi thực tế: tỉ giá mặc định bằng 1 khiến đơn $350 bị gửi sang
- * VNPay thành 350đ. Vì vậy tỉ giá KHÔNG có giá trị mặc định an toàn —
- * `assertUsableRate` bắt hệ thống dừng lại thay vì âm thầm thu sai tiền.
+ * Module vẫn giữ lại vì hai luật dưới đây là của VNPay, không phải của tỉ giá:
+ * làm tròn về đồng chẵn và mức giao dịch tối thiểu.
  */
 
-/** Tỉ giá thấp hơn ngưỡng này chắc chắn là cấu hình sai (USD/VND luôn > 20.000). */
-export const MIN_PLAUSIBLE_USD_VND_RATE = 1000;
-
-/** VNPay/ngân hàng VN không xử lý số lẻ nhỏ hơn 1.000đ — làm tròn LÊN bội số 1.000. */
+/** Giá niêm yết Việt Nam không dùng số lẻ dưới 1.000đ. */
 export const VND_ROUNDING_UNIT = 1000;
 
 /** VNPay từ chối giao dịch dưới 5.000đ. */
@@ -26,41 +22,21 @@ export class FxConfigurationError extends Error {
   }
 }
 
-/**
- * Chặn đơn hàng ngay từ đầu nếu tỉ giá chưa được cấu hình đúng.
- * Thà không cho đặt hàng còn hơn thu của khách sai số tiền.
- */
-export function assertUsableRate(rate: number): number {
-  if (!Number.isFinite(rate) || rate < MIN_PLAUSIBLE_USD_VND_RATE) {
-    throw new FxConfigurationError(
-      `VNPAY_USD_TO_VND chưa được cấu hình đúng (đang là "${rate}"). ` +
-        `Tỉ giá USD→VND phải >= ${MIN_PLAUSIBLE_USD_VND_RATE}.`,
-    );
+/** Chuẩn hoá số tiền đơn hàng về đồng chẵn trước khi gửi cổng. */
+export function normalizeVnd(amount: number | string): number {
+  const value = Number(amount);
+  if (!Number.isFinite(value) || value < 0) {
+    throw new FxConfigurationError(`Số tiền không hợp lệ: "${amount}"`);
   }
-  return rate;
-}
-
-/**
- * Quy đổi USD sang VND, làm tròn LÊN bội số 1.000đ.
- * Làm tròn lên (không phải gần nhất) để cửa hàng không bao giờ thu thiếu.
- */
-export function convertUsdToVnd(amountUsd: number | string, rate: number): number {
-  assertUsableRate(rate);
-  const usd = Number(amountUsd);
-  if (!Number.isFinite(usd) || usd < 0) {
-    throw new FxConfigurationError(`Số tiền không hợp lệ: "${amountUsd}"`);
-  }
-  const raw = usd * rate;
-  return Math.ceil(raw / VND_ROUNDING_UNIT) * VND_ROUNDING_UNIT;
+  return Math.round(value / VND_ROUNDING_UNIT) * VND_ROUNDING_UNIT;
 }
 
 /** VNPay yêu cầu số tiền nhân 100, không phần thập phân. */
 export function toVnpAmount(amountVnd: number | string): number {
-  const vnd = Math.round(Number(amountVnd));
-  return vnd * 100;
+  return Math.round(Number(amountVnd)) * 100;
 }
 
-/** VNPay từ chối giao dịch quá nhỏ — báo lỗi sớm thay vì để cổng trả lỗi khó hiểu. */
+/** Báo lỗi sớm thay vì để cổng trả về mã lỗi khó hiểu. */
 export function assertPayableVnd(amountVnd: number): number {
   if (amountVnd < VNPAY_MIN_AMOUNT_VND) {
     throw new FxConfigurationError(
@@ -70,7 +46,7 @@ export function assertPayableVnd(amountVnd: number): number {
   return amountVnd;
 }
 
-/** Hiển thị cho khách: "1.234.000 ₫". */
+/** Hiển thị cho khách: "1.300.000 ₫". */
 export function formatVnd(amountVnd: number): string {
   return `${Math.round(amountVnd).toLocaleString('vi-VN')} ₫`;
 }

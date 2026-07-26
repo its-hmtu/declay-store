@@ -179,11 +179,6 @@ export const ordersApi = {
     shippingMethodId?: number;
     paymentMethod?: 'cod' | 'stripe' | 'vnpay';
   }) => api.post<import('./types').CheckoutResult>('/orders/checkout', payload, { token }),
-  /** M-12 FX: hỏi backend số tiền VND sẽ bị trừ (tỉ giá chỉ có ở backend). */
-  vnpayQuote: (amountUsd: number) =>
-    api.get<{ amountUsd: number; rate: number; amountVnd: number; display: string }>(
-      `/payments/vnpay/quote?amount=${amountUsd.toFixed(2)}`,
-    ),
   /** M-12: confirm a VNPay return before showing the buyer a success page. */
   verifyVnpayReturn: (query: string) =>
     api.get<{
@@ -197,6 +192,28 @@ export const ordersApi = {
 };
 
 /* ── Wishlist (customer) ───────────────────────────────── */
+/* ── GHN: địa giới + báo phí (M-13) ────────────────────── */
+export const ghnApi = {
+  provinces: () =>
+    api.get<{ provinceId: number; name: string }[]>('/shipping/ghn/provinces', { next: { revalidate: 86400 } }),
+  districts: (provinceId: number) =>
+    api.get<{ districtId: number; name: string; canDeliver: boolean }[]>(
+      `/shipping/ghn/districts?provinceId=${provinceId}`, { next: { revalidate: 86400 } },
+    ),
+  wards: (districtId: number) =>
+    api.get<{ wardCode: string; name: string; canDeliver: boolean }[]>(
+      `/shipping/ghn/wards?districtId=${districtId}`, { next: { revalidate: 86400 } },
+    ),
+  /** Phí tính từ giỏ hàng phía server — client không gửi cân nặng. */
+  quote: (payload: { districtId: number | null; wardCode: string | null }) =>
+    api.post<{
+      available: boolean;
+      reason: 'missing_destination' | 'district_not_served' | 'parcel_too_heavy' | 'carrier_unavailable' | null;
+      feeVnd: number; carrierFeeVnd: number; freeShipping: boolean;
+      weightGram: number; usedDefaultWeight: boolean; carrier: string;
+    }>('/shipping/ghn/quote', payload),
+};
+
 export const shippingMethodsApi = {
   list: () => api.get<import('./types').ShippingMethod[]>('/shipping-methods', { next: { revalidate: 300 } }),
 };

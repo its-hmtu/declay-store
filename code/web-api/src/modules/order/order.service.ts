@@ -19,7 +19,8 @@ import { initialOrderStatusFor } from './order.payment';
 import { normalizeGuestContact, generateGuestToken } from './order.guest';
 import { returnRejectionReason } from './order.returns';
 import { buildVnpayPaymentUrl } from '@/modules/payment-provider/vnpay/vnpay.provider';
-import { convertUsdToVnd, assertPayableVnd, FxConfigurationError } from '@/modules/payment-provider/vnpay/vnpay.fx';
+import GhnService from '@/modules/shipping-provider/ghn/ghn.service';
+import { normalizeVnd, assertPayableVnd, FxConfigurationError } from '@/modules/payment-provider/vnpay/vnpay.fx';
 import { resolveCartOwner, ownerWhere } from '@/modules/cart/cart.owner';
 import CampaignService from '@/modules/campaign/campaign.service';
 import { queueOrderStatusEmail } from '@/lib/email-queue';
@@ -109,10 +110,42 @@ export default class OrderService implements IOrderService {
       discountAmount = validated.discountAmount;
     }
 
-    // W-15: resolve shipping fee (0 if no method, or subtotal reaches the free-over threshold)
+    // M-13: phí vận chuyển do GHN quyết định, hỏi LẠI ở server.
+    // Không nhận số tiền từ client — nếu không, sửa payload là sửa được phí ship.
     let shippingFee = 0;
     let resolvedShippingMethodId: number | null = null;
-    if (shippingMethodId) {
+    let ghnWeightGram: number | null = null;
+
+    const destinationDistrictId = data.ghnDistrictId ?? shippingAddress?.ghnDistrictId ?? null;
+    const destinationWardCode = data.ghnWardCode ?? shippingAddress?.ghnWardCode ?? null;
+
+    if (destinationDistrictId && destinationWardCode) {
+      const quote = await new GhnService().quote({
+        districtId: destinationDistrictId,
+        wardCode: destinationWardCode,
+        items: items.map((item: any) => ({
+          quantity: item.quantity,
+          weightGram: item.variant?.weightGram ?? null,
+          lengthCm: item.variant?.lengthCm ?? null,
+          widthCm: item.variant?.widthCm ?? null,
+          heightCm: item.variant?.heightCm ?? null,
+        })),
+        subtotalVnd: subtotal,
+      });
+
+      // Không báo được phí thì KHÔNG tạo đơn: thà chặn còn hơn nhận một đơn
+      // mà cửa hàng chưa biết chi phí giao là bao nhiêu.
+      if (!quote.available) {
+        const message = quote.reason === 'district_not_served'
+          ? 'GHN không giao tới quận/huyện này.'
+          : quote.reason === 'parcel_too_heavy'
+            ? 'Đơn hàng vượt giới hạn cân nặng của dịch vụ tiêu chuẩn.'
+            : 'Chưa lấy được phí vận chuyển. Vui lòng thử lại.';
+        throw httpError(400, message);
+      }
+      shippingFee = quote.feeVnd;
+      ghnWeightGram = quote.weightGram;
+    } else if (shippingMethodId) {
       const method = await ShippingMethod.findByPk(shippingMethodId);
       if (!method || !method.isActive) throw httpError(400, 'Selected shipping method is not available');
       const address = resolvedAddressId ? await Address.findByPk(resolvedAddressId) : null;
@@ -132,7 +165,7 @@ export default class OrderService implements IOrderService {
       ? null
       : await stripe.paymentIntents.create({
           amount: Math.round(totalAmount * 100), // cents
-          currency: 'usd',
+          currency: 'vnd',
           metadata: { userId: String(userId ?? ''), guest: String(isGuest) },
         });
 
@@ -158,6 +191,16 @@ export default class OrderService implements IOrderService {
           subtotal,
           shippingFee,
           shippingMethodId: resolvedShippingMethodId,
+          // Chốt lại thông tin vận chuyển: biểu phí GHN đổi theo thời gian,
+          // đơn cũ phải giữ đúng con số đã báo cho khách.
+          ...(ghnWeightGram != null
+            ? {
+                shippingCarrier: 'ghn',
+                shippingFeeQuoted: shippingFee,
+                shippingWeightGram: ghnWeightGram,
+                ghnServiceTypeId: config.ghn.serviceTypeId,
+              }
+            : {}),
           totalAmount,
           discountCodeId,
           discountAmount,
@@ -168,15 +211,15 @@ export default class OrderService implements IOrderService {
         { transaction: t },
       );
 
-      // M-12 FX: VNPay chỉ nhận VND. Quy đổi MỘT LẦN ở đây rồi chốt lại,
-      // để IPN và đối soát về sau luôn dùng đúng con số đã hiển thị cho khách.
-      // Tỉ giá sai/thiếu -> ném lỗi, huỷ transaction, KHÔNG tạo đơn.
+      // M-15: cửa hàng niêm yết thẳng VND — không còn quy đổi tiền tệ.
+      // Vẫn CHỐT lại số tiền gửi cổng để IPN đối chiếu đúng con số đã hiển thị
+      // cho khách, kể cả khi sau này giá sản phẩm thay đổi.
       let chargedVnd: number | null = null;
       if (isVnpay) {
         try {
-          chargedVnd = assertPayableVnd(convertUsdToVnd(totalAmount, config.vnpay.usdToVnd));
+          chargedVnd = assertPayableVnd(normalizeVnd(totalAmount));
         } catch (err) {
-          if (err instanceof FxConfigurationError) throw httpError(503, err.message);
+          if (err instanceof FxConfigurationError) throw httpError(400, err.message);
           throw err;
         }
       }
@@ -188,10 +231,10 @@ export default class OrderService implements IOrderService {
           method,
           provider: isCod ? 'cod' : isVnpay ? 'vnpay' : 'stripe',
           amount: totalAmount,
-          currency: 'usd',
+          currency: 'vnd',
           chargedAmount: chargedVnd,
           chargedCurrency: isVnpay ? 'VND' : null,
-          fxRate: isVnpay ? config.vnpay.usdToVnd : null,
+          fxRate: isVnpay ? 1 : null,   // M-15: niêm yết VND, không quy đổi
           status: 'pending',
         },
         { transaction: t },

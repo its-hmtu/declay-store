@@ -9,6 +9,7 @@ import type { Wishlist } from '@/lib/types';
 import { wishlistApi, cartApi } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
+import { formatPrice } from '@/lib/utils';
 
 export default function WishlistClient() {
   const router = useRouter();
@@ -94,7 +95,7 @@ export default function WishlistClient() {
                     <p className="font-medium text-text">{v?.product?.name ?? 'Product'}</p>
                   )}
                   <p className="text-sm text-text-muted">{v?.name}</p>
-                  <p className="font-mono text-sm text-brand mt-0.5">${Number(v?.price ?? 0).toFixed(2)}</p>
+                  <p className="font-mono text-sm text-brand mt-0.5">{formatPrice(Number(v?.price ?? 0))}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <Button

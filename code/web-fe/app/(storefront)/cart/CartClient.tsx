@@ -7,7 +7,7 @@ import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Cart } from '@/lib/types';
 import { cartApi } from '@/lib/api';
-import { effectivePrice } from '@/lib/utils';
+import { effectivePrice, formatPrice } from '@/lib/utils';
 import { auth } from '@/lib/auth';
 import { guestSession } from '@/lib/guest';
 import { useT } from '@/lib/i18n/LocaleProvider';
@@ -107,7 +107,7 @@ export default function CartClient() {
                   <p className="font-medium text-text truncate">{product?.name}</p>
                   <p className="text-sm text-text-muted">{variant?.name}</p>
                   <p className="mt-1 font-semibold">
-                    {onSale ? (<><span className="text-error">${price.toFixed(2)}</span> <span className="text-text-faint line-through text-sm">${base.toFixed(2)}</span></>) : <span className="text-brand">${price.toFixed(2)}</span>}
+                    {onSale ? (<><span className="text-error">{formatPrice(price)}</span> <span className="text-text-faint line-through text-sm">{formatPrice(base)}</span></>) : <span className="text-brand">{formatPrice(price)}</span>}
                   </p>
                 </div>
                 <div className="flex flex-col items-end justify-between gap-2">
@@ -119,7 +119,7 @@ export default function CartClient() {
                     <span className="w-8 text-center font-medium">{item.quantity}</span>
                     <button onClick={() => updateQty(item.id, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center text-text-muted hover:text-brand transition-colors">+</button>
                   </div>
-                  <p className="text-sm font-medium text-text">${(price * item.quantity).toFixed(2)}</p>
+                  <p className="text-sm font-medium text-text">{formatPrice((price * item.quantity))}</p>
                 </div>
               </div>
             );
@@ -133,7 +133,7 @@ export default function CartClient() {
             <div className="space-y-2 text-sm text-text-muted">
               <div className="flex justify-between">
                 <span>{t('cart.subtotal')}</span>
-                <span className="text-text font-medium">${subtotal.toFixed(2)}</span>
+                <span className="text-text font-medium">{formatPrice(subtotal)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Shipping</span>
@@ -142,7 +142,7 @@ export default function CartClient() {
             </div>
             <div className="mt-4 pt-4 border-t border-border flex justify-between font-semibold text-text">
               <span>Total</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>{formatPrice(subtotal)}</span>
             </div>
             <Link href="/checkout">
               <Button className="w-full mt-6">Proceed to Checkout</Button>

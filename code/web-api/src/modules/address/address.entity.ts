@@ -17,6 +17,10 @@ class Address extends Model<InferAttributes<Address>, InferCreationAttributes<Ad
   declare ward: string;
   declare district: string;
   declare city: string;
+  // M-13: mã địa giới GHN. Cột text ở trên chỉ để hiển thị và in vận đơn.
+  declare ghnProvinceId: CreationOptional<number | null>;
+  declare ghnDistrictId: CreationOptional<number | null>;
+  declare ghnWardCode: CreationOptional<string | null>;
   declare country: CreationOptional<string>;
   declare postalCode: CreationOptional<string | null>;
   declare isDefault: CreationOptional<boolean>;
@@ -110,6 +114,9 @@ Address.init(
       type: DataTypes.STRING(100),
       allowNull: true,
     },
+    ghnProvinceId: { type: DataTypes.INTEGER, allowNull: true, field: 'ghn_province_id' },
+    ghnDistrictId: { type: DataTypes.INTEGER, allowNull: true, field: 'ghn_district_id' },
+    ghnWardCode:   { type: DataTypes.STRING(20), allowNull: true, field: 'ghn_ward_code' },
     country: {
       type: DataTypes.STRING(100),
       allowNull: false,

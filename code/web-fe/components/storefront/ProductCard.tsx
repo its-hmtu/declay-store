@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Star } from 'lucide-react';
 import type { Product } from '@/lib/types';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import { formatPrice } from '@/lib/utils';
 
 export default function ProductCard({ product }: { product: Product }) {
   const { t } = useT();
@@ -58,12 +59,12 @@ export default function ProductCard({ product }: { product: Product }) {
           {price !== null ? (
             onSale ? (
               <p className="font-mono text-sm flex items-baseline gap-1.5">
-                <span className="text-error font-semibold">${price.toFixed(2)}</span>
-                <span className="text-text-faint line-through">${(base as number).toFixed(2)}</span>
+                <span className="text-error font-semibold">{formatPrice(price)}</span>
+                <span className="text-text-faint line-through">{formatPrice((base as number))}</span>
                 <span className="text-[10px] font-bold text-white bg-error rounded px-1 py-0.5">-{percentOff}%</span>
               </p>
             ) : (
-              <p className="font-mono text-sm text-text">${price.toFixed(2)}</p>
+              <p className="font-mono text-sm text-text">{formatPrice(price)}</p>
             )
           ) : (
             <p className="font-mono text-sm text-text-faint">&mdash;</p>

@@ -43,11 +43,28 @@ const config = {
     hashSecret: process.env.VNPAY_HASH_SECRET || '',
     payUrl: process.env.VNPAY_PAY_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
     returnUrl: process.env.VNPAY_RETURN_URL || '',   // trang FE hiển thị kết quả
-    // VNPay chỉ nhận VND, cửa hàng niêm yết USD -> BẮT BUỘC có tỉ giá.
-    // Không đặt mặc định: tỉ giá sai/thiếu phải làm đơn hàng thất bại ngay,
-    // thay vì âm thầm gửi $350 sang cổng thành 350đ.
-    usdToVnd: Number(process.env.VNPAY_USD_TO_VND ?? process.env.VNPAY_CURRENCY_RATE ?? 0),
     expireMinutes: Number(process.env.VNPAY_EXPIRE_MINUTES) || 15,
+  },
+  // M-13: GHN — vận chuyển nội địa.
+  ghn: {
+    // .trim(): giá trị dán từ dashboard hoặc file CRLF dễ mang theo khoảng trắng,
+    // mà header HTTP có ký tự lạ sẽ làm fetch ném lỗi rất khó truy.
+    token: (process.env.GHN_TOKEN || '').trim(),
+    shopId: (process.env.GHN_SHOP_ID || '').trim(),
+    // Môi trường dev của GHN (dev-online-gateway) đã ngừng phản hồi, nên mặc
+    // định là production. An toàn KHÔNG còn dựa vào URL mà dựa vào quyền thao
+    // tác: xem ghn.mode.ts — tính phí là chỉ đọc, không tạo ra gì.
+    baseUrl: (process.env.GHN_BASE_URL || 'https://online-gateway.ghn.vn').trim(),
+    // Chỉ bật khi thực sự muốn tạo vận đơn THẬT (phát sinh cước).
+    allowWrite: process.env.GHN_ALLOW_WRITE === 'true',
+    // Kho lấy hàng. Bỏ trống thì GHN dùng địa chỉ mặc định của ShopId.
+    fromDistrictId: Number(process.env.GHN_FROM_DISTRICT_ID) || 0,
+    fromWardCode: (process.env.GHN_FROM_WARD_CODE || '').trim(),
+    // 2 = Hàng nhẹ (E-Commerce Delivery), 5 = Hàng nặng.
+    serviceTypeId: Number(process.env.GHN_SERVICE_TYPE_ID) || 2,
+    // Chính sách phí của cửa hàng (VND).
+    freeOverVnd: Number(process.env.SHIPPING_FREE_OVER_VND) || 0,
+    subsidyVnd: Number(process.env.SHIPPING_SUBSIDY_VND) || 0,
   },
   easyship: {
     apiKey: process.env.EASYSHIP_API_KEY || '',

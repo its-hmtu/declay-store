@@ -23,3 +23,13 @@ export function effectivePrice(
   }
   return best;
 }
+
+/**
+ * M-15: cửa hàng niêm yết bằng VND. Mọi nơi hiển thị tiền đều đi qua đây để
+ * định dạng không bị lệch giữa các màn hình (1.300.000 ₫).
+ */
+export function formatPrice(amount: number | string | null | undefined): string {
+  const value = typeof amount === 'string' ? parseFloat(amount) : amount;
+  if (value == null || !Number.isFinite(value)) return '—';
+  return `${Math.round(value).toLocaleString('vi-VN')} ₫`;
+}

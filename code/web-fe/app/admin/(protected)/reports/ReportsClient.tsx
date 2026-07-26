@@ -7,6 +7,7 @@ import { TrendingUp, Eye, Package } from 'lucide-react';
 import type { TopSkuReport, ProductViewRow } from '@/lib/types';
 import { adminReportsApi } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
+import { formatPrice } from '@/lib/utils';
 
 const PERIODS = [
   { value: '7d',  label: 'Last 7 days'  },
@@ -62,7 +63,7 @@ export default function ReportsClient() {
       {/* Totals */}
       <div className="grid sm:grid-cols-3 gap-4 mb-8">
         <StatCard icon={<Package size={18} />} label="Units sold" value={totals ? String(totals.totalUnits) : '—'} />
-        <StatCard icon={<TrendingUp size={18} />} label="Revenue" value={totals ? `$${totals.totalRevenue.toFixed(2)}` : '—'} />
+        <StatCard icon={<TrendingUp size={18} />} label="Revenue" value={totals ? `${formatPrice(totals.totalRevenue)}` : '—'} />
         <StatCard icon={<Eye size={18} />} label="SKUs with sales" value={totals ? String(totals.skuCount) : '—'} />
       </div>
 
@@ -100,7 +101,7 @@ export default function ReportsClient() {
                 <td className="px-4 py-3 text-right font-medium text-text">{r.unitsSold}</td>
                 <td className="px-4 py-3 text-right text-text-muted">{r.unitShare}%</td>
                 <td className="px-4 py-3 text-right text-text-muted">{r.orderCount}</td>
-                <td className="px-4 py-3 text-right text-text">${r.revenue.toFixed(2)}</td>
+                <td className="px-4 py-3 text-right text-text">{formatPrice(r.revenue)}</td>
               </tr>
             ))}
           </tbody>

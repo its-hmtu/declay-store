@@ -6,6 +6,7 @@ import type { Order } from '@/lib/types';
 import { ordersApi } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import Badge from '@/components/ui/Badge';
+import { formatPrice } from '@/lib/utils';
 
 const STATUS_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'error' | 'info'> = {
   pending_payment: 'warning',
@@ -77,7 +78,7 @@ export default function OrdersClient() {
                   <Badge variant={STATUS_VARIANT[order.status] ?? 'default'}>
                     {STATUS_LABEL[order.status] ?? order.status}
                   </Badge>
-                  <p className="font-semibold text-brand">${parseFloat(order.totalAmount).toFixed(2)}</p>
+                  <p className="font-semibold text-brand">{formatPrice(parseFloat(order.totalAmount))}</p>
                 </div>
               </div>
             </Link>

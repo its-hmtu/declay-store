@@ -10,6 +10,7 @@ import { adminAuth } from '@/lib/auth';
 import ProductForm from '../ProductForm';
 import ImageUploader from '@/components/admin/ImageUploader';
 import Button from '@/components/ui/Button';
+import { formatPrice } from '@/lib/utils';
 
 export default function EditProductClient({ productId }: { productId: number }) {
   const [product,  setProduct]  = useState<Product | null>(null);
@@ -219,13 +220,13 @@ function VariantRow({ variant, productId, onChanged }: { variant: ProductVariant
         <div className="min-w-0">
           <span className="font-medium text-text">{variant.name}</span>
           <span className="text-text-muted mx-2">·</span>
-          <span className="text-brand">${parseFloat(variant.price).toFixed(2)}</span>
+          <span className="text-brand">{formatPrice(parseFloat(variant.price))}</span>
           {variant.margin != null && (
             <span
               className={variant.margin >= 0 ? 'text-success' : 'text-error'}
               title="Margin — visible to admins only"
             >
-              {variant.margin >= 0 ? '+' : ''}${variant.margin.toFixed(2)}
+              {variant.margin >= 0 ? '+' : ''}{formatPrice(variant.margin)}
               {variant.marginPercent != null ? ` (${variant.marginPercent}%)` : ''}
             </span>
           )}

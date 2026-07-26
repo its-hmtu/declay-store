@@ -9,6 +9,7 @@ import { api, adminShipmentApi } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import { formatPrice } from '@/lib/utils';
 
 const STATUS_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'error' | 'info'> = {
   pending_payment: 'warning', paid: 'info', processing: 'info', shipped: 'info', delivered: 'success', returned: 'warning', cancelled: 'error',
@@ -64,13 +65,13 @@ export default function AdminOrderDetailClient({ orderId }: { orderId: number })
             {items.map((it) => (
               <div key={it.id} className="flex justify-between py-2 text-text-muted">
                 <span>{it.productNameAtPurchase} ({it.variantNameAtPurchase}) × {it.quantity}</span>
-                <span>${(parseFloat(it.priceAtPurchase) * it.quantity).toFixed(2)}</span>
+                <span>{formatPrice((parseFloat(it.priceAtPurchase) * it.quantity))}</span>
               </div>
             ))}
           </div>
         )}
         <div className="flex justify-between pt-3 border-t border-border font-semibold text-text">
-          <span>Total</span><span className="text-brand">${parseFloat(order.totalAmount).toFixed(2)}</span>
+          <span>Total</span><span className="text-brand">{formatPrice(parseFloat(order.totalAmount))}</span>
         </div>
       </div>
 

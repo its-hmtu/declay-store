@@ -50,7 +50,7 @@ Payment.init(
     reconciledBy: { type: DataTypes.INTEGER, allowNull: true, field: 'reconciled_by' },
     reconcileNote: { type: DataTypes.STRING(500), allowNull: true, field: 'reconcile_note' },
     amount: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
-    currency: { type: DataTypes.STRING(10), allowNull: false, defaultValue: 'usd' },
+    currency: { type: DataTypes.STRING(10), allowNull: false, defaultValue: 'vnd' },
     status: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'pending' },
     createdAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'created_at' },
     updatedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'updated_at' },

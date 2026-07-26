@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Search, X } from 'lucide-react';
 import type { Product } from '@/lib/types';
 import { productsApi } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { cn, formatPrice } from '@/lib/utils';
 
 export default function SearchBox({
   variant = 'desktop',
@@ -106,7 +106,7 @@ export default function SearchBox({
                     <span className="block text-sm text-text truncate">{p.name}</span>
                     {price !== null && (
                       <span className="block font-mono text-xs text-text-muted">
-                        {onSale ? (<><span className="text-error">${price.toFixed(2)}</span> <span className="line-through">${(base as number).toFixed(2)}</span></>) : `$${price.toFixed(2)}`}
+                        {onSale ? (<><span className="text-error">{formatPrice(price)}</span> <span className="line-through">{formatPrice((base as number))}</span></>) : `${formatPrice(price)}`}
                       </span>
                     )}
                   </span>

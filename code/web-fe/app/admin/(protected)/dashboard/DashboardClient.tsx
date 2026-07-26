@@ -6,6 +6,7 @@ import type { Order, Product, Job } from '@/lib/types';
 import { api } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Badge from '@/components/ui/Badge';
+import { formatPrice } from '@/lib/utils';
 
 const REVENUE_STATUSES = ['paid', 'processing', 'shipped', 'delivered'];
 
@@ -61,7 +62,7 @@ export default function DashboardClient() {
 
   const cards = [
     { label: 'Total Orders',   value: loading ? '…' : String(stats?.orders ?? 0),                     sub: 'All time'  },
-    { label: 'Revenue',        value: loading ? '…' : `$${(stats?.revenue ?? 0).toFixed(2)}`,          sub: 'Paid orders' },
+    { label: 'Revenue',        value: loading ? '…' : `${formatPrice((stats?.revenue ?? 0))}`,          sub: 'Paid orders' },
     { label: 'Products',       value: loading ? '…' : String(stats?.products ?? 0),                   sub: 'Total'     },
     { label: 'Open Positions', value: loading ? '…' : String(stats?.openJobs ?? 0),                   sub: 'Careers'   },
   ];
@@ -95,7 +96,7 @@ export default function DashboardClient() {
                 <li key={o.id} className="flex items-center justify-between py-2.5 text-sm">
                   <span className="font-medium text-text">#{o.id}</span>
                   <Badge variant={STATUS_VARIANT[o.status] ?? 'default'}>{o.status.replace('_', ' ')}</Badge>
-                  <span className="text-text-muted">${parseFloat(o.totalAmount).toFixed(2)}</span>
+                  <span className="text-text-muted">{formatPrice(parseFloat(o.totalAmount))}</span>
                 </li>
               ))}
             </ul>

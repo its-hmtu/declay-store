@@ -9,6 +9,7 @@ import { ordersApi, shipmentApi } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import Badge from '@/components/ui/Badge';
 import OrderProgress from '@/components/storefront/OrderProgress';
+import { formatPrice } from '@/lib/utils';
 
 const TERMINAL = ['delivered', 'cancelled'];
 
@@ -119,13 +120,13 @@ export default function OrderDetailClient({ orderId }: { orderId: number }) {
               <p className="text-sm text-text-muted">{item.variantNameAtPurchase} × {item.quantity}</p>
             </div>
             <p className="font-medium text-text shrink-0">
-              ${(parseFloat(item.priceAtPurchase) * item.quantity).toFixed(2)}
+              {formatPrice((parseFloat(item.priceAtPurchase) * item.quantity))}
             </p>
           </div>
         ))}
         <div className="flex justify-between p-4 font-semibold text-text">
           <span>Total</span>
-          <span>${parseFloat(order.totalAmount).toFixed(2)}</span>
+          <span>{formatPrice(parseFloat(order.totalAmount))}</span>
         </div>
       </div>
 

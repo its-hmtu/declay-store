@@ -78,7 +78,7 @@ export default function VnpayReturnClient() {
             <Button size="sm">{t('checkout.viewOrder')}</Button>
           </Link>
         )}
-        <Link href="/shop">
+        <Link href="/products">
           <Button size="sm" variant="outline">{t('cart.continueShopping')}</Button>
         </Link>
       </div>

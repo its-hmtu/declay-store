@@ -30,11 +30,15 @@ export interface ICreateOrderData {
   userId?: number | null;
   guestSessionId?: string | null;
   ipAddr?: string | null;
+  /** M-13: điểm đến GHN để chốt phí vận chuyển khi tạo đơn. */
+  ghnDistrictId?: number | null;
+  ghnWardCode?: string | null;
   guest?: { name?: string; email?: string; phone?: string } | null;
   shippingAddressId?: number | null;
   shippingAddress?: {
     receiverName?: string; receiverPhone?: string; addressLine: string;
     ward: string; district: string; city: string; country?: string; postalCode?: string;
+    ghnProvinceId?: number | null; ghnDistrictId?: number | null; ghnWardCode?: string | null;
   } | null;
   notes?: string;
   discountCode?: string;

@@ -8,11 +8,12 @@ import { cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n/LocaleProvider';
 
 const PRICE_BUCKETS: { label: string; min?: number; max?: number }[] = [
-  { label: 'Under $25', max: 25 },
-  { label: '$25 – $50', min: 25, max: 50 },
-  { label: '$50 – $100', min: 50, max: 100 },
-  { label: '$100 – $200', min: 100, max: 200 },
-  { label: 'Over $200', min: 200 },
+  // M-15: khoảng giá theo VND cho thị trường trong nước.
+  { label: 'Dưới 500.000 ₫', max: 500_000 },
+  { label: '500.000 – 1.000.000 ₫', min: 500_000, max: 1_000_000 },
+  { label: '1.000.000 – 2.000.000 ₫', min: 1_000_000, max: 2_000_000 },
+  { label: '2.000.000 – 5.000.000 ₫', min: 2_000_000, max: 5_000_000 },
+  { label: 'Trên 5.000.000 ₫', min: 5_000_000 },
 ];
 
 export default function ProductFilters({

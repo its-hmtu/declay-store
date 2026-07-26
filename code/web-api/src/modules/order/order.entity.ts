@@ -37,6 +37,12 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
   declare subtotal: CreationOptional<number>;
   declare shippingFee: CreationOptional<number>;
   declare shippingMethodId: CreationOptional<number | null>;
+  // M-13: chốt lại thông tin vận chuyển GHN tại thời điểm đặt hàng.
+  declare shippingCarrier: CreationOptional<string | null>;
+  declare ghnServiceId: CreationOptional<number | null>;
+  declare ghnServiceTypeId: CreationOptional<number | null>;
+  declare shippingFeeQuoted: CreationOptional<number | null>;
+  declare shippingWeightGram: CreationOptional<number | null>;
   declare notes: CreationOptional<string | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
@@ -106,6 +112,11 @@ Order.init(
       defaultValue: 0,
       field: 'shipping_fee',
     },
+    shippingCarrier:    { type: DataTypes.STRING(20), allowNull: true, field: 'shipping_carrier' },
+    ghnServiceId:       { type: DataTypes.INTEGER, allowNull: true, field: 'ghn_service_id' },
+    ghnServiceTypeId:   { type: DataTypes.SMALLINT, allowNull: true, field: 'ghn_service_type_id' },
+    shippingFeeQuoted:  { type: DataTypes.DECIMAL(14, 2), allowNull: true, field: 'shipping_fee_quoted' },
+    shippingWeightGram: { type: DataTypes.INTEGER, allowNull: true, field: 'shipping_weight_gram' },
     shippingMethodId: {
       type: DataTypes.INTEGER,
       allowNull: true,

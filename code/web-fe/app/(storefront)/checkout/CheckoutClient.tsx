@@ -7,10 +7,12 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import type { Address, Cart, DiscountPreview, ShippingMethod } from '@/lib/types';
 import { cartApi, ordersApi, addressApi, discountsApi, shippingMethodsApi } from '@/lib/api';
-import { effectivePrice } from '@/lib/utils';
+import { effectivePrice, formatPrice } from '@/lib/utils';
 import { auth } from '@/lib/auth';
 import { guestSession } from '@/lib/guest';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import VietnamAddressSelect, { emptyVietnamAddress, type VietnamAddressValue } from '@/components/storefront/VietnamAddressSelect';
+import { ghnApi } from '@/lib/api';
 import Button from '@/components/ui/Button';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -22,7 +24,15 @@ function shippingZone(country?: string | null): 'domestic' | 'international' {
 }
 
 const emptyGuest = { name: '', email: '', phone: '' };
-const emptyAddress = { addressLine: '', ward: '', district: '', city: '', country: 'Vietnam' };
+const emptyAddress = {
+  addressLine: '', ward: '', district: '', city: '', country: 'Vietnam',
+  // M-13: mã địa giới GHN — thứ thực sự dùng để tính phí và tạo vận đơn.
+  ghnProvinceId: null as number | null,
+  ghnDistrictId: null as number | null,
+  ghnWardCode: null as string | null,
+};
+
+type ShippingQuote = Awaited<ReturnType<typeof ghnApi.quote>>['data'];
 
 export default function CheckoutClient() {
   const { t } = useT();
@@ -44,10 +54,10 @@ export default function CheckoutClient() {
   const [guest,         setGuest]         = useState(emptyGuest);
   const [guestAddress,  setGuestAddress]  = useState(emptyAddress);
   const [payMethod,     setPayMethod]     = useState<'cod' | 'stripe' | 'vnpay'>('cod');
-  // M-12 FX: cửa hàng niêm yết USD, VNPay chỉ nhận VND — hỏi backend số tiền thật
-  // để khách thấy đúng con số sẽ bị trừ, và để ẩn VNPay khi chưa cấu hình tỉ giá.
-  const [vnpQuote, setVnpQuote] = useState<{ amountVnd: number; rate: number; display: string } | null>(null);
-  const [vnpUnavailable, setVnpUnavailable] = useState(false);
+  // M-13: địa giới GHN + phí vận chuyển thật.
+  const [geo, setGeo] = useState<VietnamAddressValue>(emptyVietnamAddress);
+  const [quote, setQuote] = useState<ShippingQuote | null>(null);
+  const [quoting, setQuoting] = useState(false);
 
   useEffect(() => {
     const token = auth.getToken() ?? undefined;
@@ -102,8 +112,9 @@ export default function CheckoutClient() {
   function guestFormReady(): boolean {
     return Boolean(
       guest.name.trim() && guest.email.trim() && guest.phone.trim() &&
-      guestAddress.addressLine.trim() && guestAddress.ward.trim() &&
-      guestAddress.district.trim() && guestAddress.city.trim(),
+      guestAddress.addressLine.trim() &&
+      // Chỉ mã địa giới mới đủ để tính phí và tạo vận đơn; tên hiển thị là hệ quả.
+      Boolean(guestAddress.ghnDistrictId) && Boolean(guestAddress.ghnWardCode),
     );
   }
 
@@ -115,6 +126,11 @@ export default function CheckoutClient() {
         ...(isMember ? { shippingAddressId: addressId ?? undefined } : { shippingAddress: guestAddress, guest }),
         ...(discount?.code ? { discountCode: discount.code } : {}),
         ...(shippingMethodId ? { shippingMethodId } : {}),
+        // Gửi ĐIỂM ĐẾN, không gửi số tiền: server tự hỏi lại GHN rồi chốt phí,
+        // nếu không khách sửa payload là sửa được phí ship.
+        ...(geo.districtId && geo.wardCode
+          ? { ghnDistrictId: geo.districtId, ghnWardCode: geo.wardCode }
+          : {}),
         paymentMethod: payMethod,
       });
       // M-12: VNPay owns the payment page — hand the buyer over to it.
@@ -145,19 +161,29 @@ export default function CheckoutClient() {
   const shippingFee       = selectedMethod
     ? (selectedMethod.freeOver != null && subtotal >= Number(selectedMethod.freeOver) ? 0 : Number(selectedMethod.fee))
     : 0;
-  const total    = Math.max(0, subtotal - (discount?.discountAmount ?? 0) + shippingFee);
-  const canOrder = items.length > 0 && (isMember ? Boolean(addressId) : guestFormReady());
+  // M-13: phí lấy từ GHN qua backend; chỉ dùng bảng phí phẳng cũ khi chưa báo được giá.
+  const shippingFeeVnd = quote?.available ? quote.feeVnd : shippingFee;
+  const total    = Math.max(0, subtotal - (discount?.discountAmount ?? 0) + shippingFeeVnd);
+  // M-13: không cho đặt hàng khi chưa tính được phí — nếu không, khách sẽ
+  // chốt một tổng tiền mà cửa hàng chưa biết chi phí giao là bao nhiêu.
+  const canOrder =
+    items.length > 0 &&
+    (isMember ? Boolean(addressId) : guestFormReady()) &&
+    Boolean(quote?.available);
 
-  // Số tiền VND lấy từ backend (nguồn tỉ giá duy nhất), cập nhật mỗi khi tổng đơn đổi.
+  // Hỏi phí GHN mỗi khi khách chọn xong phường/xã hoặc giỏ hàng thay đổi.
+  // Cân nặng do server tự đọc từ CSDL nên client không gửi gì ngoài điểm đến.
   useEffect(() => {
-    if (total <= 0) { setVnpQuote(null); return; }
+    if (!geo.districtId || !geo.wardCode) { setQuote(null); return; }
     let stale = false;
-    ordersApi
-      .vnpayQuote(total)
-      .then(({ data }) => { if (!stale) { setVnpQuote(data); setVnpUnavailable(false); } })
-      .catch(() => { if (!stale) { setVnpQuote(null); setVnpUnavailable(true); } });
+    setQuoting(true);
+    ghnApi
+      .quote({ districtId: geo.districtId, wardCode: geo.wardCode })
+      .then(({ data }) => { if (!stale) setQuote(data); })
+      .catch(() => { if (!stale) setQuote(null); })
+      .finally(() => { if (!stale) setQuoting(false); });
     return () => { stale = true; };
-  }, [total]);
+  }, [geo.districtId, geo.wardCode, items.length, subtotal]);
 
   if (loading) return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-20 text-center text-text-muted">{t('common.loading')}</div>
@@ -226,14 +252,23 @@ export default function CheckoutClient() {
               <div className="space-y-2">
                 <input className={inputCls} placeholder={`${t('checkout.street')} *`} value={guestAddress.addressLine}
                   onChange={(e) => setGuestAddress((a) => ({ ...a, addressLine: e.target.value }))} />
-                <div className="grid grid-cols-3 gap-2">
-                  <input className={inputCls} placeholder={`${t('checkout.ward')} *`} value={guestAddress.ward}
-                    onChange={(e) => setGuestAddress((a) => ({ ...a, ward: e.target.value }))} />
-                  <input className={inputCls} placeholder={`${t('checkout.district')} *`} value={guestAddress.district}
-                    onChange={(e) => setGuestAddress((a) => ({ ...a, district: e.target.value }))} />
-                  <input className={inputCls} placeholder={`${t('checkout.city')} *`} value={guestAddress.city}
-                    onChange={(e) => setGuestAddress((a) => ({ ...a, city: e.target.value }))} />
-                </div>
+                {/* M-13: chọn từ dữ liệu địa giới GHN — tên text được điền theo
+                    lựa chọn để vẫn in được lên vận đơn và hiển thị cho khách. */}
+                <VietnamAddressSelect
+                  value={geo}
+                  onChange={(next) => {
+                    setGeo(next);
+                    setGuestAddress((a) => ({
+                      ...a,
+                      ward: next.wardName,
+                      district: next.districtName,
+                      city: next.provinceName,
+                      ghnProvinceId: next.provinceId,
+                      ghnDistrictId: next.districtId,
+                      ghnWardCode: next.wardCode,
+                    }));
+                  }}
+                />
               </div>
             </>
           )}
@@ -252,7 +287,7 @@ export default function CheckoutClient() {
                       <p className="font-medium text-text">{m.name}{m.estimatedDays ? <span className="font-normal text-text-faint"> · {m.estimatedDays}</span> : null}</p>
                       {m.description && <p className="text-text-muted">{m.description}</p>}
                     </div>
-                    <span className="text-sm font-medium text-text">{free ? t('checkout.free') : `$${Number(m.fee).toFixed(2)}`}</span>
+                    <span className="text-sm font-medium text-text">{free ? t('checkout.free') : `${formatPrice(Number(m.fee))}`}</span>
                   </label>
                 );
               })}
@@ -266,24 +301,11 @@ export default function CheckoutClient() {
               <span className="text-sm text-text">{t('checkout.cod')}</span>
             </label>
             {/* M-12: VNPay works for guests too — no account required.
-                Ẩn hẳn khi backend chưa cấu hình tỉ giá: thà không cho chọn còn hơn
-                để khách bấm vào rồi bị trừ sai số tiền. */}
-            {!vnpUnavailable && (
-              <label className={`flex flex-col gap-1 p-4 rounded-xl border cursor-pointer transition-colors ${payMethod === 'vnpay' ? 'border-brand bg-brand-faint' : 'border-border hover:border-brand-lighter'}`}>
-                <span className="flex items-center gap-3">
-                  <input type="radio" name="payMethod" checked={payMethod === 'vnpay'} onChange={() => setPayMethod('vnpay')} className="accent-brand" />
-                  <span className="text-sm text-text">{t('checkout.vnpay')}</span>
-                </span>
-                {vnpQuote && (
-                  <span className="pl-7 font-mono text-xs text-text-muted">
-                    {t('checkout.vnpayCharged', {
-                      amount: vnpQuote.display,
-                      rate: vnpQuote.rate.toLocaleString('vi-VN'),
-                    })}
-                  </span>
-                )}
-              </label>
-            )}
+                M-15: giá đã niêm yết VND nên số tiền gửi cổng đúng bằng tổng đơn. */}
+            <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-colors ${payMethod === 'vnpay' ? 'border-brand bg-brand-faint' : 'border-border hover:border-brand-lighter'}`}>
+              <input type="radio" name="payMethod" checked={payMethod === 'vnpay'} onChange={() => setPayMethod('vnpay')} className="accent-brand" />
+              <span className="text-sm text-text">{t('checkout.vnpay')}</span>
+            </label>
             {isMember && (
               <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-colors ${payMethod === 'stripe' ? 'border-brand bg-brand-faint' : 'border-border hover:border-brand-lighter'}`}>
                 <input type="radio" name="payMethod" checked={payMethod === 'stripe'} onChange={() => setPayMethod('stripe')} className="accent-brand" />
@@ -300,25 +322,44 @@ export default function CheckoutClient() {
             {items.map((item) => (
               <div key={item.id} className="flex justify-between text-text-muted">
                 <span>{item.variant?.product?.name} × {item.quantity}</span>
-                <span>${(effectivePrice(item.variant?.price, item.variant?.specialPrice, item.variant?.product?.campaignDiscountPercent) * item.quantity).toFixed(2)}</span>
+                <span>{formatPrice((effectivePrice(item.variant?.price, item.variant?.specialPrice, item.variant?.product?.campaignDiscountPercent) * item.quantity))}</span>
               </div>
             ))}
             <div className="flex justify-between text-text-muted">
-              <span>{t('cart.subtotal')}</span><span>${subtotal.toFixed(2)}</span>
+              <span>{t('cart.subtotal')}</span><span>{formatPrice(subtotal)}</span>
             </div>
             {discount && (
               <div className="flex justify-between text-success">
-                <span>{t('checkout.discount')} ({discount.code})</span><span>−${discount.discountAmount.toFixed(2)}</span>
+                <span>{t('checkout.discount')} ({discount.code})</span><span>−{formatPrice(discount.discountAmount)}</span>
               </div>
             )}
-            {selectedMethod && (
-              <div className="flex justify-between text-text-muted">
-                <span>{t('checkout.shipping')} ({selectedMethod.name})</span>
-                <span>{shippingFee === 0 ? t('checkout.free') : `$${shippingFee.toFixed(2)}`}</span>
-              </div>
+            {/* M-13: phí GHN thật khi đã chọn xong địa chỉ; nếu chưa, nói rõ vì sao. */}
+            <div className="flex justify-between text-text-muted">
+              <span>
+                {t('checkout.shipping')}
+                {quote?.available ? ` (${t('shipping.byGhn')})` : selectedMethod ? ` (${selectedMethod.name})` : ''}
+              </span>
+              <span>
+                {quoting
+                  ? t('shipping.calculating')
+                  : quote?.available
+                    ? (quote.freeShipping || quote.feeVnd === 0 ? t('shipping.free') : formatPrice(quote.feeVnd))
+                    : shippingFeeVnd === 0 ? t('checkout.free') : formatPrice(shippingFeeVnd)}
+              </span>
+            </div>
+            {!quoting && quote && !quote.available && (
+              <p className="text-xs text-error">
+                {quote.reason === 'district_not_served' ? t('shipping.notServed')
+                  : quote.reason === 'parcel_too_heavy' ? t('shipping.tooHeavy')
+                  : quote.reason === 'missing_destination' ? t('shipping.selectAddress')
+                  : t('shipping.unavailable')}
+              </p>
+            )}
+            {!quoting && !quote && (
+              <p className="text-xs text-text-faint">{t('shipping.selectAddress')}</p>
             )}
             <div className="pt-3 border-t border-border flex justify-between font-semibold text-text">
-              <span>{t('checkout.total')}</span><span>${total.toFixed(2)}</span>
+              <span>{t('checkout.total')}</span><span>{formatPrice(total)}</span>
             </div>
           </div>
 
