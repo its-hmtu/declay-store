@@ -19,6 +19,7 @@ import { createTagRouter } from '@/modules/tag/tag.route';
 import { createCampaignRouter } from '@/modules/campaign/campaign.route';
 import { createCollectionRouter } from '@/modules/collection/collection.route';
 import { createWebhookRouter } from '@/modules/shipment/shipment.route';
+import { createVnpayQuoteRouter } from '@/modules/payment-provider/vnpay/vnpay.quote.route';
 import { createSettingRouter } from '@/modules/site-setting/site-setting.route';
 import { createChatRouter } from '@/modules/chat/chat.route';
 import { createOrderRouter } from '@/modules/order/order.route';
@@ -74,6 +75,7 @@ export function createRoutes(): Router {
   router.use('/campaigns', createCampaignRouter());
   router.use('/collections', createCollectionRouter());
   router.use('/webhooks', createWebhookRouter());
+  router.use('/payments/vnpay', createVnpayQuoteRouter());
   router.use('/careers/cv', createCvUploadRouter());
   router.use('/settings', createSettingRouter());
   router.use('/chat', createChatRouter());

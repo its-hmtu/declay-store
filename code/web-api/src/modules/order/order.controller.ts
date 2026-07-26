@@ -19,6 +19,8 @@ export default class OrderController implements IOrderController {
     const result = await this.orderService.createFromCart({
       userId: user?.userId ?? null,
       guestSessionId: req.header('X-Guest-Session') ?? null,
+      // VNPay requires the payer IP; behind Render's proxy use the forwarded header.
+      ipAddr: (req.header('X-Forwarded-For') ?? '').split(',')[0].trim() || req.ip || '127.0.0.1',
       guest,
       shippingAddressId,
       shippingAddress,

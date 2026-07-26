@@ -18,6 +18,8 @@ import { effectiveUnitPrice } from '@/lib/pricing';
 import { initialOrderStatusFor } from './order.payment';
 import { normalizeGuestContact, generateGuestToken } from './order.guest';
 import { returnRejectionReason } from './order.returns';
+import { buildVnpayPaymentUrl } from '@/modules/payment-provider/vnpay/vnpay.provider';
+import { convertUsdToVnd, assertPayableVnd, FxConfigurationError } from '@/modules/payment-provider/vnpay/vnpay.fx';
 import { resolveCartOwner, ownerWhere } from '@/modules/cart/cart.owner';
 import CampaignService from '@/modules/campaign/campaign.service';
 import { queueOrderStatusEmail } from '@/lib/email-queue';
@@ -30,10 +32,12 @@ export default class OrderService implements IOrderService {
   private notificationService = new NotificationService();
   private campaignService = new CampaignService();
 
-  async createFromCart(data: ICreateOrderData): Promise<{ order: IOrder; clientSecret: string | null }> {
+  async createFromCart(data: ICreateOrderData): Promise<{ order: IOrder; clientSecret: string | null; paymentUrl?: string | null }> {
     const { userId, guestSessionId, guest, shippingAddressId, shippingAddress, notes, discountCode, shippingMethodId, paymentMethod } = data;
     const method = paymentMethod ?? 'stripe';
     const isCod = method === 'cod';
+    // M-12: VNPay redirects the buyer to its own page; no Stripe intent is created.
+    const isVnpay = method === 'vnpay';
 
     // M-01: the buyer is either a signed-in user or a guest session.
     const owner = resolveCartOwner(userId ?? null, guestSessionId ?? null);
@@ -124,7 +128,7 @@ export default class OrderService implements IOrderService {
     const totalAmount = computeOrderTotal(subtotal, discountAmount, shippingFee);
 
     // COD skips prepayment; only prepaid methods create a Stripe PaymentIntent.
-    const paymentIntent = isCod
+    const paymentIntent = isCod || isVnpay
       ? null
       : await stripe.paymentIntents.create({
           amount: Math.round(totalAmount * 100), // cents
@@ -164,14 +168,30 @@ export default class OrderService implements IOrderService {
         { transaction: t },
       );
 
+      // M-12 FX: VNPay chỉ nhận VND. Quy đổi MỘT LẦN ở đây rồi chốt lại,
+      // để IPN và đối soát về sau luôn dùng đúng con số đã hiển thị cho khách.
+      // Tỉ giá sai/thiếu -> ném lỗi, huỷ transaction, KHÔNG tạo đơn.
+      let chargedVnd: number | null = null;
+      if (isVnpay) {
+        try {
+          chargedVnd = assertPayableVnd(convertUsdToVnd(totalAmount, config.vnpay.usdToVnd));
+        } catch (err) {
+          if (err instanceof FxConfigurationError) throw httpError(503, err.message);
+          throw err;
+        }
+      }
+
       await Payment.create(
         {
           orderId: newOrder.id,
           stripePaymentIntentId: paymentIntent?.id ?? null,
           method,
-          provider: isCod ? 'cod' : 'stripe',
+          provider: isCod ? 'cod' : isVnpay ? 'vnpay' : 'stripe',
           amount: totalAmount,
           currency: 'usd',
+          chargedAmount: chargedVnd,
+          chargedCurrency: isVnpay ? 'VND' : null,
+          fxRate: isVnpay ? config.vnpay.usdToVnd : null,
           status: 'pending',
         },
         { transaction: t },
@@ -219,7 +239,21 @@ export default class OrderService implements IOrderService {
       });
     }
 
-    return { order: order.toJSON() as IOrder, clientSecret: paymentIntent?.client_secret ?? null };
+    // M-12: VNPay hands the buyer a redirect URL instead of a client secret.
+    // Số tiền lấy từ BẢN CHỐT vừa ghi, không quy đổi lần hai — URL gửi khách,
+    // DB và IPN vì thế luôn nói cùng một con số.
+    let paymentUrl: string | null = null;
+    if (isVnpay) {
+      const snapshot = await Payment.findOne({ where: { orderId: order.id }, order: [['id', 'DESC']] });
+      if (!snapshot?.chargedAmount) throw httpError(500, 'Missing VNPay amount snapshot');
+      paymentUrl = buildVnpayPaymentUrl({
+        orderId: order.id,
+        amountVnd: Number(snapshot.chargedAmount),
+        ipAddr: data.ipAddr ?? '127.0.0.1',
+      });
+    }
+
+    return { order: order.toJSON() as IOrder, clientSecret: paymentIntent?.client_secret ?? null, paymentUrl };
   }
 
   async listByUser(userId: number, page: number, limit: number): Promise<{ rows: IOrder[]; count: number }> {
@@ -304,6 +338,44 @@ export default class OrderService implements IOrderService {
     });
     if (!order) throw httpError(404, 'Order not found');
     return order.toJSON() as IOrder;
+  }
+
+  /** M-12: internal lookup for the VNPay IPN (no ownership check). */
+  async findByIdRaw(id: number): Promise<Order | null> {
+    return Order.findByPk(id);
+  }
+
+  /**
+   * M-12: settle an order paid through VNPay. Mirrors markAsPaid but keyed by order id,
+   * and idempotent — VNPay retries the IPN until it gets RspCode 00.
+   */
+  async markVnpayPaid(orderId: number): Promise<void> {
+    const transitioned = await sequelize.transaction(async (t) => {
+      const locked = await Order.findOne({ where: { id: orderId }, lock: t.LOCK.UPDATE, transaction: t });
+      if (!locked || locked.status !== 'pending_payment') return false;
+
+      if (locked.discountCodeId) await this.discountService.incrementUsage(locked.discountCodeId, t);
+
+      // Stock was already reserved at order creation (W-03) — do not decrement again.
+      if (locked.userId) {
+        const cart = await Cart.findOne({ where: { userId: locked.userId }, transaction: t });
+        if (cart) await CartItem.destroy({ where: { cartId: cart.id }, transaction: t });
+      }
+      await locked.update({ status: 'paid' }, { transaction: t });
+      return true;
+    });
+
+    if (!transitioned) return;
+
+    await queueOrderStatusEmail({ orderId, status: 'paid' });
+    await this.notificationService.notifyAdmins({
+      type: 'order_paid', title: `New paid order #${orderId}`,
+      body: 'Paid via VNPay and ready to prepare.', link: `/admin/orders/${orderId}`,
+    });
+    const paid = await Order.findByPk(orderId, { attributes: ['id', 'userId'] });
+    if (paid?.userId) await this.notificationService.notifyUser(paid.userId, {
+      type: 'order_status', title: `Payment received for order #${orderId}`, link: `/orders/${orderId}`,
+    });
   }
 
   async markAsPaid(stripePaymentIntentId: string): Promise<void> {

@@ -29,6 +29,7 @@ export interface IOrder {
 export interface ICreateOrderData {
   userId?: number | null;
   guestSessionId?: string | null;
+  ipAddr?: string | null;
   guest?: { name?: string; email?: string; phone?: string } | null;
   shippingAddressId?: number | null;
   shippingAddress?: {
@@ -38,12 +39,13 @@ export interface ICreateOrderData {
   notes?: string;
   discountCode?: string;
   shippingMethodId?: number;
-  paymentMethod?: 'cod' | 'stripe';
+  paymentMethod?: 'cod' | 'stripe' | 'vnpay';
 }
 
 export interface IOrderService {
-  createFromCart(data: ICreateOrderData): Promise<{ order: IOrder; clientSecret: string | null }>;
+  createFromCart(data: ICreateOrderData): Promise<{ order: IOrder; clientSecret: string | null; paymentUrl?: string | null }>;
   findByGuestToken(token: string): Promise<IOrder>;
+  markVnpayPaid(orderId: number): Promise<void>;
   returnOrder(orderId: number, reason: string): Promise<IOrder>;
   listByUser(userId: number, page: number, limit: number): Promise<{ rows: IOrder[]; count: number }>;
   findById(id: number, userId?: number): Promise<IOrder>;

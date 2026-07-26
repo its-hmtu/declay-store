@@ -295,7 +295,9 @@ export interface User {
 /* ── Checkout ──────────────────────────────────────────── */
 export interface CheckoutResult {
   order: Order;
-  clientSecret: string;
+  clientSecret: string | null;
+  /** M-12: present only for VNPay — redirect the buyer here. */
+  paymentUrl?: string | null;
 }
 
 /* ── Wishlist ──────────────────────────────────────────── */

@@ -17,7 +17,7 @@ export const createOrderSchema = z.object({
   notes: z.string().max(500).optional(),
   discountCode: z.string().min(3).max(50).optional(),
   shippingMethodId: z.number().int().positive().optional(),
-  paymentMethod: z.enum(['cod', 'stripe']).optional(),
+  paymentMethod: z.enum(['cod', 'stripe', 'vnpay']).optional(),
   guest: z.object({
     name: z.string().min(2).max(120),
     email: z.string().email().max(160),

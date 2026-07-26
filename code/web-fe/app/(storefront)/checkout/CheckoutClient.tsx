@@ -43,7 +43,11 @@ export default function CheckoutClient() {
   const [isMember,      setIsMember]      = useState(false);
   const [guest,         setGuest]         = useState(emptyGuest);
   const [guestAddress,  setGuestAddress]  = useState(emptyAddress);
-  const [payMethod,     setPayMethod]     = useState<'cod' | 'stripe'>('cod');
+  const [payMethod,     setPayMethod]     = useState<'cod' | 'stripe' | 'vnpay'>('cod');
+  // M-12 FX: cửa hàng niêm yết USD, VNPay chỉ nhận VND — hỏi backend số tiền thật
+  // để khách thấy đúng con số sẽ bị trừ, và để ẩn VNPay khi chưa cấu hình tỉ giá.
+  const [vnpQuote, setVnpQuote] = useState<{ amountVnd: number; rate: number; display: string } | null>(null);
+  const [vnpUnavailable, setVnpUnavailable] = useState(false);
 
   useEffect(() => {
     const token = auth.getToken() ?? undefined;
@@ -113,6 +117,12 @@ export default function CheckoutClient() {
         ...(shippingMethodId ? { shippingMethodId } : {}),
         paymentMethod: payMethod,
       });
+      // M-12: VNPay owns the payment page — hand the buyer over to it.
+      if (data.paymentUrl) {
+        toast.message(t('checkout.redirecting'));
+        window.location.href = data.paymentUrl;
+        return;
+      }
       // COD has no payment step — the order is already being prepared.
       if (!data.clientSecret) {
         toast.success(t('checkout.orderPlaced'));
@@ -128,10 +138,6 @@ export default function CheckoutClient() {
     }
   }
 
-  if (loading) return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-20 text-center text-text-muted">{t('common.loading')}</div>
-  );
-
   const items    = cart?.items ?? [];
   const subtotal = items.reduce((s, i) => s + effectivePrice(i.variant?.price, i.variant?.specialPrice, i.variant?.product?.campaignDiscountPercent) * i.quantity, 0);
   const applicableMethods = shippingMethods.filter((m) => m.zone === 'all' || m.zone === zone);
@@ -141,6 +147,22 @@ export default function CheckoutClient() {
     : 0;
   const total    = Math.max(0, subtotal - (discount?.discountAmount ?? 0) + shippingFee);
   const canOrder = items.length > 0 && (isMember ? Boolean(addressId) : guestFormReady());
+
+  // Số tiền VND lấy từ backend (nguồn tỉ giá duy nhất), cập nhật mỗi khi tổng đơn đổi.
+  useEffect(() => {
+    if (total <= 0) { setVnpQuote(null); return; }
+    let stale = false;
+    ordersApi
+      .vnpayQuote(total)
+      .then(({ data }) => { if (!stale) { setVnpQuote(data); setVnpUnavailable(false); } })
+      .catch(() => { if (!stale) { setVnpQuote(null); setVnpUnavailable(true); } });
+    return () => { stale = true; };
+  }, [total]);
+
+  if (loading) return (
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-20 text-center text-text-muted">{t('common.loading')}</div>
+  );
+
 
   if (clientSecret && orderId) {
     return (
@@ -243,6 +265,25 @@ export default function CheckoutClient() {
               <input type="radio" name="payMethod" checked={payMethod === 'cod'} onChange={() => setPayMethod('cod')} className="accent-brand" />
               <span className="text-sm text-text">{t('checkout.cod')}</span>
             </label>
+            {/* M-12: VNPay works for guests too — no account required.
+                Ẩn hẳn khi backend chưa cấu hình tỉ giá: thà không cho chọn còn hơn
+                để khách bấm vào rồi bị trừ sai số tiền. */}
+            {!vnpUnavailable && (
+              <label className={`flex flex-col gap-1 p-4 rounded-xl border cursor-pointer transition-colors ${payMethod === 'vnpay' ? 'border-brand bg-brand-faint' : 'border-border hover:border-brand-lighter'}`}>
+                <span className="flex items-center gap-3">
+                  <input type="radio" name="payMethod" checked={payMethod === 'vnpay'} onChange={() => setPayMethod('vnpay')} className="accent-brand" />
+                  <span className="text-sm text-text">{t('checkout.vnpay')}</span>
+                </span>
+                {vnpQuote && (
+                  <span className="pl-7 font-mono text-xs text-text-muted">
+                    {t('checkout.vnpayCharged', {
+                      amount: vnpQuote.display,
+                      rate: vnpQuote.rate.toLocaleString('vi-VN'),
+                    })}
+                  </span>
+                )}
+              </label>
+            )}
             {isMember && (
               <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-colors ${payMethod === 'stripe' ? 'border-brand bg-brand-faint' : 'border-border hover:border-brand-lighter'}`}>
                 <input type="radio" name="payMethod" checked={payMethod === 'stripe'} onChange={() => setPayMethod('stripe')} className="accent-brand" />

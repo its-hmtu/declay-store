@@ -177,8 +177,21 @@ export const ordersApi = {
     guest?: { name: string; email: string; phone: string };
     discountCode?: string;
     shippingMethodId?: number;
-    paymentMethod?: 'cod' | 'stripe';
+    paymentMethod?: 'cod' | 'stripe' | 'vnpay';
   }) => api.post<import('./types').CheckoutResult>('/orders/checkout', payload, { token }),
+  /** M-12 FX: hỏi backend số tiền VND sẽ bị trừ (tỉ giá chỉ có ở backend). */
+  vnpayQuote: (amountUsd: number) =>
+    api.get<{ amountUsd: number; rate: number; amountVnd: number; display: string }>(
+      `/payments/vnpay/quote?amount=${amountUsd.toFixed(2)}`,
+    ),
+  /** M-12: confirm a VNPay return before showing the buyer a success page. */
+  verifyVnpayReturn: (query: string) =>
+    api.get<{
+      valid: boolean; orderId: number | null; paid: boolean;
+      orderStatus: string | null; responseCode: string | null;
+    }>(
+      `/webhooks/vnpay/verify-return${query}`,
+    ),
   lookupGuest: (token: string) =>
     api.get<import('./types').Order>(`/orders/lookup?token=${encodeURIComponent(token)}`),
 };

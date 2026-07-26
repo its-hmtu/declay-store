@@ -19,6 +19,10 @@ export class Payment extends Model<InferAttributes<Payment>, InferCreationAttrib
   declare provider: CreationOptional<string | null>;
   declare providerRef: CreationOptional<string | null>;
   // M-07: COD cash reconciliation (BR-11).
+  // M-12 FX: số tiền/tỉ giá đã chốt khi tạo đơn (VNPay chỉ nhận VND).
+  declare chargedAmount: CreationOptional<number | null>;
+  declare chargedCurrency: CreationOptional<string | null>;
+  declare fxRate: CreationOptional<number | null>;
   declare reconciledAt: CreationOptional<Date | null>;
   declare reconciledAmount: CreationOptional<number | null>;
   declare reconciledBy: CreationOptional<number | null>;
@@ -38,6 +42,9 @@ Payment.init(
     method: { type: DataTypes.STRING(30), allowNull: true },
     provider: { type: DataTypes.STRING(30), allowNull: true },
     providerRef: { type: DataTypes.STRING(255), allowNull: true, field: 'provider_ref' },
+    chargedAmount: { type: DataTypes.DECIMAL(18, 2), allowNull: true, field: 'charged_amount' },
+    chargedCurrency: { type: DataTypes.STRING(3), allowNull: true, field: 'charged_currency' },
+    fxRate: { type: DataTypes.DECIMAL(18, 6), allowNull: true, field: 'fx_rate' },
     reconciledAt: { type: DataTypes.DATE, allowNull: true, field: 'reconciled_at' },
     reconciledAmount: { type: DataTypes.DECIMAL(10, 2), allowNull: true, field: 'reconciled_amount' },
     reconciledBy: { type: DataTypes.INTEGER, allowNull: true, field: 'reconciled_by' },

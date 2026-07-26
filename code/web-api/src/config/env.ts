@@ -38,6 +38,17 @@ const config = {
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
     publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
   },
+  vnpay: {
+    tmnCode: process.env.VNPAY_TMN_CODE || '',
+    hashSecret: process.env.VNPAY_HASH_SECRET || '',
+    payUrl: process.env.VNPAY_PAY_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
+    returnUrl: process.env.VNPAY_RETURN_URL || '',   // trang FE hiển thị kết quả
+    // VNPay chỉ nhận VND, cửa hàng niêm yết USD -> BẮT BUỘC có tỉ giá.
+    // Không đặt mặc định: tỉ giá sai/thiếu phải làm đơn hàng thất bại ngay,
+    // thay vì âm thầm gửi $350 sang cổng thành 350đ.
+    usdToVnd: Number(process.env.VNPAY_USD_TO_VND ?? process.env.VNPAY_CURRENCY_RATE ?? 0),
+    expireMinutes: Number(process.env.VNPAY_EXPIRE_MINUTES) || 15,
+  },
   easyship: {
     apiKey: process.env.EASYSHIP_API_KEY || '',
     webhookSecret: process.env.EASYSHIP_WEBHOOK_SECRET || '',
