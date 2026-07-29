@@ -13,6 +13,7 @@ export function createOrderRouter(): Router {
   // M-01: guests can check out and track an order by token; everything else needs a login.
   router.post('/checkout', optionalAuth, validate(createOrderSchema), controller.createCheckout);
   router.get('/lookup', controller.lookupGuestOrder);
+  router.get('/summary', controller.guestOrderSummary);
 
   router.use(routeProtect);
 
@@ -30,7 +31,7 @@ export function createAdminOrderRouter(): Router {
   router.use(adminProtect, requireRole('admin', 'super_admin'));
 
   router.get('/', controller.adminListOrders);
-  router.get('/:id', validate(orderIdSchema, 'params'), controller.getOrder);
+  router.get('/:id', validate(orderIdSchema, 'params'), controller.adminGetOrder);
   router.put('/:id/status', validate(orderIdSchema, 'params'), validate(updateOrderStatusSchema), controller.adminUpdateStatus);
   router.post('/:id/return', validate(orderIdSchema, 'params'), validate(returnOrderSchema), controller.adminReturnOrder);
 

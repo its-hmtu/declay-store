@@ -33,3 +33,16 @@ export function formatPrice(amount: number | string | null | undefined): string 
   if (value == null || !Number.isFinite(value)) return '—';
   return `${Math.round(value).toLocaleString('vi-VN')} ₫`;
 }
+
+/**
+ * M-16: nhãn hiển thị của đơn hàng.
+ * Đơn tạo trước khi có mã (dữ liệu cũ) mới rơi về id — không để trang trống.
+ */
+export function orderLabel(order: { orderCode?: string | null; id: number }): string {
+  return order.orderCode || `#${order.id}`;
+}
+
+/** Trang tra cứu vận đơn công khai của GHN. */
+export function ghnTrackingUrl(trackingNumber: string): string {
+  return `https://donhang.ghn.vn/?order_code=${encodeURIComponent(trackingNumber)}`;
+}

@@ -20,7 +20,10 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "ghn:sync": "npm run build && node scripts/ghn-sync.js",
     "vnpay:diagnose": "node scripts/vnpay-diagnose.js",
-    "ghn:check": "node scripts/ghn-check.js"
+    "ghn:check": "node scripts/ghn-check.js",
+    "address:check": "node scripts/address-check.js",
+    "ghn:probe": "node scripts/ghn-fee-probe.js",
+    "ghn:webhook-test": "node scripts/ghn-webhook-test.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",

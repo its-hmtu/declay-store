@@ -32,6 +32,9 @@ export function createAdminShipmentRouter(): Router {
   router.get('/', validate(orderIdParamSchema, 'params'), controller.adminGet);
   router.post('/', validate(orderIdParamSchema, 'params'), validate(createShipmentSchema), controller.adminCreate);
   router.post('/provider', validate(orderIdParamSchema, 'params'), controller.adminCreateViaProvider);
+  // M-13d: vận chuyển nội địa qua GHN.
+  router.post('/ghn', validate(orderIdParamSchema, 'params'), controller.adminCreateGhn);
+  router.post('/ghn/sync', validate(orderIdParamSchema, 'params'), controller.adminSyncGhn);
   router.post('/simulate', validate(orderIdParamSchema, 'params'), validate(simulateTrackingSchema), controller.adminSimulate);
   router.put('/', validate(orderIdParamSchema, 'params'), validate(updateShipmentSchema), controller.adminUpdate);
   router.delete('/', validate(orderIdParamSchema, 'params'), controller.adminRemove);

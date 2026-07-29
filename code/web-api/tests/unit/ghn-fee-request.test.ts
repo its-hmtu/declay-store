@@ -51,10 +51,12 @@ describe('buildFeeRequestBody (M-13, lỗi thứ tự spread)', () => {
 });
 
 describe('warnIfSuspiciousBaseUrl', () => {
-  it('cảnh báo khi còn trỏ vào gateway dev đã ngừng hoạt động', () => {
-    expect(warnIfSuspiciousBaseUrl(GHN_DEV_BASE_URL)).toContain('ngừng phản hồi');
+  it('nhắc dev URL là STAGING, cần token staging — không khẳng định sống/chết', () => {
+    const hint = warnIfSuspiciousBaseUrl(GHN_DEV_BASE_URL);
+    expect(hint).toContain('staging');
+    expect(hint).not.toContain('ngừng'); // không võ đoán gateway đã chết
   });
-  it('URL production là bình thường — tính phí vốn là thao tác chỉ đọc', () => {
+  it('URL production là bình thường, không cảnh báo', () => {
     expect(warnIfSuspiciousBaseUrl(GHN_PROD_BASE_URL)).toBeNull();
   });
   it('cảnh báo khi URL không thuộc tên miền ghn.vn', () => {

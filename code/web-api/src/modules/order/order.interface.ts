@@ -13,6 +13,8 @@ export interface IOrderItem {
 
 export interface IOrder {
   id: number;
+  /** M-16: mã hiển thị cho khách (DC-YYMMDD-XXXX). Giao diện dùng mã này, không dùng id. */
+  orderCode: string;
   userId: number;
   status: OrderStatus;
   totalAmount: number;
@@ -33,6 +35,7 @@ export interface ICreateOrderData {
   /** M-13: điểm đến GHN để chốt phí vận chuyển khi tạo đơn. */
   ghnDistrictId?: number | null;
   ghnWardCode?: string | null;
+  ghnServiceId?: number | null;
   guest?: { name?: string; email?: string; phone?: string } | null;
   shippingAddressId?: number | null;
   shippingAddress?: {
@@ -49,6 +52,8 @@ export interface ICreateOrderData {
 export interface IOrderService {
   createFromCart(data: ICreateOrderData): Promise<{ order: IOrder; clientSecret: string | null; paymentUrl?: string | null }>;
   findByGuestToken(token: string): Promise<IOrder>;
+  getPublicSummaryByGuestToken(token: string): Promise<unknown>;
+  adminGetById(orderId: number): Promise<IOrder>;
   markVnpayPaid(orderId: number): Promise<void>;
   returnOrder(orderId: number, reason: string): Promise<IOrder>;
   listByUser(userId: number, page: number, limit: number): Promise<{ rows: IOrder[]; count: number }>;

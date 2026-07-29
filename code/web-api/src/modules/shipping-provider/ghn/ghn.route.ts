@@ -7,6 +7,7 @@ import { Op } from 'sequelize';
 import ProductVariant from '@/modules/product-variant/product-variant.entity';
 import { optionalAuth } from '@/middlewares/auth.middleware';
 import { adminProtect, requireRole } from '@/middlewares/admin.middleware';
+import config from '@/config/env';
 
 /**
  * M-13: dữ liệu địa giới + báo phí.
@@ -84,7 +85,57 @@ export function createGhnRouter(): Router {
     }, 0);
 
     const quote = await service.quote({ districtId, wardCode, items, subtotalVnd });
-    res.json({ success: true, data: quote, message: 'Shipping quote' });
+    // debugMessage (thông điệp lỗi gốc từ GHN) chỉ lộ ngoài production để hỗ trợ
+    // gỡ rối; ở production giấu đi để không phơi chi tiết nội bộ cho khách.
+    const safe = config.server.env === 'production'
+      ? (({ debugMessage, ...rest }) => rest)(quote)
+      : quote;
+    res.json({ success: true, data: safe, message: 'Shipping quote' });
+  }));
+
+  // M-22: liệt kê các phương thức GHN (nhanh/chuẩn/tiết kiệm) cho giỏ hiện tại.
+  router.post('/quote-options', optionalAuth, asyncHandler(async (req: Request, res: Response) => {
+    const districtId = Number(req.body?.districtId) || null;
+    const wardCode = typeof req.body?.wardCode === 'string' ? req.body.wardCode : null;
+
+    const owner = resolveCartOwner(
+      (req as Request & { user?: { id: number } }).user?.id,
+      req.header('X-Guest-Session') ?? undefined,
+    );
+    if (!owner) {
+      res.status(400).json({ success: false, message: 'Không xác định được giỏ hàng' });
+      return;
+    }
+    const cart = await cartService.getCart(owner);
+
+    // Cân nặng lấy từ CSDL, không tin client — giống endpoint /quote.
+    const variantIds = (cart.items ?? []).map((item) => item.variantId);
+    const variants = variantIds.length
+      ? await ProductVariant.findAll({ where: { id: { [Op.in]: variantIds } } })
+      : [];
+    const byId = new Map(variants.map((v) => [v.id, v]));
+
+    const items = (cart.items ?? []).map((item) => {
+      const v = byId.get(item.variantId);
+      return {
+        quantity: item.quantity,
+        weightGram: v?.weightGram ?? null,
+        lengthCm: v?.lengthCm ?? null,
+        widthCm: v?.widthCm ?? null,
+        heightCm: v?.heightCm ?? null,
+      };
+    });
+    const subtotalVnd = (cart.items ?? []).reduce((sum, item) => {
+      const v = byId.get(item.variantId);
+      const price = Number(v?.specialPrice ?? v?.price ?? 0);
+      return sum + price * item.quantity;
+    }, 0);
+
+    const result = await service.quoteOptions({ districtId, wardCode, items, subtotalVnd });
+    const safe = config.server.env === 'production'
+      ? (({ debugMessage, ...rest }) => rest)(result)
+      : result;
+    res.json({ success: true, data: safe, message: 'Shipping options' });
   }));
 
   return router;

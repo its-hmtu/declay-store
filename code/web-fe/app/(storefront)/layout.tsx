@@ -6,6 +6,8 @@ import { Toaster } from 'sonner';
 import { categoriesApi, collectionsApi } from '@/lib/api';
 import { isEnabled } from '@/lib/features';
 import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
+import { CartProvider } from '@/lib/cart/CartProvider';
+import CartDrawer from '@/components/storefront/CartDrawer';
 import { getServerLocale } from '@/lib/i18n/server';
 
 export const metadata: Metadata = {
@@ -24,11 +26,16 @@ export default async function StorefrontLayout({ children }: { children: React.R
 
   return (
     <LocaleProvider initialLocale={locale}>
-      <Header categories={categories} collections={collections} />
-      <main className="flex-1">{children}</main>
-      <Footer />
-      {isEnabled('chat') && <ChatWidget />}
-      <Toaster richColors position="bottom-right" />
+      {/* M-20: một nguồn sự thật cho giỏ hàng — badge, ngăn kéo và trang giỏ
+          hàng cùng đọc từ đây nên không bao giờ lệch nhau. */}
+      <CartProvider>
+        <Header categories={categories} collections={collections} />
+        <main className="flex-1">{children}</main>
+        <Footer />
+        <CartDrawer />
+        {isEnabled('chat') && <ChatWidget />}
+        <Toaster richColors position="bottom-right" />
+      </CartProvider>
     </LocaleProvider>
   );
 }

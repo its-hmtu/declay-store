@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Badge from '@/components/ui/Badge';
 import { formatPrice } from '@/lib/utils';
+import { orderLabel } from '@/lib/utils';
 
 const REVENUE_STATUSES = ['paid', 'processing', 'shipped', 'delivered'];
 
@@ -94,7 +95,7 @@ export default function DashboardClient() {
             <ul className="divide-y divide-border">
               {stats.recent.map((o) => (
                 <li key={o.id} className="flex items-center justify-between py-2.5 text-sm">
-                  <span className="font-medium text-text">#{o.id}</span>
+                  <span className="font-mono text-xs font-medium text-text">{orderLabel(o)}</span>
                   <Badge variant={STATUS_VARIANT[o.status] ?? 'default'}>{o.status.replace('_', ' ')}</Badge>
                   <span className="text-text-muted">{formatPrice(parseFloat(o.totalAmount))}</span>
                 </li>

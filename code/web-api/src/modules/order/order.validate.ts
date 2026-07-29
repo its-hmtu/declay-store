@@ -24,6 +24,8 @@ export const createOrderSchema = z.object({
   // Điểm đến để hỏi phí GHN. Cố ý KHÔNG nhận số tiền từ client.
   ghnDistrictId: z.number().int().positive().optional(),
   ghnWardCode: z.string().max(20).optional(),
+  // M-22: dịch vụ GHN khách chọn (nhanh/chuẩn/tiết kiệm).
+  ghnServiceId: z.number().int().positive().optional(),
   paymentMethod: z.enum(['cod', 'stripe', 'vnpay']).optional(),
   guest: z.object({
     name: z.string().min(2).max(120),

@@ -36,6 +36,17 @@ export default class OrderShipmentController implements IOrderShipmentController
     sendSuccess(res, shipment, 'Shipment created via provider', 201);
   });
 
+  /** M-13d: tạo vận đơn GHN. ⚠️ Phát sinh cước thật khi GHN_ALLOW_WRITE=true. */
+  adminCreateGhn = asyncHandler(async (req: Request, res: Response) => {
+    const shipment = await this.shipmentService.createGhnShipment(Number(req.params.orderId));
+    sendSuccess(res, shipment, 'Đã tạo vận đơn GHN', 201);
+  });
+
+  adminSyncGhn = asyncHandler(async (req: Request, res: Response) => {
+    const result = await this.shipmentService.syncFromGhn(Number(req.params.orderId));
+    sendSuccess(res, result, result.synced ? `Đã đồng bộ: ${result.ghnStatus}` : 'GHN chưa có trạng thái mới');
+  });
+
   adminSimulate = asyncHandler(async (req: Request, res: Response) => {
     const shipment = await this.shipmentService.simulate(Number(req.params.orderId), req.body.status);
     sendSuccess(res, shipment, 'Tracking simulated');

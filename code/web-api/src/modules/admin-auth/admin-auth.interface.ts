@@ -7,11 +7,13 @@ export interface IAdminLoginData {
 }
 
 export interface IAdminAuthService {
-  login(data: IAdminLoginData): Promise<{ access_token: string; admin: object }>;
+  login(data: IAdminLoginData): Promise<{ access_token: string; refresh_token: string; admin: object }>;
+  refresh(refreshToken: string): Promise<{ access_token: string; refresh_token: string }>;
   getAdminInfo(adminId: number): Promise<object>;
 }
 
 export interface IAdminAuthController {
   login: RequestHandler;
+  refresh: RequestHandler;
   getAdminInfo: RequestHandler;
 }

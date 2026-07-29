@@ -1,8 +1,9 @@
 import Stripe from 'stripe';
-import { Op, literal } from 'sequelize';
+import User from '@/modules/user/user.entity';
+import { Op, literal, type Transaction } from 'sequelize';
 import { sequelize } from '@/config/sequelize';
 import config from '@/config/env';
-import { Order, OrderItem, type OrderStatus } from './order.entity';
+import { Order, OrderItem, type OrderStatus, OrderShipment } from './order.entity';
 import { Cart, CartItem } from '@/modules/cart/cart.entity';
 import ProductVariant from '@/modules/product-variant/product-variant.entity';
 import Product from '@/modules/product/product.entity';
@@ -20,10 +21,12 @@ import { normalizeGuestContact, generateGuestToken } from './order.guest';
 import { returnRejectionReason } from './order.returns';
 import { buildVnpayPaymentUrl } from '@/modules/payment-provider/vnpay/vnpay.provider';
 import GhnService from '@/modules/shipping-provider/ghn/ghn.service';
+import { generateOrderCode } from './order.code';
+import { maskEmail, formatAddressLine, countItems } from './order.summary';
 import { normalizeVnd, assertPayableVnd, FxConfigurationError } from '@/modules/payment-provider/vnpay/vnpay.fx';
 import { resolveCartOwner, ownerWhere } from '@/modules/cart/cart.owner';
 import CampaignService from '@/modules/campaign/campaign.service';
-import { queueOrderStatusEmail } from '@/lib/email-queue';
+import { queueOrderStatusEmail, queueOrderConfirmationEmail } from '@/lib/email-queue';
 import type { IOrder, IOrderService, ICreateOrderData } from './order.interface';
 
 const stripe = new Stripe(config.stripe.secretKey);
@@ -115,6 +118,7 @@ export default class OrderService implements IOrderService {
     let shippingFee = 0;
     let resolvedShippingMethodId: number | null = null;
     let ghnWeightGram: number | null = null;
+    let ghnServiceId: number | null = null;
 
     const destinationDistrictId = data.ghnDistrictId ?? shippingAddress?.ghnDistrictId ?? null;
     const destinationWardCode = data.ghnWardCode ?? shippingAddress?.ghnWardCode ?? null;
@@ -131,6 +135,7 @@ export default class OrderService implements IOrderService {
           heightCm: item.variant?.heightCm ?? null,
         })),
         subtotalVnd: subtotal,
+        serviceId: data.ghnServiceId ?? null,
       });
 
       // Không báo được phí thì KHÔNG tạo đơn: thà chặn còn hơn nhận một đơn
@@ -145,6 +150,7 @@ export default class OrderService implements IOrderService {
       }
       shippingFee = quote.feeVnd;
       ghnWeightGram = quote.weightGram;
+      ghnServiceId = quote.serviceId;
     } else if (shippingMethodId) {
       const method = await ShippingMethod.findByPk(shippingMethodId);
       if (!method || !method.isActive) throw httpError(400, 'Selected shipping method is not available');
@@ -189,6 +195,13 @@ export default class OrderService implements IOrderService {
           guestToken: isGuest ? generateGuestToken() : null,
           status: initialOrderStatusFor(method),
           subtotal,
+          // M-16: mã hiển thị, sinh ngay khi tạo đơn. Chỉ số 4 ký tự ngẫu nhiên
+          // nên xác suất trùng trong cùng một ngày rất thấp; ràng buộc UNIQUE ở
+          // CSDL là chốt chặn cuối, và createFromCart được bọc trong transaction.
+          orderCode: generateOrderCode(),
+          // M-20: nhớ giỏ để xoá đúng giỏ đó khi thanh toán thành công.
+          // Giỏ khách vãng lai gắn với session, không tra ngược được từ đơn.
+          cartId: cart.id,
           shippingFee,
           shippingMethodId: resolvedShippingMethodId,
           // Chốt lại thông tin vận chuyển: biểu phí GHN đổi theo thời gian,
@@ -198,6 +211,8 @@ export default class OrderService implements IOrderService {
                 shippingCarrier: 'ghn',
                 shippingFeeQuoted: shippingFee,
                 shippingWeightGram: ghnWeightGram,
+                // M-22: lưu dịch vụ ĐÃ CHỌN để lúc tạo vận đơn dùng đúng nó.
+                ghnServiceId: ghnServiceId,
                 ghnServiceTypeId: config.ghn.serviceTypeId,
               }
             : {}),
@@ -275,7 +290,10 @@ export default class OrderService implements IOrderService {
     }
 
     // COD has no payment webhook — notify admins of the new order to prepare/ship.
+    // M-17: COD không có bước thanh toán nên gửi xác nhận ngay khi đặt.
+    // Khách vãng lai chỉ có email này làm bằng chứng đơn hàng.
     if (isCod) {
+      await queueOrderConfirmationEmail(order.id);
       await this.notificationService.notifyAdmins({
         type: 'new_order', title: `New COD order #${order.id}`,
         body: `Total ${totalAmount}. Please prepare and ship.`, link: '/admin/orders',
@@ -320,6 +338,24 @@ export default class OrderService implements IOrderService {
       include: [{ model: OrderItem, as: 'items' }],
     });
 
+    if (!order) throw httpError(404, 'Order not found');
+    return order.toJSON() as IOrder;
+  }
+
+  /**
+   * M-23: admin xem CHI TIẾT một đơn — không scope theo user (admin thấy mọi
+   * đơn). Trước đây admin dùng chung findById(id, userId) của khách, mà userId
+   * của admin không khớp -> getUserId ném 401 -> FE xoá token admin -> đăng
+   * xuất. Đây là handler riêng, kèm đủ quan hệ để trang chi tiết hiển thị.
+   */
+  async adminGetById(orderId: number): Promise<IOrder> {
+    const order = await Order.findByPk(orderId, {
+      include: [
+        { model: OrderItem, as: 'items', include: [{ model: ProductVariant, as: 'variant' }] },
+        { model: Address, as: 'shippingAddress' },
+        { model: OrderShipment, as: 'shipment' },
+      ],
+    });
     if (!order) throw httpError(404, 'Order not found');
     return order.toJSON() as IOrder;
   }
@@ -383,6 +419,107 @@ export default class OrderService implements IOrderService {
     return order.toJSON() as IOrder;
   }
 
+  /**
+   * M-17/M-19: tóm tắt đơn để hiển thị trên trang cảm ơn.
+   *
+   * Chỉ gọi sau khi đã xác thực quyền xem: chữ ký VNPay hợp lệ, hoặc token đơn
+   * hàng của khách vãng lai. Email được CHE bớt — đủ để khách nhận ra địa chỉ
+   * của mình mà không phơi nguyên ra ngoài.
+   */
+  async getPublicSummary(orderId: number) {
+    const order = await Order.findByPk(orderId, {
+      include: [
+        { model: OrderItem, as: 'items' },
+        { model: OrderShipment, as: 'shipment' },
+        { model: Address, as: 'shippingAddress' },
+        { model: User, as: 'user', attributes: ['email'] },
+      ],
+    });
+    if (!order) return null;
+
+    const anyOrder = order as unknown as {
+      items?: { productNameAtPurchase: string; variantNameAtPurchase: string | null; quantity: number; priceAtPurchase: number }[];
+      shipment?: { trackingNumber: string | null; carrier: string | null; estimatedDeliveryAt: Date | null } | null;
+      shippingAddress?: {
+        receiverName: string; receiverPhone: string;
+        addressLine: string; addressLine2: string | null;
+        ward: string | null; district: string | null; city: string | null;
+      } | null;
+      user?: { email?: string } | null;
+    };
+
+    const items = (anyOrder.items ?? []).map((i) => ({
+      productName: i.productNameAtPurchase,
+      variantName: i.variantNameAtPurchase,
+      quantity: i.quantity,
+      unitPrice: Number(i.priceAtPurchase),
+    }));
+    const address = anyOrder.shippingAddress;
+
+    // Order chưa có quan hệ tới ShippingMethod nên đọc riêng — include một model
+    // chưa khai báo quan hệ sẽ ném lỗi lúc chạy mà TypeScript không bắt được.
+    const shippingMethodName = order.shippingMethodId
+      ? (await ShippingMethod.findByPk(order.shippingMethodId, { attributes: ['name'] }))?.name ?? null
+      : null;
+
+    return {
+      orderCode: order.orderCode,
+      status: order.status,
+      orderDate: order.createdAt.toISOString(),
+      /** Email đã che — dùng cho câu "đã gửi xác nhận tới ...". */
+      maskedEmail: maskEmail(anyOrder.user?.email ?? order.guestEmail),
+      items,
+      itemCount: countItems(items),
+      subtotal: Number(order.subtotal),
+      shippingFee: Number(order.shippingFee),
+      discountAmount: Number(order.discountAmount),
+      totalAmount: Number(order.totalAmount),
+      shippingAddress: address
+        ? {
+            receiverName: address.receiverName,
+            line: formatAddressLine(address),
+          }
+        : null,
+      shippingMethodName: shippingMethodName
+        ?? (anyOrder.shipment?.carrier ? `Giao bởi ${anyOrder.shipment.carrier}` : null),
+      estimatedDeliveryAt: anyOrder.shipment?.estimatedDeliveryAt
+        ? anyOrder.shipment.estimatedDeliveryAt.toISOString()
+        : null,
+      trackingNumber: anyOrder.shipment?.trackingNumber ?? null,
+      carrier: anyOrder.shipment?.carrier ?? null,
+      isGuest: order.userId == null,
+    };
+  }
+
+  /**
+   * M-19: tóm tắt đơn cho khách vãng lai, tra bằng token trong link.
+   * Token là chuỗi 48 ký tự hex sinh ngẫu nhiên — nó chính là giấy thông hành.
+   */
+  async getPublicSummaryByGuestToken(token: string) {
+    if (!token || token.length < 16) return null;
+    const order = await Order.findOne({ where: { guestToken: token }, attributes: ['id'] });
+    if (!order) return null;
+    return this.getPublicSummary(order.id);
+  }
+
+  /**
+   * M-20: dọn giỏ hàng đã sinh ra đơn, sau khi thanh toán thành công.
+   *
+   * Ưu tiên `cartId` đã chốt trên đơn — đây là cách DUY NHẤT tìm được giỏ của
+   * khách vãng lai. Đơn cũ (trước migration 025) không có cartId nên vẫn dùng
+   * đường cũ theo userId.
+   */
+  private async clearCartForOrder(order: Order, t: Transaction): Promise<void> {
+    if (order.cartId) {
+      await CartItem.destroy({ where: { cartId: order.cartId }, transaction: t });
+      return;
+    }
+    if (order.userId) {
+      const cart = await Cart.findOne({ where: { userId: order.userId }, transaction: t });
+      if (cart) await CartItem.destroy({ where: { cartId: cart.id }, transaction: t });
+    }
+  }
+
   /** M-12: internal lookup for the VNPay IPN (no ownership check). */
   async findByIdRaw(id: number): Promise<Order | null> {
     return Order.findByPk(id);
@@ -400,10 +537,10 @@ export default class OrderService implements IOrderService {
       if (locked.discountCodeId) await this.discountService.incrementUsage(locked.discountCodeId, t);
 
       // Stock was already reserved at order creation (W-03) — do not decrement again.
-      if (locked.userId) {
-        const cart = await Cart.findOne({ where: { userId: locked.userId }, transaction: t });
-        if (cart) await CartItem.destroy({ where: { cartId: cart.id }, transaction: t });
-      }
+      // M-20: xoá theo cartId đã chốt trên đơn. Trước đây chỉ xoá khi có userId,
+      // nên giỏ của khách vãng lai trả qua VNPay không bao giờ được dọn — họ
+      // quay lại vẫn thấy hàng cũ và dễ đặt trùng.
+      await this.clearCartForOrder(locked, t);
       await locked.update({ status: 'paid' }, { transaction: t });
       return true;
     });
@@ -411,6 +548,8 @@ export default class OrderService implements IOrderService {
     if (!transitioned) return;
 
     await queueOrderStatusEmail({ orderId, status: 'paid' });
+    // M-17: xác nhận đầy đủ sản phẩm + số tiền, gửi cả cho khách vãng lai.
+    await queueOrderConfirmationEmail(orderId);
     await this.notificationService.notifyAdmins({
       type: 'order_paid', title: `New paid order #${orderId}`,
       body: 'Paid via VNPay and ready to prepare.', link: `/admin/orders/${orderId}`,
@@ -443,13 +582,8 @@ export default class OrderService implements IOrderService {
         await this.discountService.incrementUsage(locked.discountCodeId, t);
       }
 
-      // Clear the buyer's cart
-      // Guest carts are emptied when the COD order is created, so only signed-in
-      // buyers still need their cart cleared here.
-      if (locked.userId) {
-        const cart = await Cart.findOne({ where: { userId: locked.userId }, transaction: t });
-        if (cart) await CartItem.destroy({ where: { cartId: cart.id }, transaction: t });
-      }
+      // M-20: xoá giỏ đã sinh ra đơn — đúng cho cả thành viên lẫn khách vãng lai.
+      await this.clearCartForOrder(locked, t);
 
       // The reservation becomes a firm sale.
       await locked.update({ status: 'paid' }, { transaction: t });
@@ -461,6 +595,7 @@ export default class OrderService implements IOrderService {
     if (!transitioned) return;
 
     await queueOrderStatusEmail({ orderId: order.id, status: 'paid' });
+    await queueOrderConfirmationEmail(order.id);
     await this.notificationService.notifyAdmins({
       type: 'order_paid', title: `New paid order #${order.id}`,
       body: 'A new order has been paid and is ready to prepare.', link: `/admin/orders/${order.id}`,

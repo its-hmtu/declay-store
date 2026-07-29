@@ -1,57 +1,33 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Cart } from '@/lib/types';
-import { cartApi } from '@/lib/api';
 import { effectivePrice, formatPrice } from '@/lib/utils';
 import { auth } from '@/lib/auth';
-import { guestSession } from '@/lib/guest';
 import { useT } from '@/lib/i18n/LocaleProvider';
 import Button from '@/components/ui/Button';
+import { useCart } from '@/lib/cart/CartProvider';
 
 export default function CartClient() {
   const { t } = useT();
-  const [cart,    setCart]    = useState<Cart | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchCart = useCallback(async () => {
-    const token = auth.getToken() ?? undefined;
-    // M-01: guests read their cart via the guest session cookie.
-    if (!token && !guestSession.peek()) { setLoading(false); return; }
-    try {
-      const res = await cartApi.get(token);
-      setCart(res.data);
-    } catch {
-      toast.error('Could not load cart.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchCart(); }, [fetchCart]);
+  // M-20: đọc từ trạng thái giỏ hàng dùng chung. Trước đây trang này giữ bản
+  // sao riêng, nên sửa số lượng ở đây thì badge trên Header vẫn hiện số cũ.
+  const { cart, loading, updateItem, removeItem: removeCartItem } = useCart();
 
   async function updateQty(itemId: number, qty: number) {
-    const token = auth.getToken() ?? undefined;
-    if (!token && !guestSession.peek()) return;
     try {
-      const res = await cartApi.update(token, itemId, qty);
-      setCart(res.data);
+      await updateItem(itemId, qty);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Update failed.');
     }
   }
 
   async function removeItem(itemId: number) {
-    const token = auth.getToken() ?? undefined;
-    if (!token && !guestSession.peek()) return;
     try {
-      const res = await cartApi.remove(token, itemId);
-      setCart(res.data);
-      toast.success('Item removed.');
+      await removeCartItem(itemId);
+      toast.success(t('cart.removed'));
     } catch {
       toast.error('Remove failed.');
     }

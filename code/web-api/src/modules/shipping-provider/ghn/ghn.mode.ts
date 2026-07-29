@@ -13,10 +13,16 @@
  * Nên mô hình mới chặn theo QUYỀN THAO TÁC:
  *   mock     — không gọi ra ngoài, dùng dữ liệu giả lập
  *   readonly — được đọc địa giới và tính phí, CẤM tạo/huỷ vận đơn  (mặc định)
+ *   preview  — gọi API /preview THẬT của GHN: kiểm chứng đầy đủ payload,
+ *              địa chỉ, dịch vụ, phí và ngày giao dự kiến, nhưng KHÔNG tạo
+ *              vận đơn và KHÔNG phát sinh cước
  *   live     — được phép tất cả, phải bật rõ ràng
  */
 
-export type GhnMode = 'mock' | 'readonly' | 'live';
+export type GhnMode = 'mock' | 'readonly' | 'preview' | 'live';
+
+/** Tiền tố mã vận đơn ở chế độ preview — nhìn là biết ngay không phải mã thật. */
+export const PREVIEW_TRACKING_PREFIX = 'PREVIEW-';
 
 /** Thao tác ghi = tạo ra hệ quả thật bên GHN (vận đơn, tiền cước). */
 export const GHN_WRITE_OPERATIONS = [
@@ -47,8 +53,21 @@ export function resolveGhnMode(input: {
   token: string;
   shopId: string;
   allowWrite: boolean;
+  /** Ghi đè tường minh, dùng cho môi trường test. */
+  modeOverride?: string | null;
 }): GhnMode {
+  const override = (input.modeOverride ?? '').trim().toLowerCase();
+
+  // 'mock' ép được kể cả khi đã có token — hữu ích khi muốn chạy hoàn toàn offline.
+  if (override === 'mock') return 'mock';
+
   if (!input.token || !input.shopId) return 'mock';
+
+  if (override === 'preview') return 'preview';
+  if (override === 'readonly') return 'readonly';
+  // 'live' qua override vẫn phải kèm allowWrite: hai lớp xác nhận cho thao tác tốn tiền.
+  if (override === 'live' && input.allowWrite) return 'live';
+
   return input.allowWrite ? 'live' : 'readonly';
 }
 
@@ -56,6 +75,13 @@ export function resolveGhnMode(input: {
 export function assertOperationAllowed(mode: GhnMode, path: string): void {
   if (mode === 'mock') {
     throw new GhnPermissionError(`GHN đang ở chế độ mock — không gọi "${path}" ra ngoài.`);
+  }
+  // preview không bao giờ chạm tới endpoint tạo đơn: provider đã đổi sang
+  // /preview trước khi tới đây. Nếu vẫn thấy đường dẫn ghi thì là lỗi lập trình.
+  if (mode === 'preview' && isWriteOperation(path)) {
+    throw new GhnPermissionError(
+      `Chế độ preview không được gọi "${path}". Đây là lỗi lập trình: lẽ ra phải dùng /v2/shipping-order/preview.`,
+    );
   }
   if (mode === 'readonly' && isWriteOperation(path)) {
     throw new GhnPermissionError(
@@ -72,6 +98,8 @@ export function describeMode(mode: GhnMode): string {
       return 'GHN: chế độ MOCK (chưa có GHN_TOKEN/GHN_SHOP_ID) — phí là số giả lập.';
     case 'readonly':
       return 'GHN: chế độ READONLY — tính phí thật, KHÔNG tạo được vận đơn.';
+    case 'preview':
+      return 'GHN: chế độ PREVIEW — kiểm chứng vận đơn với GHN thật nhưng KHÔNG tạo đơn, không phát sinh cước.';
     case 'live':
       return 'GHN: chế độ LIVE — tạo vận đơn thật và phát sinh cước.';
   }

@@ -7,6 +7,8 @@ import { ordersApi } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import Badge from '@/components/ui/Badge';
 import { formatPrice } from '@/lib/utils';
+import { orderLabel } from '@/lib/utils';
+import TrackingCode from '@/components/storefront/TrackingCode';
 
 const STATUS_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'error' | 'info'> = {
   pending_payment: 'warning',
@@ -69,7 +71,16 @@ export default function OrdersClient() {
             >
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div>
-                  <p className="font-medium text-text">Order #{order.id}</p>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <p className="font-mono font-medium text-text">{orderLabel(order)}</p>
+                    {order.shipment?.trackingNumber && (
+                      <TrackingCode
+                        trackingNumber={order.shipment.trackingNumber}
+                        carrier={order.shipment.carrier}
+                        compact
+                      />
+                    )}
+                  </div>
                   <p className="text-sm text-text-muted mt-0.5">
                     {new Date(order.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                   </p>

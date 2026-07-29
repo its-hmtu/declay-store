@@ -103,3 +103,147 @@ export async function sendOrderStatusEmail(
     `,
   });
 }
+
+
+/**
+ * M-17: email xác nhận đơn hàng, đầy đủ sản phẩm và số tiền.
+ *
+ * Gửi cho CẢ khách vãng lai. Với họ đây là hoá đơn duy nhất — không có tài
+ * khoản thì không có trang lịch sử đơn để xem lại.
+ */
+export async function sendOrderConfirmation(orderId: number): Promise<void> {
+  const { Order, OrderItem, OrderShipment } = await import('@/modules/order/order.entity');
+  const { default: Address } = await import('@/modules/address/address.entity');
+  const { default: User } = await import('@/modules/user/user.entity');
+  const { buildOrderConfirmationHtml, orderEmailSubject } = await import('@/lib/order-email');
+
+  const order = await Order.findByPk(orderId, {
+    include: [
+      { model: User, as: 'user', attributes: ['email', 'fullName'] },
+      { model: OrderItem, as: 'items' },
+      { model: Address, as: 'shippingAddress' },
+      { model: OrderShipment, as: 'shipment' },
+    ],
+  });
+  if (!order) return;
+
+  const anyOrder = order as unknown as {
+    user?: { email?: string; fullName?: string };
+    items?: { productNameAtPurchase: string; variantNameAtPurchase: string | null; quantity: number; priceAtPurchase: number }[];
+    shippingAddress?: { receiverName: string; addressLine: string; ward: string; district: string; city: string };
+    shipment?: { trackingNumber: string | null; carrier: string | null } | null;
+  };
+
+  const recipient = anyOrder.user?.email ?? order.guestEmail ?? null;
+  if (!recipient) return;
+
+  const address = anyOrder.shippingAddress;
+  const lookupUrl = order.guestToken
+    ? `${config.oauth.frontendUrl}/orders/lookup?token=${encodeURIComponent(order.guestToken)}`
+    : null;
+
+  const data = {
+    orderCode: order.orderCode,
+    customerName: anyOrder.user?.fullName ?? order.guestName ?? address?.receiverName ?? 'bạn',
+    items: (anyOrder.items ?? []).map((i) => ({
+      name: i.productNameAtPurchase,
+      variantName: i.variantNameAtPurchase,
+      quantity: i.quantity,
+      unitPriceVnd: Number(i.priceAtPurchase),
+    })),
+    subtotalVnd: Number(order.subtotal),
+    shippingFeeVnd: Number(order.shippingFee),
+    discountVnd: Number(order.discountAmount),
+    totalVnd: Number(order.totalAmount),
+    paymentMethodLabel: order.stripePaymentIntentId ? 'Thẻ quốc tế' : 'VNPay / COD',
+    shippingAddress: address
+      ? [address.addressLine, address.ward, address.district, address.city].filter(Boolean).join(', ')
+      : '',
+    trackingNumber: anyOrder.shipment?.trackingNumber ?? null,
+    carrier: anyOrder.shipment?.carrier ?? null,
+    lookupUrl,
+  };
+
+  await getTransporter().sendMail({
+    from: config.email.from,
+    to: recipient,
+    subject: orderEmailSubject(data),
+    html: buildOrderConfirmationHtml(data),
+  });
+}
+
+
+/**
+ * M-18: email thứ hai — báo mã vận đơn.
+ *
+ * Gửi khi admin tạo vận đơn, không phải lúc khách thanh toán: theo luồng hiện
+ * tại vận đơn chỉ tồn tại sau bước xác nhận đơn, nên email xác nhận đầu tiên
+ * không thể chứa mã này.
+ */
+export async function sendShipmentNotification(orderId: number): Promise<void> {
+  const { Order, OrderItem, OrderShipment } = await import('@/modules/order/order.entity');
+  const { default: Address } = await import('@/modules/address/address.entity');
+  const { default: User } = await import('@/modules/user/user.entity');
+  const { buildShipmentNotificationHtml, shipmentEmailSubject } = await import('@/lib/order-email');
+
+  const order = await Order.findByPk(orderId, {
+    include: [
+      { model: User, as: 'user', attributes: ['email', 'fullName'] },
+      { model: OrderItem, as: 'items' },
+      { model: Address, as: 'shippingAddress' },
+      { model: OrderShipment, as: 'shipment' },
+    ],
+  });
+  if (!order) return;
+
+  const anyOrder = order as unknown as {
+    user?: { email?: string; fullName?: string };
+    items?: { productNameAtPurchase: string; variantNameAtPurchase: string | null; quantity: number; priceAtPurchase: number }[];
+    shippingAddress?: { receiverName: string; addressLine: string; ward: string; district: string; city: string };
+    shipment?: { trackingNumber: string | null; carrier: string | null; estimatedDeliveryAt: Date | null } | null;
+  };
+
+  // Khách vãng lai không có `user` — lấy email họ đã nhập lúc đặt hàng.
+  const recipient = anyOrder.user?.email ?? order.guestEmail ?? null;
+  const shipment = anyOrder.shipment;
+  if (!recipient || !shipment?.trackingNumber) {
+    console.warn(`⚠️ Đơn ${orderId}: thiếu email người nhận hoặc mã vận đơn — bỏ qua email vận chuyển.`);
+    return;
+  }
+
+  const carrier = shipment.carrier ?? 'GHN';
+  const address = anyOrder.shippingAddress;
+
+  const data = {
+    orderCode: order.orderCode,
+    customerName: anyOrder.user?.fullName ?? order.guestName ?? address?.receiverName ?? 'bạn',
+    trackingNumber: shipment.trackingNumber,
+    carrier,
+    trackingUrl: carrier.toUpperCase() === 'GHN'
+      ? `https://donhang.ghn.vn/?order_code=${encodeURIComponent(shipment.trackingNumber)}`
+      : null,
+    expectedDeliveryAt: shipment.estimatedDeliveryAt ?? null,
+    items: (anyOrder.items ?? []).map((i) => ({
+      name: i.productNameAtPurchase,
+      variantName: i.variantNameAtPurchase,
+      quantity: i.quantity,
+      unitPriceVnd: Number(i.priceAtPurchase),
+    })),
+    shippingAddress: address
+      ? [address.addressLine, address.ward, address.district, address.city].filter(Boolean).join(', ')
+      : '',
+    // Đơn đã thanh toán thì shipper KHÔNG thu thêm — nói rõ để khách không
+    // chuẩn bị tiền thừa hoặc bị shipper thu nhầm.
+    codAmountVnd: order.status === 'paid' ? 0 : Number(order.totalAmount),
+    lookupUrl: order.guestToken
+      ? `${config.oauth.frontendUrl}/orders/lookup?token=${encodeURIComponent(order.guestToken)}`
+      : null,
+  };
+
+  await getTransporter().sendMail({
+    from: config.email.from,
+    to: recipient,
+    subject: shipmentEmailSubject(data),
+    html: buildShipmentNotificationHtml(data),
+  });
+}

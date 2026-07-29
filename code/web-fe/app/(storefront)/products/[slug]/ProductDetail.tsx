@@ -13,8 +13,12 @@ import WishlistButton from '@/components/storefront/WishlistButton';
 import ProductReviews from '@/components/storefront/ProductReviews';
 import RelatedProducts from '@/components/storefront/RelatedProducts';
 import { formatPrice } from '@/lib/utils';
+import { useCart } from '@/lib/cart/CartProvider';
+import { useT } from '@/lib/i18n/LocaleProvider';
 
 export default function ProductDetail({ product }: { product: Product }) {
+  const { t } = useT();
+  const { addItem } = useCart();
   const variants = product.variants?.filter((v) => v.isActive) ?? [];
   const [selected, setSelected] = useState<ProductVariant | null>(variants[0] ?? null);
   const [qty,      setQty]      = useState(1);
@@ -31,8 +35,10 @@ export default function ProductDetail({ product }: { product: Product }) {
     if (!selected) return;
     setLoading(true);
     try {
-      await cartApi.add(token, selected.id, qty);
-      toast.success(`${product.name} added to cart!`);
+      // M-20: thêm qua trạng thái dùng chung -> badge cập nhật ngay và
+      // ngăn kéo giỏ hàng tự mở, rút ngắn đường tới thanh toán.
+      await addItem(selected.id, qty);
+      toast.success(`${product.name} — ${t('cart.added')}`);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to add to cart.');
     } finally {

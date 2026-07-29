@@ -2,6 +2,7 @@ import express, { Router } from 'express';
 import ShipmentService from './shipment.service';
 import ShipmentWebhookController from './shipment.controller';
 import { vnpayIpn, vnpayVerifyReturn } from '@/modules/payment-provider/vnpay/vnpay.controller';
+import { ghnWebhook } from '@/modules/shipping-provider/ghn/ghn.webhook';
 
 // Public webhook endpoints for shipping aggregators/carriers (secret-guarded).
 export function createWebhookRouter(): Router {
@@ -13,5 +14,8 @@ export function createWebhookRouter(): Router {
   router.get('/vnpay/verify-return', vnpayVerifyReturn);
   router.get('/vnpay', vnpayIpn);
   router.post('/vnpay', express.urlencoded({ extended: true }), vnpayIpn);
+  // M-24: webhook trạng thái vận đơn GHN. Router mount bằng express.raw nên
+  // handler tự parse JSON từ Buffer.
+  router.post('/ghn', ghnWebhook);
   return router;
 }

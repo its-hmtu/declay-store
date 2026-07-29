@@ -40,8 +40,10 @@ async function call(path, body, method = 'POST') {
 
   console.log(`  · GHN_BASE_URL: ${BASE_URL}`);
   if (BASE_URL.includes('dev-online-gateway')) {
-    bad('Đang trỏ vào dev-online-gateway.ghn.vn — gateway này đã ngừng phản hồi',
-      'Đổi sang https://online-gateway.ghn.vn. Tính phí là thao tác CHỈ ĐỌC, không tạo vận đơn nên an toàn.');
+    // Staging hợp lệ — CHỈ dùng được với token staging (5sao.ghn.dev).
+    // Không khẳng định gateway sống/chết ở đây; bước 2 gọi thật sẽ cho biết.
+    ok('URL staging (dev-online-gateway). Cần token staging từ 5sao.ghn.dev');
+    console.log('    Ở staging, tạo vận đơn KHÔNG tính cước thật — an toàn để test đầy đủ.');
   } else if (!BASE_URL.includes('ghn.vn')) {
     bad(`URL không thuộc tên miền ghn.vn: ${BASE_URL}`);
   } else {
@@ -59,7 +61,8 @@ async function call(path, body, method = 'POST') {
   if (prov.payload?.code !== 200) {
     bad(`HTTP ${prov.status} — ${prov.payload?.message ?? 'không rõ'}`,
       prov.status === 401 || prov.status === 403
-        ? 'Token sai, hoặc token của môi trường khác với GHN_BASE_URL'
+        ? 'Token sai, hoặc LỆCH môi trường: token staging phải đi với dev-online-gateway, '
+          + 'token production phải đi với online-gateway.'
         : 'Kiểm tra lại token và kết nối mạng');
     console.log('');
     process.exit(1);
@@ -108,7 +111,11 @@ async function call(path, body, method = 'POST') {
       }
       pickupDistrict = shop.district_id;
       pickupWard = String(shop.ward_code ?? '');
-      ok(`Kho "${shop.name || shop._id}": DistrictID ${pickupDistrict}, WardCode ${pickupWard}`);
+      ok(`Kho "${shop.name || shop._id}": ShopId=${shop._id}, DistrictID ${pickupDistrict}, WardCode ${pickupWard}`);
+      if (String(shop._id) !== String(SHOP_ID)) {
+        console.log(`    ⚠ GHN_SHOP_ID=${SHOP_ID} KHÁC ShopId thật ${shop._id} của token này.`);
+        console.log(`      Đặt GHN_SHOP_ID=${shop._id} vào .env để header khớp tài khoản.`);
+      }
       if (shop.address) console.log(`    ${shop.address}`);
       console.log('    (Code cũng tự đọc kho theo cách này khi GHN_FROM_DISTRICT_ID rỗng.)');
     }
@@ -157,11 +164,18 @@ async function call(path, body, method = 'POST') {
     console.log(`    (cước ${Number(fee.service_fee).toLocaleString('vi-VN')} ₫ + bảo hiểm ${Number(fee.insurance_fee || 0).toLocaleString('vi-VN')} ₫)`);
   } else {
     const msg = feeRes.payload?.message ?? `HTTP ${feeRes.status}`;
-    bad(msg,
-      /route not found/i.test(msg)
-        ? `GHN không có tuyến ${pickupDistrict} → ${target.DistrictID}. Kiểm tra: kho có đúng quận không, `
-          + 'và quận đích có nằm trong vùng phục vụ không.'
-        : 'Kiểm tra lại địa chỉ kho và service_id');
+    let fix;
+    if (feeRes.status === 404) {
+      fix = 'LỆCH MÔI TRƯỜNG: token production (khachhang.ghn.vn) đang gọi vào '
+        + `${BASE_URL}. Đổi GHN_BASE_URL sang https://online-gateway.ghn.vn `
+        + '(hoặc dùng token staging từ 5sao.ghn.dev nếu muốn giữ dev URL).';
+    } else if (/route not found/i.test(msg)) {
+      fix = `GHN không có tuyến ${pickupDistrict} → ${target.DistrictID}. `
+        + 'Kiểm tra kho có đúng quận không, và quận đích có nằm trong vùng phục vụ không.';
+    } else {
+      fix = 'Kiểm tra lại địa chỉ kho và service_id';
+    }
+    bad(msg, fix);
   }
 
   console.log(failed

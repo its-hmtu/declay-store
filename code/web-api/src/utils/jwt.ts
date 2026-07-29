@@ -162,3 +162,49 @@ export function verifyAdminAccessToken(token: string): AuthenticatedAdmin {
     exp: decoded.exp,
   };
 }
+
+/**
+ * M-25: refresh token cho admin. Trước đây admin chỉ có access token 8h, hết
+ * hạn là bị đăng xuất giữa chừng. Refresh token sống lâu để đổi lấy access mới.
+ *
+ * Secret RIÊNG (JWT_ADMIN_REFRESH_SECRET). Nếu chưa khai thì suy ra từ secret
+ * access + hậu tố cố định — vẫn khác secret access nên access token không dùng
+ * làm refresh được, và ngược lại.
+ */
+function adminRefreshSecret(): string {
+  return process.env.JWT_ADMIN_REFRESH_SECRET
+    ?? `${getRequiredEnv('JWT_ADMIN_SECRET')}::refresh`;
+}
+
+export function signAdminRefreshToken(admin: AuthenticatedAdmin): string {
+  return jwt.sign(
+    { sub: String(admin.adminId), email: admin.email, role: admin.role, tokenType: 'admin_refresh' },
+    adminRefreshSecret(),
+    { expiresIn: (process.env.JWT_ADMIN_REFRESH_EXPIRED_IN ?? '30d') as SignOptions['expiresIn'], jwtid: randomUUID() },
+  );
+}
+
+export function verifyAdminRefreshToken(token: string): AuthenticatedAdmin {
+  let decoded: jwt.JwtPayload;
+  try {
+    decoded = jwt.verify(token, adminRefreshSecret()) as jwt.JwtPayload;
+  } catch {
+    throw new AppError('Invalid or expired admin refresh token', { statusCode: 401, code: 'UNAUTHORIZED' });
+  }
+  // tokenType phải đúng: access token KHÔNG được nhận làm refresh.
+  if (decoded.tokenType !== 'admin_refresh' || typeof decoded.sub !== 'string') {
+    throw new AppError('Invalid admin refresh token payload', { statusCode: 401, code: 'UNAUTHORIZED' });
+  }
+  const adminId = Number(decoded.sub);
+  if (!Number.isInteger(adminId) || adminId <= 0) {
+    throw new AppError('Invalid admin refresh token payload', { statusCode: 401, code: 'UNAUTHORIZED' });
+  }
+  return {
+    adminId,
+    email: decoded.email as string,
+    role: decoded.role as string,
+    jti: decoded.jti,
+    iat: decoded.iat,
+    exp: decoded.exp,
+  };
+}

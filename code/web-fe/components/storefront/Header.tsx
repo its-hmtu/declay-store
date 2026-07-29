@@ -5,14 +5,14 @@ import { usePathname, useRouter } from 'next/navigation';
 import { ShoppingCart, User, LogOut, Menu, X, ChevronDown, Heart, Package } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { auth } from '@/lib/auth';
-import { guestSession } from '@/lib/guest';
-import { authApi, cartApi } from '@/lib/api';
+import { authApi } from '@/lib/api';
 import NotificationBell from '@/components/NotificationBell';
 import SearchBox from '@/components/storefront/SearchBox';
 import type { Category, Collection } from '@/lib/types';
 import { isEnabled } from '@/lib/features';
 import { useT } from '@/lib/i18n/LocaleProvider';
 import LanguageSwitcher from '@/components/storefront/LanguageSwitcher';
+import { useCart } from '@/lib/cart/CartProvider';
 
 const NAV = [
   { href: '/products',    label: 'Shop', i18n: 'nav.shop' as const },
@@ -27,18 +27,10 @@ export default function Header({ categories = [], collections = [] }: { categori
   const router     = useRouter();
   const [open, setOpen] = useState(false);       // mobile drawer
   const [shopOpen, setShopOpen] = useState(false); // desktop mega menu
-  const [cartCount, setCartCount] = useState(0);
   const isLoggedIn = auth.isLoggedIn();
-
-  // Keep the cart badge in sync — refetch on navigation (e.g. after add-to-cart)
-  useEffect(() => {
-    const token = auth.getToken() ?? undefined;
-    // M-01: guests have a cart too, keyed by their guest session cookie.
-    if (!token && !guestSession.peek()) { setCartCount(0); return; }
-    cartApi.get(token)
-      .then((res) => setCartCount(res.data.items?.reduce((n, i) => n + i.quantity, 0) ?? 0))
-      .catch(() => undefined);
-  }, [pathname]);
+  // M-20: badge đọc từ trạng thái giỏ hàng dùng chung. Trước đây nó tự gọi API
+  // và chỉ nạp lại khi ĐỔI TRANG — thêm hàng xong đứng yên thì số không đổi.
+  const { count: cartCount, refresh: refreshCart } = useCart();
 
   async function logout() {
     const token = auth.getToken();
@@ -46,7 +38,7 @@ export default function Header({ categories = [], collections = [] }: { categori
       try { await authApi.logout(token); } catch {}
     }
     auth.clearTokens();
-    setCartCount(0);
+    await refreshCart();
     router.push('/login');
   }
 

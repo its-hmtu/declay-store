@@ -22,6 +22,48 @@ describe('resolveGhnMode (M-13)', () => {
   });
 });
 
+describe('GHN_MODE — ghi đè cho môi trường test (M-21)', () => {
+  const withToken = { token: 'abc', shopId: '885', allowWrite: false };
+
+  it('preview: kiểm chứng với GHN thật nhưng không tạo đơn', () => {
+    expect(resolveGhnMode({ ...withToken, modeOverride: 'preview' })).toBe('preview');
+  });
+
+  it('ép được mock kể cả khi đã có token — chạy hoàn toàn offline', () => {
+    expect(resolveGhnMode({ ...withToken, allowWrite: true, modeOverride: 'mock' })).toBe('mock');
+  });
+
+  it('override "live" VẪN phải kèm GHN_ALLOW_WRITE — hai lớp xác nhận', () => {
+    expect(resolveGhnMode({ ...withToken, modeOverride: 'live' })).toBe('readonly');
+    expect(resolveGhnMode({ ...withToken, allowWrite: true, modeOverride: 'live' })).toBe('live');
+  });
+
+  it('không có token thì mọi override đều ra mock — không có gì để gọi', () => {
+    expect(resolveGhnMode({ token: '', shopId: '', allowWrite: true, modeOverride: 'preview' })).toBe('mock');
+  });
+
+  it('giá trị rác bị bỏ qua, quay về suy diễn mặc định', () => {
+    expect(resolveGhnMode({ ...withToken, modeOverride: 'linh tinh' })).toBe('readonly');
+    expect(resolveGhnMode({ ...withToken, modeOverride: '  PREVIEW  ' })).toBe('preview');
+  });
+});
+
+describe('assertOperationAllowed — chế độ preview', () => {
+  it('preview vẫn tính phí và tra địa giới bình thường', () => {
+    expect(() => assertOperationAllowed('preview', FEE)).not.toThrow();
+    expect(() => assertOperationAllowed('preview', MASTER)).not.toThrow();
+  });
+
+  it('preview KHÔNG được chạm endpoint tạo đơn — lẽ ra provider đã đổi sang /preview', () => {
+    expect(() => assertOperationAllowed('preview', CREATE)).toThrow(GhnPermissionError);
+  });
+
+  it('endpoint preview không bị coi là thao tác ghi', () => {
+    expect(isWriteOperation('/v2/shipping-order/preview')).toBe(false);
+    expect(() => assertOperationAllowed('preview', '/v2/shipping-order/preview')).not.toThrow();
+  });
+});
+
 describe('isWriteOperation', () => {
   it('tính phí và tra cứu địa giới KHÔNG phải thao tác ghi', () => {
     expect(isWriteOperation(FEE)).toBe(false);
@@ -69,8 +111,8 @@ describe('assertOperationAllowed', () => {
 
 describe('describeMode', () => {
   it('mỗi chế độ có mô tả riêng để in ra log khởi động', () => {
-    const all = (['mock', 'readonly', 'live'] as const).map(describeMode);
-    expect(new Set(all).size).toBe(3);
+    const all = (['mock', 'readonly', 'preview', 'live'] as const).map(describeMode);
+    expect(new Set(all).size).toBe(4);
     expect(describeMode('live')).toContain('LIVE');
   });
 });

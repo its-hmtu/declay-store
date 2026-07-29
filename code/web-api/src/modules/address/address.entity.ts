@@ -42,6 +42,10 @@ class Address extends Model<InferAttributes<Address>, InferCreationAttributes<Ad
     postalCode: string | null;
     isDefault: boolean;
     addressType: 'home' | 'work' | 'other';
+    // M-13: mã địa giới GHN — thiếu ba trường này khiến checkout không tính được phí.
+    ghnProvinceId: number | null;
+    ghnDistrictId: number | null;
+    ghnWardCode: string | null;
     createdAt: Date;
     updatedAt: Date;
   } {
@@ -59,6 +63,9 @@ class Address extends Model<InferAttributes<Address>, InferCreationAttributes<Ad
       postalCode: this.postalCode,
       isDefault: this.isDefault,
       addressType: this.addressType,
+      ghnProvinceId: this.ghnProvinceId,
+      ghnDistrictId: this.ghnDistrictId,
+      ghnWardCode: this.ghnWardCode,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     }

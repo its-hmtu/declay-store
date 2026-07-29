@@ -10,6 +10,7 @@ import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import { formatPrice } from '@/lib/utils';
+import { orderLabel } from '@/lib/utils';
 
 const STATUS_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'error' | 'info'> = {
   pending_payment: 'warning', paid: 'info', processing: 'info', shipped: 'info', delivered: 'success', returned: 'warning', cancelled: 'error',
@@ -51,7 +52,7 @@ export default function AdminOrderDetailClient({ orderId }: { orderId: number })
   return (
     <div className="max-w-3xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="font-serif text-3xl font-bold text-text">Order #{order.id}</h1>
+        <h1 className="font-serif text-3xl font-bold text-text font-mono">{orderLabel(order)}</h1>
         <Link href="/admin/orders" className="text-sm text-brand hover:underline">&larr; Orders</Link>
       </div>
 
@@ -175,6 +176,33 @@ function ShipmentManager({ orderId }: { orderId: number }) {
     }
   }
 
+  const [syncing, setSyncing] = useState(false);
+  async function syncFromGhn() {
+    const token = adminAuth.getToken();
+    if (!token) return;
+    setSyncing(true);
+    try {
+      const res = await adminShipmentApi.syncGhn(token, orderId);
+      await load();
+      toast.success(res.data.synced ? `Trạng thái GHN: ${res.data.ghnStatus}` : 'GHN chưa có trạng thái mới.');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Đồng bộ thất bại.');
+    } finally { setSyncing(false); }
+  }
+
+  async function createGhn() {
+    const token = adminAuth.getToken();
+    if (!token) return;
+    setSaving(true);
+    try {
+      const res = await adminShipmentApi.createGhn(token, orderId);
+      setShipment(res.data); fillFrom(res.data);
+      toast.success('Đã tạo vận đơn GHN — đơn chuyển sang "shipped".');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Không tạo được vận đơn GHN.');
+    } finally { setSaving(false); }
+  }
+
   async function createViaProvider() {
     const token = adminAuth.getToken();
     if (!token) return;
@@ -209,7 +237,19 @@ function ShipmentManager({ orderId }: { orderId: number }) {
       <div className="flex items-center justify-between">
         <h2 className="font-medium text-text flex items-center gap-2"><Truck size={17} /> Shipment</h2>
         {shipment && (
-          <button type="button" onClick={remove} className="text-text-faint hover:text-error" aria-label="Delete shipment"><Trash2 size={15} /></button>
+          <div className="flex items-center gap-2">
+            {shipment.provider === 'ghn' && shipment.trackingNumber && (
+              <button
+                type="button"
+                onClick={syncFromGhn}
+                disabled={syncing}
+                className="text-xs px-2 py-1 rounded border border-border hover:border-brand hover:text-brand disabled:opacity-50"
+              >
+                {syncing ? 'Đang đồng bộ…' : 'Đồng bộ từ GHN'}
+              </button>
+            )}
+            <button type="button" onClick={remove} className="text-text-faint hover:text-error" aria-label="Delete shipment"><Trash2 size={15} /></button>
+          </div>
         )}
       </div>
 
@@ -240,9 +280,16 @@ function ShipmentManager({ orderId }: { orderId: number }) {
       )}
 
       {!shipment && (
-        <div className="rounded-lg border border-dashed border-border p-3 flex items-center justify-between gap-3">
-          <p className="text-sm text-text-muted">Create a shipment automatically via the shipping provider (mock until an Easyship token is set).</p>
-          <Button type="button" size="sm" variant="outline" loading={saving} onClick={createViaProvider}>Create with provider</Button>
+        <div className="rounded-lg border border-dashed border-border p-3 space-y-2">
+          <p className="text-sm text-text-muted">
+            Tạo vận đơn để chuyển đơn sang <span className="font-medium text-text">shipped</span>.
+            Đơn chỉ chuyển trạng thái này khi có mã vận đơn — không đổi tay được.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" loading={saving} onClick={createGhn}>Tạo vận đơn GHN</Button>
+            <Button type="button" size="sm" variant="outline" loading={saving} onClick={createViaProvider}>Nhà cung cấp khác</Button>
+          </div>
+          <p className="text-xs text-text-faint">Hoặc nhập mã vận đơn thủ công bên dưới.</p>
         </div>
       )}
 

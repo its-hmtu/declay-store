@@ -3,7 +3,8 @@ import { logger } from '@/lib/logger';
 import { httpError } from '@/utils/http-error';
 import { assertOperationAllowed, GhnPermissionError, type GhnMode } from './ghn.mode';
 import type {
-  GhnMasterDataProvider, GhnProvince, GhnDistrict, GhnWard, GhnService, GhnShop, GhnFeeRequest, GhnFeeResponse,
+  GhnMasterDataProvider, GhnProvince, GhnDistrict, GhnWard, GhnService, GhnShop,
+  GhnFeeRequest, GhnFeeResponse, GhnCreatedOrder, GhnLeadtimeRequest, GhnLeadtimeResponse,
 } from './ghn.types';
 
 /**
@@ -24,9 +25,26 @@ export class GhnProvider implements GhnMasterDataProvider {
     private token: string,
     private shopId: string,
     private baseUrl: string,
-    /** 'readonly' cho phép tra cứu + tính phí; 'live' mới tạo được vận đơn. */
+    /**
+     * 'readonly' cho phép tra cứu + tính phí;
+     * 'preview' gọi endpoint preview của GHN (không tạo đơn);
+     * 'live' mới tạo vận đơn thật.
+     */
     private mode: GhnMode = 'readonly',
   ) {}
+
+  // ShopId thực dùng: ưu tiên shop lấy từ /v2/shop/all (chắc chắn thuộc tài
+  // khoản token) hơn GHN_SHOP_ID trong .env — env dễ lệch khi đổi token, và
+  // ShopId lệch tài khoản làm fee/create trả 404.
+  private effectiveShopId: string | undefined;
+
+  setEffectiveShopId(id: string | number): void {
+    this.effectiveShopId = String(id);
+  }
+
+  private get shopIdHeader(): string {
+    return this.effectiveShopId ?? this.shopId;
+  }
 
   private async call<T>(path: string, body: unknown, method: 'GET' | 'POST' = 'POST'): Promise<T> {
     // Chặn TRƯỚC khi gói tin rời máy chủ: thao tác tạo vận đơn phát sinh cước
@@ -46,7 +64,7 @@ export class GhnProvider implements GhnMasterDataProvider {
         headers: {
           'Content-Type': 'application/json',
           Token: this.token,
-          ShopId: this.shopId,
+          ShopId: this.shopIdHeader,
         },
         ...(method === 'POST' ? { body: JSON.stringify(body) } : {}),
         signal: AbortSignal.timeout(10_000),
@@ -63,9 +81,22 @@ export class GhnProvider implements GhnMasterDataProvider {
       | null;
 
     if (!response.ok || !payload || payload.code !== 200) {
-      logger.warn('GHN returned an error', {
-        path, status: response.status, code: payload?.code, message: payload?.message,
-      });
+      // 404 trên fee/available-services (khi master-data lại chạy được) gần như
+      // luôn là LỆCH MÔI TRƯỜNG: token/shop của môi trường này, URL của môi
+      // trường kia. Nói thẳng để không phải mò lần sau.
+      const envMismatch = response.status === 404
+        && /shipping-order\/(fee|available-services)/.test(path);
+      if (envMismatch) {
+        logger.error('GHN 404 — nhiều khả năng LỆCH MÔI TRƯỜNG token/URL', {
+          path, baseUrl: this.baseUrl,
+          hint: 'Token khachhang.ghn.vn (production) phải đi với online-gateway.ghn.vn; '
+            + 'token 5sao.ghn.dev (staging) phải đi với dev-online-gateway.ghn.vn.',
+        });
+      } else {
+        logger.warn('GHN returned an error', {
+          path, status: response.status, code: payload?.code, message: payload?.message,
+        });
+      }
       throw httpError(502, `GHN: ${payload?.message ?? `HTTP ${response.status}`}`);
     }
     return payload.data as T;
@@ -75,7 +106,12 @@ export class GhnProvider implements GhnMasterDataProvider {
     const data = await this.call<{ shops?: GhnShop[] }>('/v2/shop/all', {
       offset: 0, limit: 50, client_phone: '',
     });
-    return data?.shops ?? [];
+    const shops = data?.shops ?? [];
+    if (shops.length > 0) {
+      const match = shops.find((sh) => String(sh._id) === String(this.shopId));
+      this.setEffectiveShopId((match ?? shops[0])._id);
+    }
+    return shops;
   }
 
   async getProvinces(): Promise<GhnProvince[]> {
@@ -94,11 +130,26 @@ export class GhnProvider implements GhnMasterDataProvider {
     return (
       (await this.call<GhnService[]>('/v2/shipping-order/available-services', {
         // shop_id ở ĐÂY là số, khác với header ShopId dạng chuỗi.
-        shop_id: Number(this.shopId),
+        shop_id: Number(this.shopIdHeader),
         from_district: fromDistrictId,
         to_district: toDistrictId,
       })) ?? []
     );
+  }
+
+  /**
+   * ⚠️ Tạo vận đơn THẬT. Bị `assertOperationAllowed` chặn trừ khi mode = 'live'.
+   * `client_order_code` trong payload khiến việc gọi lại an toàn: GHN trả về
+   * vận đơn cũ thay vì tạo thêm cái mới.
+   */
+  async createOrder(payload: Record<string, unknown>): Promise<GhnCreatedOrder> {
+    // Chế độ preview dùng ĐÚNG payload này nhưng gửi tới endpoint preview:
+    // GHN kiểm tra địa chỉ, dịch vụ, giới hạn cân/kích thước, tính phí và ngày
+    // giao dự kiến y như thật — chỉ không tạo vận đơn và không tính cước.
+    const path = this.mode === 'preview'
+      ? '/v2/shipping-order/preview'
+      : '/v2/shipping-order/create';
+    return this.call<GhnCreatedOrder>(path, payload);
   }
 
   async calculateFee(request: GhnFeeRequest): Promise<GhnFeeResponse> {
@@ -108,20 +159,38 @@ export class GhnProvider implements GhnMasterDataProvider {
       serviceTypeId: config.ghn.serviceTypeId,
     }));
   }
+
+  async getLeadtime(request: GhnLeadtimeRequest): Promise<GhnLeadtimeResponse> {
+    return this.call<GhnLeadtimeResponse>('/v2/shipping-order/leadtime', request);
+  }
+
+  async getOrderStatus(ghnOrderCode: string) {
+    // detail trả về data có thể là object hoặc mảng tuỳ phiên bản — chuẩn hoá.
+    const data = await this.call<any>('/v2/shipping-order/detail', { order_code: ghnOrderCode });
+    const info = Array.isArray(data) ? data[0] : data;
+    if (!info?.status) return null;
+    return { status: String(info.status), log: info.log };
+  }
 }
 
 /**
  * Cảnh báo cấu hình URL.
  *
- * Trước đây hàm này NÉM LỖI khi URL không khớp cờ sandbox. Cách đó đã sai khi
- * môi trường dev của GHN ngừng hoạt động: cấu hình "đúng" theo luật cũ lại làm
- * toàn bộ tính năng chết. Nay việc chặn tạo vận đơn do ghn.mode.ts đảm nhiệm —
- * hàm này chỉ còn cảnh báo để không ai im lặng gọi vào một gateway đã chết.
+ * Trước đây hàm này NÉM LỖI khi URL không khớp cờ sandbox. Cách đó sai: an toàn
+ * thuộc về ghn.mode.ts (chặn theo quyền thao tác), không thuộc về URL. Nay hàm
+ * chỉ còn cảnh báo cho các URL bất thường.
+ *
+ * `dev-online-gateway.ghn.vn` là môi trường STAGING chính thức của GHN — hợp lệ
+ * nếu token của bạn là token staging. Ở đó `create` không tạo vận đơn thật và
+ * không tính cước thật, nên đây là nơi test lý tưởng.
  */
+export const GHN_STAGING_HINT =
+  'GHN_BASE_URL đang dùng dev-online-gateway.ghn.vn (staging). Chỉ hoạt động với '
+  + 'token staging (đăng ký tại 5sao.ghn.dev); token production sẽ trả 401/403.';
+
 export function warnIfSuspiciousBaseUrl(baseUrl: string): string | null {
   if (baseUrl.includes('dev-online-gateway')) {
-    return 'GHN_BASE_URL đang trỏ vào dev-online-gateway.ghn.vn — gateway này đã ngừng phản hồi. '
-      + 'Dùng https://online-gateway.ghn.vn (tính phí là thao tác chỉ đọc, không tạo vận đơn).';
+    return GHN_STAGING_HINT;
   }
   if (!baseUrl.includes('ghn.vn')) {
     return `GHN_BASE_URL không phải tên miền ghn.vn: ${baseUrl}`;

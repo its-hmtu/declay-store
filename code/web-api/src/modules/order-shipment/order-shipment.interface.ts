@@ -42,6 +42,8 @@ export interface IOrderShipmentService {
   getByOrder(orderId: number): Promise<IOrderShipment>;
   create(orderId: number, data: ICreateShipmentData): Promise<IOrderShipment>;
   createViaProvider(orderId: number): Promise<IOrderShipment>;
+  createGhnShipment(orderId: number): Promise<IOrderShipment>;
+  syncFromGhn(orderId: number): Promise<{ synced: boolean; ghnStatus: string | null }>;
   simulate(orderId: number, rawStatus: string): Promise<IOrderShipment>;
   update(orderId: number, data: IUpdateShipmentData): Promise<IOrderShipment>;
   remove(orderId: number): Promise<void>;

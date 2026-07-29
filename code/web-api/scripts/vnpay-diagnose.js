@@ -10,9 +10,19 @@ require('dotenv').config();
 const { Sequelize } = require('sequelize');
 
 const orderId = process.argv[2] ? Number(process.argv[2]) : null;
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
+
+// Đọc DB theo ĐÚNG cách app đọc (biến rời), không phải DATABASE_URL.
+const host = process.env.DB_HOST || 'localhost';
+const isRemote = !['localhost', '127.0.0.1'].includes(host);
+const sequelize = new Sequelize({
+  dialect: 'postgres',
+  host,
+  port: Number(process.env.DB_PORT) || 5432,
+  database: process.env.DB_NAME,
+  username: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
   logging: false,
-  dialectOptions: process.env.DATABASE_URL.includes('localhost') ? {} : { ssl: { require: true, rejectUnauthorized: false } },
+  dialectOptions: isRemote ? { ssl: { require: true, rejectUnauthorized: false } } : {},
 });
 
 (async () => {

@@ -32,7 +32,8 @@ const emptyAddress = {
   ghnWardCode: null as string | null,
 };
 
-type ShippingQuote = Awaited<ReturnType<typeof ghnApi.quote>>['data'];
+type ShippingOptions = Awaited<ReturnType<typeof ghnApi.quoteOptions>>['data'];
+type ShippingOption = ShippingOptions['options'][number];
 
 export default function CheckoutClient() {
   const { t } = useT();
@@ -56,8 +57,12 @@ export default function CheckoutClient() {
   const [payMethod,     setPayMethod]     = useState<'cod' | 'stripe' | 'vnpay'>('cod');
   // M-13: địa giới GHN + phí vận chuyển thật.
   const [geo, setGeo] = useState<VietnamAddressValue>(emptyVietnamAddress);
-  const [quote, setQuote] = useState<ShippingQuote | null>(null);
+  const [shipOptions, setShipOptions] = useState<ShippingOptions | null>(null);
+  const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
   const [quoting, setQuoting] = useState(false);
+  // Dịch vụ đang chọn (dẫn xuất) — khai sớm vì phí và canOrder phụ thuộc nó.
+  const selectedOption: ShippingOption | null =
+    shipOptions?.options.find((o) => o.serviceId === selectedServiceId) ?? null;
 
   useEffect(() => {
     const token = auth.getToken() ?? undefined;
@@ -131,6 +136,7 @@ export default function CheckoutClient() {
         ...(geo.districtId && geo.wardCode
           ? { ghnDistrictId: geo.districtId, ghnWardCode: geo.wardCode }
           : {}),
+        ...(selectedServiceId ? { ghnServiceId: selectedServiceId } : {}),
         paymentMethod: payMethod,
       });
       // M-12: VNPay owns the payment page — hand the buyer over to it.
@@ -142,7 +148,14 @@ export default function CheckoutClient() {
       // COD has no payment step — the order is already being prepared.
       if (!data.clientSecret) {
         toast.success(t('checkout.orderPlaced'));
-        router.push(isMember ? `/orders/${data.order.id}` : `/orders/thank-you?id=${data.order.id}`);
+        // Khách vãng lai: dùng guestToken làm giấy thông hành để trang cảm ơn
+        // tra được nội dung đơn. Chỉ có mã đơn thì không đủ — mã đơn đoán được.
+        const guestToken = (data.order as { guestToken?: string | null }).guestToken;
+        router.push(isMember
+          ? `/orders/${data.order.id}`
+          : guestToken
+            ? `/orders/thank-you?token=${encodeURIComponent(guestToken)}`
+            : `/orders/thank-you?code=${encodeURIComponent(data.order.orderCode)}`);
         return;
       }
       setClientSecret(data.clientSecret);
@@ -161,29 +174,55 @@ export default function CheckoutClient() {
   const shippingFee       = selectedMethod
     ? (selectedMethod.freeOver != null && subtotal >= Number(selectedMethod.freeOver) ? 0 : Number(selectedMethod.fee))
     : 0;
-  // M-13: phí lấy từ GHN qua backend; chỉ dùng bảng phí phẳng cũ khi chưa báo được giá.
-  const shippingFeeVnd = quote?.available ? quote.feeVnd : shippingFee;
+  // M-22: phí theo dịch vụ GHN đang chọn; dùng bảng phí phẳng cũ khi chưa báo được.
+  const shippingFeeVnd = selectedOption ? selectedOption.feeVnd : shippingFee;
   const total    = Math.max(0, subtotal - (discount?.discountAmount ?? 0) + shippingFeeVnd);
   // M-13: không cho đặt hàng khi chưa tính được phí — nếu không, khách sẽ
   // chốt một tổng tiền mà cửa hàng chưa biết chi phí giao là bao nhiêu.
   const canOrder =
     items.length > 0 &&
     (isMember ? Boolean(addressId) : guestFormReady()) &&
-    Boolean(quote?.available);
+    Boolean(selectedOption);
+
+  // M-13 (sửa lỗi): thành viên chọn địa chỉ đã lưu thì lấy mã GHN TỪ địa chỉ đó
+  // đổ vào geo, để hook báo phí bên dưới chạy. Không có bước này thì geo luôn
+  // rỗng cho thành viên -> không báo được phí -> nút thanh toán bị khoá vĩnh viễn.
+  useEffect(() => {
+    if (!isMember) return;
+    if (selectedAddress?.ghnDistrictId && selectedAddress?.ghnWardCode) {
+      setGeo({
+        provinceId: selectedAddress.ghnProvinceId ?? null,
+        districtId: selectedAddress.ghnDistrictId,
+        wardCode: selectedAddress.ghnWardCode,
+        provinceName: selectedAddress.city,
+        districtName: selectedAddress.district,
+        wardName: selectedAddress.ward,
+      });
+    } else {
+      // Địa chỉ cũ chưa có mã GHN — xoá geo để hiện cảnh báo yêu cầu cập nhật.
+      setGeo(emptyVietnamAddress);
+    }
+  }, [isMember, selectedAddress]);
 
   // Hỏi phí GHN mỗi khi khách chọn xong phường/xã hoặc giỏ hàng thay đổi.
   // Cân nặng do server tự đọc từ CSDL nên client không gửi gì ngoài điểm đến.
   useEffect(() => {
-    if (!geo.districtId || !geo.wardCode) { setQuote(null); return; }
+    if (!geo.districtId || !geo.wardCode) { setShipOptions(null); setSelectedServiceId(null); return; }
     let stale = false;
     setQuoting(true);
     ghnApi
-      .quote({ districtId: geo.districtId, wardCode: geo.wardCode })
-      .then(({ data }) => { if (!stale) setQuote(data); })
-      .catch(() => { if (!stale) setQuote(null); })
+      .quoteOptions({ districtId: geo.districtId, wardCode: geo.wardCode })
+      .then(({ data }) => {
+        if (stale) return;
+        setShipOptions(data);
+        // Tự chọn phương thức đầu tiên (nhanh nhất) để khách không phải bấm thêm.
+        setSelectedServiceId(data.options[0]?.serviceId ?? null);
+      })
+      .catch(() => { if (!stale) { setShipOptions(null); setSelectedServiceId(null); } })
       .finally(() => { if (!stale) setQuoting(false); });
     return () => { stale = true; };
   }, [geo.districtId, geo.wardCode, items.length, subtotal]);
+
 
   if (loading) return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-20 text-center text-text-muted">{t('common.loading')}</div>
@@ -274,24 +313,38 @@ export default function CheckoutClient() {
           )}
 
           <h2 className="font-medium text-text mb-3 mt-6">{t('checkout.shippingMethod')}</h2>
-          {applicableMethods.length === 0 ? (
-            <p className="text-sm text-text-muted">{t('checkout.noShippingMethods')}</p>
-          ) : (
+          {/* M-22: các phương thức GHN theo tuyến. Khách chọn nhanh/chuẩn/tiết kiệm. */}
+          {quoting ? (
+            <p className="text-sm text-text-muted">{t('shipping.calculating')}</p>
+          ) : shipOptions?.available && shipOptions.options.length > 0 ? (
             <div className="space-y-2">
-              {applicableMethods.map((m) => {
-                const free = m.freeOver != null && subtotal >= Number(m.freeOver);
-                return (
-                  <label key={m.id} className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-colors ${shippingMethodId === m.id ? 'border-brand bg-brand-faint' : 'border-border hover:border-brand-lighter'}`}>
-                    <input type="radio" name="shippingMethod" checked={shippingMethodId === m.id} onChange={() => setShippingMethodId(m.id)} className="mt-0.5 accent-brand" />
-                    <div className="flex-1 text-sm">
-                      <p className="font-medium text-text">{m.name}{m.estimatedDays ? <span className="font-normal text-text-faint"> · {m.estimatedDays}</span> : null}</p>
-                      {m.description && <p className="text-text-muted">{m.description}</p>}
-                    </div>
-                    <span className="text-sm font-medium text-text">{free ? t('checkout.free') : `${formatPrice(Number(m.fee))}`}</span>
-                  </label>
-                );
-              })}
+              {shipOptions.options.map((o) => (
+                <label key={o.serviceId} className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-colors ${selectedServiceId === o.serviceId ? 'border-brand bg-brand-faint' : 'border-border hover:border-brand-lighter'}`}>
+                  <input type="radio" name="ghnService" checked={selectedServiceId === o.serviceId} onChange={() => setSelectedServiceId(o.serviceId)} className="mt-0.5 accent-brand" />
+                  <div className="flex-1 text-sm">
+                    <p className="font-medium text-text">{o.name}</p>
+                    <p className="text-text-muted">
+                      {o.leadtimeDays ? t('shipping.leadDays', { days: o.leadtimeDays }) : o.description}
+                    </p>
+                  </div>
+                  <span className="text-sm font-medium text-text">
+                    {o.freeShipping || o.feeVnd === 0 ? t('shipping.free') : formatPrice(o.feeVnd)}
+                  </span>
+                </label>
+              ))}
             </div>
+          ) : shipOptions && !shipOptions.available ? (
+            <p className="text-sm text-error">
+              {shipOptions.reason === 'district_not_served' ? t('shipping.notServed')
+                : shipOptions.reason === 'parcel_too_heavy' ? t('shipping.tooHeavy')
+                : shipOptions.reason === 'no_pickup' ? t('shipping.noPickup')
+                : shipOptions.reason === 'route_not_found' ? t('shipping.routeNotFound')
+                : t('shipping.unavailable')}
+            </p>
+          ) : isMember && addressId && !geo.districtId ? (
+            <p className="text-sm text-error">{t('shipping.addressNeedsUpdate')}</p>
+          ) : (
+            <p className="text-sm text-text-faint">{t('shipping.selectAddress')}</p>
           )}
 
           <h2 className="font-medium text-text mb-3 mt-6">{t('checkout.payment')}</h2>
@@ -333,31 +386,20 @@ export default function CheckoutClient() {
                 <span>{t('checkout.discount')} ({discount.code})</span><span>−{formatPrice(discount.discountAmount)}</span>
               </div>
             )}
-            {/* M-13: phí GHN thật khi đã chọn xong địa chỉ; nếu chưa, nói rõ vì sao. */}
+            {/* M-22: phí theo dịch vụ GHN đang chọn. */}
             <div className="flex justify-between text-text-muted">
               <span>
                 {t('checkout.shipping')}
-                {quote?.available ? ` (${t('shipping.byGhn')})` : selectedMethod ? ` (${selectedMethod.name})` : ''}
+                {selectedOption ? ` · ${selectedOption.name}` : ''}
               </span>
               <span>
                 {quoting
                   ? t('shipping.calculating')
-                  : quote?.available
-                    ? (quote.freeShipping || quote.feeVnd === 0 ? t('shipping.free') : formatPrice(quote.feeVnd))
-                    : shippingFeeVnd === 0 ? t('checkout.free') : formatPrice(shippingFeeVnd)}
+                  : selectedOption
+                    ? (selectedOption.freeShipping || selectedOption.feeVnd === 0 ? t('shipping.free') : formatPrice(selectedOption.feeVnd))
+                    : '—'}
               </span>
             </div>
-            {!quoting && quote && !quote.available && (
-              <p className="text-xs text-error">
-                {quote.reason === 'district_not_served' ? t('shipping.notServed')
-                  : quote.reason === 'parcel_too_heavy' ? t('shipping.tooHeavy')
-                  : quote.reason === 'missing_destination' ? t('shipping.selectAddress')
-                  : t('shipping.unavailable')}
-              </p>
-            )}
-            {!quoting && !quote && (
-              <p className="text-xs text-text-faint">{t('shipping.selectAddress')}</p>
-            )}
             <div className="pt-3 border-t border-border flex justify-between font-semibold text-text">
               <span>{t('checkout.total')}</span><span>{formatPrice(total)}</span>
             </div>

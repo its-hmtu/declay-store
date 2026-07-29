@@ -61,6 +61,21 @@ export interface GhnFeeRequest {
   cod_value?: number;
 }
 
+/** Tham số API /v2/shipping-order/leadtime. */
+export interface GhnLeadtimeRequest {
+  from_district_id: number;
+  from_ward_code: string;
+  to_district_id: number;
+  to_ward_code: string;
+  service_id: number;
+}
+
+/** Phần `data` của /leadtime — mốc thời gian Unix (giây). */
+export interface GhnLeadtimeResponse {
+  leadtime: number;
+  order_date: number;
+}
+
 /** Phần `data` trong phản hồi thành công. */
 export interface GhnFeeResponse {
   total: number;
@@ -69,6 +84,16 @@ export interface GhnFeeResponse {
   cod_fee?: number;
   pick_remote_areas_fee?: number;
   deliver_remote_areas_fee?: number;
+}
+
+/** Phản hồi /v2/shipping-order/create */
+export interface GhnCreatedOrder {
+  order_code: string;
+  expected_delivery_time?: string;
+  total_fee?: string | number;
+  sort_code?: string;
+  trans_type?: string;
+  fee?: Record<string, number>;
 }
 
 export interface GhnMasterDataProvider {
@@ -82,4 +107,10 @@ export interface GhnMasterDataProvider {
   /** Dịch vụ khả dụng cho tuyến cụ thể — không tuyến nào cũng có đủ dịch vụ. */
   getAvailableServices(fromDistrictId: number, toDistrictId: number): Promise<GhnService[]>;
   calculateFee(request: GhnFeeRequest): Promise<GhnFeeResponse>;
+  /** Thời gian giao dự kiến cho một dịch vụ cụ thể. */
+  getLeadtime(request: GhnLeadtimeRequest): Promise<GhnLeadtimeResponse>;
+  /** M-26: trạng thái hiện tại của một vận đơn (Order Info). CHỈ ĐỌC. */
+  getOrderStatus(ghnOrderCode: string): Promise<{ status: string; log?: { status: string; updated_date?: string }[] } | null>;
+  /** ⚠️ THAO TÁC GHI: tạo vận đơn thật, phát sinh cước. */
+  createOrder(payload: Record<string, unknown>): Promise<GhnCreatedOrder>;
 }

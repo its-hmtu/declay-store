@@ -10,8 +10,10 @@ import { wishlistApi, cartApi } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import { formatPrice } from '@/lib/utils';
+import { useCart } from '@/lib/cart/CartProvider';
 
 export default function WishlistClient() {
+  const { addItem } = useCart();
   const router = useRouter();
   const [wishlist, setWishlist] = useState<Wishlist | null>(null);
   const [loading,  setLoading]  = useState(true);
@@ -46,7 +48,7 @@ export default function WishlistClient() {
     if (!token) return;
     setBusy(itemId);
     try {
-      await cartApi.add(token, variantId, 1);
+      await addItem(variantId, 1);
       const res = await wishlistApi.remove(token, itemId);
       setWishlist(res.data);
       toast.success('Added to cart.');

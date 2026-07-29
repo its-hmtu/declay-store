@@ -3,11 +3,13 @@ import { logger } from '@/lib/logger';
 import { httpError } from '@/utils/http-error';
 import { GhnProvinceModel, GhnDistrictModel, GhnWardModel, GhnServiceModel } from './ghn.entity';
 import { GhnProvider, warnIfSuspiciousBaseUrl } from './ghn.provider';
-import { resolveGhnMode, describeMode } from './ghn.mode';
+import { resolveGhnMode, describeMode, PREVIEW_TRACKING_PREFIX, type GhnMode } from './ghn.mode';
 import { GhnMockProvider } from './ghn.mock';
 import type { GhnMasterDataProvider } from './ghn.types';
 import { buildParcel, type ParcelItemInput } from './ghn.parcel';
+import { buildCreateOrderPayload, type CreateOrderInput } from './ghn.order';
 import { applyFeePolicy, quoteBlockedReason, districtSupportsDelivery, type QuoteBlockedReason } from './ghn.fee';
+import { serviceMeta, serviceSortWeight, leadtimeDays } from './ghn.services-meta';
 
 /**
  * M-13: chọn provider.
@@ -16,7 +18,7 @@ import { applyFeePolicy, quoteBlockedReason, districtSupportsDelivery, type Quot
  */
 export function createGhnProvider(): GhnMasterDataProvider {
   const { token, shopId, baseUrl, allowWrite } = config.ghn;
-  const mode = resolveGhnMode({ token, shopId, allowWrite });
+  const mode = resolveGhnMode({ token, shopId, allowWrite, modeOverride: config.ghn.mode });
 
   if (mode === 'mock') {
     logger.warn(describeMode(mode));
@@ -41,17 +43,51 @@ export interface ShippingQuote {
   /** True khi phải dùng cân nặng mặc định — admin cần khai số thật. */
   usedDefaultWeight: boolean;
   carrier: string;
+  /** Chỉ có ở môi trường không phải production: thông điệp lỗi gốc từ GHN. */
+  debugMessage?: string;
+}
+
+export interface ShippingOption {
+  serviceId: number;
+  serviceTypeId: number;
+  name: string;
+  description: string;
+  feeVnd: number;
+  freeShipping: boolean;
+  leadtimeAt: number | null;
+  leadtimeDays: number | null;
+}
+
+export interface ShippingOptionsResult {
+  available: boolean;
+  reason: QuoteBlockedReason | null;
+  options: ShippingOption[];
+  weightGram: number;
+  usedDefaultWeight: boolean;
+  debugMessage?: string;
 }
 
 export default class GhnService {
   private provider: GhnMasterDataProvider;
+  readonly mode: GhnMode;
 
   constructor(provider?: GhnMasterDataProvider) {
     this.provider = provider ?? createGhnProvider();
+    this.mode = resolveGhnMode({
+      token: config.ghn.token,
+      shopId: config.ghn.shopId,
+      allowWrite: config.ghn.allowWrite,
+      modeOverride: config.ghn.mode,
+    });
   }
 
   get isMock(): boolean {
     return this.provider.isMock;
+  }
+
+  /** M-26: trạng thái hiện tại của vận đơn (Order Info) — chỉ đọc. */
+  async getOrderStatus(ghnOrderCode: string) {
+    return this.provider.getOrderStatus(ghnOrderCode);
   }
 
   /* ── Dữ liệu địa giới (đọc từ cache trong DB) ───────────── */
@@ -238,7 +274,9 @@ export default class GhnService {
     subtotalVnd: number;
     /** Giá trị khai giá để tính bảo hiểm; bỏ qua nếu không muốn mua bảo hiểm. */
     insuranceValueVnd?: number;
-  }): Promise<ShippingQuote> {
+    /** M-22: dịch vụ khách đã chọn. Có thì tính đúng dịch vụ đó thay vì tự đoán. */
+    serviceId?: number | null;
+  }): Promise<ShippingQuote & { serviceId: number | null }> {
     const parcel = buildParcel(input.items);
 
     // Kiểm tra CẢ HAI cấp: quận mở nhưng phường bị khoá là trường hợp có thật.
@@ -264,19 +302,28 @@ export default class GhnService {
       parcelExceedsLimit: parcel.exceedsLimit,
     });
 
-    const empty: ShippingQuote = {
+    const empty: ShippingQuote & { serviceId: number | null } = {
       available: false, reason: blocked, feeVnd: 0, carrierFeeVnd: 0, freeShipping: false,
       weightGram: parcel.weightGram, usedDefaultWeight: parcel.usedDefaults, carrier: this.provider.name,
+      serviceId: null,
     };
     if (blocked) return empty;
 
-    try {
-      const pickup = await this.resolvePickup();
-      if (!pickup) return { ...empty, reason: 'carrier_unavailable' };
+    // Điểm lấy hàng phải xác định ĐƯỢC trước khi gọi GHN. Thiếu nó là lỗi cấu
+    // hình (chưa khai địa chỉ kho), không phải lỗi tạm thời — log riêng để phân biệt.
+    const pickup = await this.resolvePickup();
+    if (!pickup) {
+      logger.error('GHN quote: không xác định được điểm lấy hàng. '
+        + 'Khai GHN_FROM_DISTRICT_ID trong .env, hoặc thêm địa chỉ kho trong tài khoản GHN.');
+      return { ...empty, reason: 'no_pickup' };
+    }
 
+    try {
       // BẤT BIẾN: tra dịch vụ và tính phí phải dùng CÙNG một tuyến.
       // Lệch điểm đi giữa hai lời gọi là nguyên nhân của "route not found service".
-      const serviceId = await this.resolveServiceId(pickup.districtId, input.districtId!);
+      // M-22: nếu khách đã chọn dịch vụ, tính đúng dịch vụ đó; nếu không, tự chọn.
+      const serviceId = input.serviceId
+        ?? await this.resolveServiceId(pickup.districtId, input.districtId!);
       const fee = await this.provider.calculateFee({
         from_district_id: pickup.districtId,
         ...(pickup.wardCode ? { from_ward_code: pickup.wardCode } : {}),
@@ -306,10 +353,175 @@ export default class GhnService {
         weightGram: parcel.weightGram,
         usedDefaultWeight: parcel.usedDefaults,
         carrier: this.provider.name,
+        serviceId: serviceId ?? null,
       };
     } catch (err) {
-      logger.warn('GHN quote failed', { error: (err as Error).message, districtId: input.districtId });
-      return { ...empty, reason: 'carrier_unavailable' };
+      const message = (err as Error).message;
+      // Ghi ĐẦY ĐỦ tuyến + lỗi để đọc log là biết ngay hỏng ở đâu.
+      logger.error('GHN quote failed', {
+        error: message,
+        route: `${pickup.districtId} -> ${input.districtId}`,
+        fromWard: pickup.wardCode,
+        toWard: input.wardCode,
+        weightGram: parcel.weightGram,
+      });
+      // Tuyến không tồn tại là lỗi cấu hình kho, không phải trục trặc tạm thời.
+      const routeMissing = /route not found|not support|khong ho tro/i.test(message);
+      return {
+        ...empty,
+        reason: routeMissing ? 'route_not_found' : 'carrier_unavailable',
+        debugMessage: message,
+      };
     }
+  }
+
+  /**
+   * M-22: liệt kê CÁC phương thức GHN cho một giỏ hàng tới một địa chỉ.
+   *
+   * Mỗi dịch vụ khả dụng của tuyến được hỏi phí + thời gian giao SONG SONG.
+   * Dịch vụ nào lỗi thì bỏ qua, không làm hỏng cả danh sách.
+   */
+  async quoteOptions(input: {
+    districtId: number | null;
+    wardCode: string | null;
+    items: ParcelItemInput[];
+    subtotalVnd: number;
+    insuranceValueVnd?: number;
+  }): Promise<ShippingOptionsResult> {
+    const parcel = buildParcel(input.items);
+
+    let canDeliver = true;
+    if (input.districtId) {
+      const district = await GhnDistrictModel.findByPk(input.districtId);
+      canDeliver = district ? districtSupportsDelivery(district.supportType) : false;
+      if (canDeliver && input.wardCode) {
+        const ward = await GhnWardModel.findOne({
+          where: { wardCode: String(input.wardCode), districtId: input.districtId },
+        });
+        canDeliver = ward ? districtSupportsDelivery(ward.supportType) : false;
+      }
+    }
+
+    const blocked = quoteBlockedReason({
+      districtId: input.districtId,
+      wardCode: input.wardCode,
+      districtSupportsDelivery: canDeliver,
+      parcelExceedsLimit: parcel.exceedsLimit,
+    });
+    const base: ShippingOptionsResult = {
+      available: false, reason: blocked, options: [],
+      weightGram: parcel.weightGram, usedDefaultWeight: parcel.usedDefaults,
+    };
+    if (blocked) return base;
+
+    const pickup = await this.resolvePickup();
+    if (!pickup) return { ...base, reason: 'no_pickup' };
+
+    try {
+      const services = await this.provider.getAvailableServices(pickup.districtId, input.districtId!);
+      if (services.length === 0) return { ...base, reason: 'route_not_found' };
+
+      const parcelReq = {
+        from_district_id: pickup.districtId,
+        ...(pickup.wardCode ? { from_ward_code: pickup.wardCode } : {}),
+        to_district_id: input.districtId!,
+        to_ward_code: String(input.wardCode),
+        weight: parcel.weightGram,
+        length: parcel.lengthCm,
+        width: parcel.widthCm,
+        height: parcel.heightCm,
+        ...(input.insuranceValueVnd ? { insurance_value: Math.round(input.insuranceValueVnd) } : {}),
+      };
+
+      const settled = await Promise.allSettled(services.map(async (svc) => {
+        const [fee, leadtime] = await Promise.all([
+          this.provider.calculateFee({ ...parcelReq, service_id: svc.service_id }),
+          this.provider.getLeadtime({
+            from_district_id: pickup.districtId,
+            from_ward_code: pickup.wardCode,
+            to_district_id: input.districtId!,
+            to_ward_code: String(input.wardCode),
+            service_id: svc.service_id,
+          }).catch(() => null),
+        ]);
+        const policy = applyFeePolicy({
+          carrierFeeVnd: fee.total,
+          subtotalVnd: input.subtotalVnd,
+          freeOverVnd: config.ghn.freeOverVnd || null,
+          subsidyVnd: config.ghn.subsidyVnd || null,
+        });
+        const meta = serviceMeta(svc.service_type_id, svc.short_name);
+        return {
+          serviceId: svc.service_id,
+          serviceTypeId: svc.service_type_id,
+          name: meta.name,
+          description: meta.description,
+          feeVnd: policy.customerFeeVnd,
+          freeShipping: policy.freeShipping,
+          leadtimeAt: leadtime ? leadtime.leadtime : null,
+          leadtimeDays: leadtime ? leadtimeDays(leadtime.leadtime, leadtime.order_date) : null,
+        } as ShippingOption;
+      }));
+
+      const options = settled
+        .filter((r): r is PromiseFulfilledResult<ShippingOption> => r.status === 'fulfilled')
+        .map((r) => r.value)
+        .sort((a, b2) => serviceSortWeight(a.serviceTypeId) - serviceSortWeight(b2.serviceTypeId));
+
+      if (options.length === 0) return { ...base, reason: 'carrier_unavailable' };
+      return {
+        available: true, reason: null, options,
+        weightGram: parcel.weightGram, usedDefaultWeight: parcel.usedDefaults,
+      };
+    } catch (err) {
+      const message = (err as Error).message;
+      logger.error('GHN quoteOptions failed', { error: message, route: `${pickup.districtId} -> ${input.districtId}` });
+      const routeMissing = /route not found|not support|khong ho tro/i.test(message);
+      return { ...base, reason: routeMissing ? 'route_not_found' : 'carrier_unavailable', debugMessage: message };
+    }
+  }
+
+  /**
+   * M-13d: tạo vận đơn GHN.
+   *
+   * ⚠️ THAO TÁC GHI — phát sinh cước thật. Được gọi khi admin xác nhận đơn,
+   * không phải lúc khách đặt hàng: đơn ảo, đơn hết hàng, đơn khách huỷ đều
+   * không tốn tiền.
+   *
+   * An toàn khi gọi lại: `client_order_code` = mã đơn hàng, GHN sẽ trả về vận
+   * đơn cũ thay vì tạo thêm. Nhờ vậy admin bấm hai lần hoặc mạng chập chờn
+   * cũng không sinh ra hai vận đơn cho cùng một đơn.
+   */
+  async createShipment(input: CreateOrderInput) {
+    const payload = buildCreateOrderPayload(input);
+    const created = await this.provider.createOrder(payload as unknown as Record<string, unknown>);
+
+    // Preview KHÔNG tạo vận đơn nên GHN trả order_code rỗng. Sinh mã thay thế
+    // có tiền tố rõ ràng — tuyệt đối không để mã giả trông giống mã thật, vì
+    // nó đi vào email gửi khách và vào cơ sở dữ liệu.
+    const isPreview = this.mode === 'preview';
+    const providerOrderCode = created.order_code
+      || (isPreview ? `${PREVIEW_TRACKING_PREFIX}${input.orderCode}` : '');
+
+    if (!providerOrderCode) {
+      throw new Error('GHN không trả về mã vận đơn.');
+    }
+
+    logger.info(isPreview ? 'GHN shipment PREVIEWED (không tạo đơn thật)' : 'GHN shipment created', {
+      mode: this.mode,
+      orderCode: input.orderCode,
+      ghnOrderCode: providerOrderCode,
+      codAmount: payload.cod_amount,
+      totalFee: created.total_fee,
+    });
+
+    return {
+      providerOrderCode,
+      totalFee: created.total_fee == null ? null : Number(created.total_fee),
+      expectedDeliveryTime: created.expected_delivery_time ? new Date(created.expected_delivery_time) : null,
+      raw: created as unknown as Record<string, unknown>,
+      isMock: this.provider.isMock,
+      isPreview,
+    };
   }
 }

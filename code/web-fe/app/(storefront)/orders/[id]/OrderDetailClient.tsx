@@ -10,6 +10,9 @@ import { auth } from '@/lib/auth';
 import Badge from '@/components/ui/Badge';
 import OrderProgress from '@/components/storefront/OrderProgress';
 import { formatPrice } from '@/lib/utils';
+import { orderLabel } from '@/lib/utils';
+import TrackingCode from '@/components/storefront/TrackingCode';
+import { useT } from '@/lib/i18n/LocaleProvider';
 
 const TERMINAL = ['delivered', 'cancelled'];
 
@@ -24,6 +27,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function OrderDetailClient({ orderId }: { orderId: number }) {
+  const { t } = useT();
   const [order,    setOrder]    = useState<Order | null>(null);
   const [shipment, setShipment] = useState<Shipment | null>(null);
   const [loading,  setLoading]  = useState(true);
@@ -74,7 +78,10 @@ export default function OrderDetailClient({ orderId }: { orderId: number }) {
 
       <div className="flex items-center justify-between gap-4 mb-8 flex-wrap">
         <div>
-          <h1 className="font-serif text-3xl font-bold text-text">Order #{order.id}</h1>
+          <h1 className="font-serif text-3xl font-bold text-text">
+            <span className="eyebrow block mb-1">{t('order.code')}</span>
+            <span className="font-mono">{orderLabel(order)}</span>
+          </h1>
           <p className="text-sm text-text-muted mt-1">
             {new Date(order.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
           </p>
@@ -88,15 +95,24 @@ export default function OrderDetailClient({ orderId }: { orderId: number }) {
       <div className="rounded-xl border border-border bg-surface p-5 sm:p-6 mb-6">
         <OrderProgress status={order.status} />
 
+        {!shipment && (
+          <p className="mt-6 pt-5 border-t border-border text-sm text-text-muted">
+            {t('shipment.pending')}
+          </p>
+        )}
+
         {shipment && (
           <div className="mt-6 pt-5 border-t border-border grid sm:grid-cols-3 gap-4 text-sm">
             <div>
               <p className="text-text-faint text-xs uppercase tracking-wider mb-0.5 flex items-center gap-1"><Truck size={12} /> Carrier</p>
               <p className="text-text font-medium">{shipment.carrier}</p>
             </div>
-            <div>
-              <p className="text-text-faint text-xs uppercase tracking-wider mb-0.5">Tracking #</p>
-              <p className="text-text font-mono text-xs">{shipment.trackingNumber}</p>
+            <div className="sm:col-span-2">
+              {shipment.trackingNumber ? (
+                <TrackingCode trackingNumber={shipment.trackingNumber} carrier={shipment.carrier} />
+              ) : (
+                <p className="text-sm text-text-muted">{t('shipment.pending')}</p>
+              )}
             </div>
             <div>
               <p className="text-text-faint text-xs uppercase tracking-wider mb-0.5">

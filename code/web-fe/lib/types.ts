@@ -200,6 +200,8 @@ export interface OrderItem {
 
 export interface Order {
   id: number;
+  /** M-16: mã hiển thị cho khách (DC-YYMMDD-XXXX). Dùng cái này, không dùng id. */
+  orderCode: string;
   userId: number;
   status: OrderStatus;
   totalAmount: string;
@@ -211,6 +213,8 @@ export interface Order {
   returnedAt?: string | null;
   returnReason?: string | null;
   items?: OrderItem[];
+  /** M-13d: vận đơn GHN, có sau khi admin xác nhận đơn. */
+  shipment?: Shipment | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -246,6 +250,10 @@ export interface Address {
   postalCode?: string | null;
   isDefault: boolean;
   addressType: AddressType;
+  // M-13: mã địa giới GHN. Địa chỉ tạo trước tích hợp GHN sẽ null → cần cập nhật.
+  ghnProvinceId?: number | null;
+  ghnDistrictId?: number | null;
+  ghnWardCode?: string | null;
 }
 
 /* ── Job & Application ─────────────────────────────────── */

@@ -12,6 +12,8 @@ const orderService = new OrderService();
 
 interface SettleOutcome extends SettlementDecision {
   orderId: number | null;
+  /** M-16: mã hiển thị cho khách — giao diện không dùng id. */
+  orderCode: string | null;
   orderStatus: string | null;
 }
 
@@ -74,7 +76,12 @@ async function settleFromParams(
   }
 
   const finalOrder = orderId ? await orderService.findByIdRaw(orderId) : null;
-  return { ...decision, orderId, orderStatus: finalOrder?.status ?? null };
+  return {
+    ...decision,
+    orderId,
+    orderCode: finalOrder?.orderCode ?? null,
+    orderStatus: finalOrder?.status ?? null,
+  };
 }
 
 /**
@@ -100,17 +107,29 @@ export const vnpayVerifyReturn = asyncHandler(async (req: Request, res: Response
   const params = { ...req.query } as Record<string, string>;
   const outcome = await settleFromParams(params, 'return');
   const valid = outcome.rspCode !== '97';
+  const paid = valid && outcome.orderStatus != null && outcome.orderStatus !== 'pending_payment';
+
+  // M-17: trả kèm nội dung đơn để trang cảm ơn hiển thị đầy đủ.
+  // Khách vãng lai không xem được /orders/:id, nên nếu ở đây không hiện thì họ
+  // không còn chỗ nào khác để xem mình vừa mua gì.
+  // Chỉ trả khi chữ ký hợp lệ VÀ đơn đã thanh toán — không để URL đoán mò moi
+  // được nội dung đơn của người khác.
+  const summary = paid && outcome.orderId
+    ? await orderService.getPublicSummary(outcome.orderId)
+    : null;
 
   res.json({
     success: true,
     data: {
       valid,
       orderId: outcome.orderId,
+      orderCode: outcome.orderCode,
       // "đã trả tiền" = đơn thực sự đã rời khỏi pending_payment TRONG DB,
       // không phải chỉ vì URL trên trình duyệt nói vậy.
-      paid: valid && outcome.orderStatus != null && outcome.orderStatus !== 'pending_payment',
+      paid,
       orderStatus: outcome.orderStatus,
       responseCode: params.vnp_ResponseCode ?? null,
+      summary,
     },
     message: outcome.message,
   });

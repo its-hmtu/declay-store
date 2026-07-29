@@ -11,6 +11,7 @@ import AdminToolbar, { FilterSelect } from '@/components/admin/AdminToolbar';
 import Pagination from '@/components/admin/Pagination';
 import { usePagination } from '@/lib/usePagination';
 import { formatPrice } from '@/lib/utils';
+import { orderLabel } from '@/lib/utils';
 
 const STATUS_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'error' | 'info'> = {
   pending_payment: 'warning',
@@ -21,7 +22,10 @@ const STATUS_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'error'
   cancelled:       'error',
 };
 
-const STATUS_OPTS = ['pending_payment', 'paid', 'processing', 'shipped', 'delivered', 'cancelled'];
+const STATUS_OPTS = ['pending_payment', 'paid', 'processing', 'shipped', 'delivered', 'returned', 'cancelled'];
+// Các trạng thái admin ĐỔI TAY được. 'shipped' KHÔNG có ở đây: đơn chỉ chuyển
+// sang shipped qua việc tạo vận đơn (mã + đơn vị VC), không phải đổi dropdown.
+const MANUAL_STATUS_OPTS = ['paid', 'processing', 'delivered', 'cancelled'];
 
 export default function AdminOrdersClient() {
   const [orders,  setOrders]  = useState<Order[]>([]);
@@ -90,7 +94,7 @@ export default function AdminOrdersClient() {
             ) : (
               paged.map((order) => (
                 <tr key={order.id} className="hover:bg-surface-alt/50 transition-colors">
-                  <td className="px-4 py-3 font-medium text-text">#{order.id}</td>
+                  <td className="px-4 py-3 font-mono text-xs font-medium text-text">{orderLabel(order)}</td>
                   <td className="px-4 py-3 text-text-muted">{new Date(order.createdAt).toLocaleDateString()}</td>
                   <td className="px-4 py-3">
                     <Badge variant={STATUS_VARIANT[order.status] ?? 'default'}>
@@ -99,13 +103,18 @@ export default function AdminOrdersClient() {
                   </td>
                   <td className="px-4 py-3 font-medium text-brand">{formatPrice(parseFloat(order.totalAmount))}</td>
                   <td className="px-4 py-3">
-                    <select
-                      value={order.status}
-                      onChange={(e) => updateStatus(order.id, e.target.value)}
-                      className="text-xs border border-border rounded-md px-2 py-1 bg-surface focus:outline-none focus:border-brand text-text"
-                    >
-                      {STATUS_OPTS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-                    </select>
+                    {MANUAL_STATUS_OPTS.includes(order.status) ? (
+                      <select
+                        value={order.status}
+                        onChange={(e) => updateStatus(order.id, e.target.value)}
+                        className="text-xs border border-border rounded-md px-2 py-1 bg-surface focus:outline-none focus:border-brand text-text"
+                      >
+                        {MANUAL_STATUS_OPTS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+                      </select>
+                    ) : (
+                      // shipped/returned/pending_payment: đặt bởi hệ thống, chỉ xem.
+                      <span className="text-xs text-text-muted">{order.status.replace('_', ' ')}</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
                     <Link href={`/admin/orders/${order.id}`} className="text-xs text-brand hover:underline">Manage</Link>

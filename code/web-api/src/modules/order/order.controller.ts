@@ -40,6 +40,15 @@ export default class OrderController implements IOrderController {
     sendSuccess(res, order, 'Order retrieved successfully');
   });
 
+  /** M-19: tóm tắt đơn cho trang cảm ơn của khách vãng lai (tra bằng token). */
+  guestOrderSummary = asyncHandler(async (req: Request, res: Response) => {
+    const token = typeof req.query.token === 'string' ? req.query.token : '';
+    if (!token) throw httpError(400, 'Order token is required');
+    const summary = await this.orderService.getPublicSummaryByGuestToken(token);
+    if (!summary) throw httpError(404, 'Order not found');
+    sendSuccess(res, summary, 'Order summary');
+  });
+
   adminReturnOrder = asyncHandler(async (req: Request, res: Response) => {
     const order = await this.orderService.returnOrder(Number(req.params.id), req.body.reason);
     sendSuccess(res, order, 'Order marked as returned');
@@ -60,6 +69,11 @@ export default class OrderController implements IOrderController {
   cancelOrder = asyncHandler(async (req: Request, res: Response) => {
     const order = await this.orderService.cancelOrder(Number(req.params.id), this.getUserId(req));
     sendSuccess(res, order, 'Order cancelled successfully');
+  });
+
+  adminGetOrder = asyncHandler(async (req: Request, res: Response) => {
+    const order = await this.orderService.adminGetById(Number(req.params.id));
+    sendSuccess(res, order, 'Order retrieved successfully');
   });
 
   adminListOrders = asyncHandler(async (req: Request, res: Response) => {

@@ -8,6 +8,8 @@ import {
 import { sequelize } from '@/config/sequelize';
 import User from '@/modules/user/user.entity';
 import DiscountCode from '@/modules/discount/discount.entity';
+import Address from '@/modules/address/address.entity';
+import ProductVariant from '@/modules/product-variant/product-variant.entity';
 
 export type OrderStatus =
   | 'pending_payment'
@@ -37,6 +39,10 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
   declare subtotal: CreationOptional<number>;
   declare shippingFee: CreationOptional<number>;
   declare shippingMethodId: CreationOptional<number | null>;
+  /** M-16: mã hiển thị cho khách. Giao diện KHÔNG dùng id. */
+  declare orderCode: CreationOptional<string>;
+  /** M-20: giỏ hàng đã sinh ra đơn — để xoá đúng giỏ khi thanh toán xong. */
+  declare cartId: CreationOptional<number | null>;
   // M-13: chốt lại thông tin vận chuyển GHN tại thời điểm đặt hàng.
   declare shippingCarrier: CreationOptional<string | null>;
   declare ghnServiceId: CreationOptional<number | null>;
@@ -112,6 +118,8 @@ Order.init(
       defaultValue: 0,
       field: 'shipping_fee',
     },
+    orderCode:          { type: DataTypes.STRING(20), allowNull: false, field: 'order_code' },
+    cartId:             { type: DataTypes.INTEGER, allowNull: true, field: 'cart_id' },
     shippingCarrier:    { type: DataTypes.STRING(20), allowNull: true, field: 'shipping_carrier' },
     ghnServiceId:       { type: DataTypes.INTEGER, allowNull: true, field: 'ghn_service_id' },
     ghnServiceTypeId:   { type: DataTypes.SMALLINT, allowNull: true, field: 'ghn_service_type_id' },
@@ -200,6 +208,8 @@ export class OrderShipment extends Model<
   declare lastEvent: CreationOptional<string | null>;
   declare lastEventAt: CreationOptional<Date | null>;
   declare podUrl: CreationOptional<string | null>;
+  /** M-13d: phản hồi gốc của hãng vận chuyển, giữ để đối soát khi có tranh chấp. */
+  declare rawResponse: CreationOptional<Record<string, unknown> | null>;
   declare shippedAt: CreationOptional<Date>;
   declare estimatedDeliveryAt: CreationOptional<Date | null>;
   declare deliveredAt: CreationOptional<Date | null>;
@@ -225,6 +235,7 @@ OrderShipment.init(
     status: { type: DataTypes.STRING(40), allowNull: false, defaultValue: 'created' },
     incoterm: { type: DataTypes.STRING(10), allowNull: true },
     labelUrl: { type: DataTypes.STRING(500), allowNull: true, field: 'label_url' },
+    rawResponse: { type: DataTypes.JSONB, allowNull: true, field: 'raw_response' },
     cost: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
     currency: { type: DataTypes.STRING(3), allowNull: true },
     lastEvent: { type: DataTypes.STRING(255), allowNull: true, field: 'last_event' },
@@ -267,3 +278,11 @@ Order.hasOne(OrderShipment, { foreignKey: 'orderId', as: 'shipment', onDelete: '
 OrderShipment.belongsTo(Order, { foreignKey: 'orderId', as: 'order' });
 DiscountCode.hasMany(Order, { foreignKey: 'discountCodeId', as: 'orders' });
 Order.belongsTo(DiscountCode, { foreignKey: 'discountCodeId', as: 'discountCode' });
+
+// M-19: hai quan hệ này TRƯỚC ĐÂY CHƯA ĐƯỢC KHAI BÁO. Mọi truy vấn dùng
+// `include: [{ model: Address, as: 'shippingAddress' }]` hay `as: 'variant'`
+// đều ném lỗi lúc chạy ("is not associated"), và TypeScript không bắt được vì
+// `include` nhận kiểu lỏng. Cần cho: email xác nhận, email vận đơn, tóm tắt
+// trang cảm ơn, và việc tạo vận đơn GHN.
+Order.belongsTo(Address, { foreignKey: 'shippingAddressId', as: 'shippingAddress' });
+OrderItem.belongsTo(ProductVariant, { foreignKey: 'variantId', as: 'variant' });

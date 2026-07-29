@@ -1,10 +1,15 @@
 import { Queue, Worker, type Job } from 'bullmq';
 import { redisConfig } from '@/config/redis';
-import { sendVerificationEmail, sendPasswordResetEmail, sendOrderStatusEmail } from '@/lib/email';
+import {
+  sendVerificationEmail, sendPasswordResetEmail, sendOrderStatusEmail,
+  sendOrderConfirmation, sendShipmentNotification,
+} from '@/lib/email';
 import { Order, type OrderStatus } from '@/modules/order/order.entity';
 import User from '@/modules/user/user.entity';
 
-export type EmailJobName = 'verify-email' | 'reset-password' | 'order-status-update';
+export type EmailJobName =
+  | 'verify-email' | 'reset-password' | 'order-status-update'
+  | 'order-confirmation' | 'order-shipped';
 
 export interface VerifyEmailJobData {
   to: string;
@@ -24,7 +29,18 @@ export interface OrderStatusUpdateJobData {
   estimatedDeliveryAt?: string | null;
 }
 
-export type EmailJobData = VerifyEmailJobData | ResetPasswordJobData | OrderStatusUpdateJobData;
+export interface OrderConfirmationJobData {
+  orderId: number;
+}
+
+/** M-18: email báo mã vận đơn. */
+export interface OrderShippedJobData {
+  orderId: number;
+}
+
+export type EmailJobData =
+  | VerifyEmailJobData | ResetPasswordJobData | OrderStatusUpdateJobData
+  | OrderConfirmationJobData | OrderShippedJobData;
 
 // BullMQ requires maxRetriesPerRequest: null — already set in redisConfig
 const connection = {
@@ -62,14 +78,30 @@ export function startEmailWorker(): void {
         const order = await Order.findByPk(orderId, {
           include: [{ model: User, as: 'user', attributes: ['email'] }],
         });
-        const userEmail = (order as any)?.user?.email as string | undefined;
-        if (!order || !userEmail) return;
+        if (!order) return;
 
-        await sendOrderStatusEmail(userEmail, orderId, status, {
+        // M-17: khách vãng lai KHÔNG có bản ghi user. Trước đây điều kiện này
+        // làm mọi email đơn hàng của họ bị bỏ qua âm thầm — mà email lại là thứ
+        // duy nhất họ nhận được, vì họ không xem được lịch sử đơn.
+        const recipient = ((order as any)?.user?.email as string | undefined) ?? order.guestEmail ?? null;
+        if (!recipient) {
+          console.warn(`⚠️ Đơn ${orderId} không có email người nhận — bỏ qua email trạng thái.`);
+          return;
+        }
+
+        await sendOrderStatusEmail(recipient, orderId, status, {
           carrier: carrier ?? null,
           trackingNumber: trackingNumber ?? null,
           estimatedDeliveryAt: estimatedDeliveryAt ?? null,
         });
+      } else if (job.name === 'order-confirmation') {
+        // M-17: email xác nhận có đầy đủ sản phẩm và số tiền.
+        const { orderId } = job.data as OrderConfirmationJobData;
+        await sendOrderConfirmation(orderId);
+      } else if (job.name === 'order-shipped') {
+        // M-18: email thứ hai, báo mã vận đơn khi hàng đã bàn giao cho hãng.
+        const { orderId } = job.data as OrderShippedJobData;
+        await sendShipmentNotification(orderId);
       }
     },
     { connection, concurrency: 5 },
@@ -97,4 +129,14 @@ export async function closeEmailWorker(): Promise<void> {
 
 export async function queueOrderStatusEmail(data: OrderStatusUpdateJobData): Promise<void> {
   await emailQueue.add('order-status-update', data);
+}
+
+/** M-17: email xác nhận đơn — gửi cho cả thành viên lẫn khách vãng lai. */
+export async function queueOrderConfirmationEmail(orderId: number): Promise<void> {
+  await emailQueue.add('order-confirmation', { orderId });
+}
+
+/** M-18: email báo mã vận đơn, gửi khi admin tạo vận đơn. */
+export async function queueShipmentEmail(orderId: number): Promise<void> {
+  await emailQueue.add('order-shipped', { orderId });
 }

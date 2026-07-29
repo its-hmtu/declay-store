@@ -54,9 +54,14 @@ const config = {
     // Môi trường dev của GHN (dev-online-gateway) đã ngừng phản hồi, nên mặc
     // định là production. An toàn KHÔNG còn dựa vào URL mà dựa vào quyền thao
     // tác: xem ghn.mode.ts — tính phí là chỉ đọc, không tạo ra gì.
-    baseUrl: (process.env.GHN_BASE_URL || 'https://online-gateway.ghn.vn').trim(),
+    // .replace(/\/+$/): bỏ dấu '/' thừa ở cuối. Nếu không, nối với '/shiip/...'
+    // thành '//shiip' và gateway GHN routing coi là path khác -> 404.
+    baseUrl: (process.env.GHN_BASE_URL || 'https://online-gateway.ghn.vn').trim().replace(/\/+$/, ''),
     // Chỉ bật khi thực sự muốn tạo vận đơn THẬT (phát sinh cước).
     allowWrite: process.env.GHN_ALLOW_WRITE === 'true',
+    // Ghi đè chế độ cho môi trường test: mock | preview | readonly | live.
+    // 'preview' gọi API preview thật của GHN — kiểm chứng đầy đủ mà không tạo đơn.
+    mode: (process.env.GHN_MODE || '').trim().toLowerCase(),
     // Kho lấy hàng. Bỏ trống thì GHN dùng địa chỉ mặc định của ShopId.
     fromDistrictId: Number(process.env.GHN_FROM_DISTRICT_ID) || 0,
     fromWardCode: (process.env.GHN_FROM_WARD_CODE || '').trim(),

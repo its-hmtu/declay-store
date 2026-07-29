@@ -51,10 +51,34 @@ async function request<T>(
 
   if (!res.ok) {
     if (res.status === 401 && !options._retry) {
-      if (path.startsWith('/admin')) {
-        // Admin token rejected — clear it so the admin layout redirects to login.
-        // Never touch the customer session here.
+      if (path.startsWith('/admin') && path !== '/admin/auth/refresh' && path !== '/admin/auth/login') {
+        // M-25: access token admin hết hạn -> thử GIA HẠN bằng refresh token
+        // trước khi đăng xuất. Trước đây xoá token ngay -> admin bị đá ra giữa
+        // chừng. KHÔNG áp cho chính /admin/auth/refresh để tránh lặp vô hạn.
+        const adminRefresh = readCookie('declay_admin_refresh');
+        if (adminRefresh) {
+          try {
+            const refreshRes = await fetch(`${BASE_URL}/admin/auth/refresh`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refreshToken: adminRefresh }),
+            });
+            if (refreshRes.ok) {
+              const refreshJson = await refreshRes.json();
+              const data = (refreshJson as ApiResponse<{ accessToken: string; refreshToken: string }>).data;
+              writeCookie('declay_admin_token', data.accessToken, 8 * 3600);
+              writeCookie('declay_admin_refresh', data.refreshToken, 30 * 24 * 3600);
+              return request(path, { ...options, token: data.accessToken, _retry: true });
+            }
+          } catch {}
+        }
+        // Refresh thất bại/không có -> xoá cả hai, layout admin sẽ đá về login.
         deleteCookie('declay_admin_token');
+        deleteCookie('declay_admin_refresh');
+      } else if (path.startsWith('/admin')) {
+        // /admin/auth/* : không tự refresh, chỉ để lỗi nổi lên.
+        deleteCookie('declay_admin_token');
+        deleteCookie('declay_admin_refresh');
       } else {
         const refreshToken = readCookie('declay_refresh');
         if (refreshToken) {
@@ -182,10 +206,21 @@ export const ordersApi = {
   /** M-12: confirm a VNPay return before showing the buyer a success page. */
   verifyVnpayReturn: (query: string) =>
     api.get<{
-      valid: boolean; orderId: number | null; paid: boolean;
+      valid: boolean; orderId: number | null; orderCode: string | null; paid: boolean;
       orderStatus: string | null; responseCode: string | null;
+      /**
+       * M-17/M-19: nội dung đơn để trang cảm ơn hiển thị đầy đủ (chỉ có khi đã
+       * thanh toán). Dùng CHUNG một kiểu với luồng COD để hai trang cảm ơn
+       * không bao giờ lệch nhau về dữ liệu.
+       */
+      summary: import('@/components/storefront/OrderThankYou').ThankYouSummary | null;
     }>(
       `/webhooks/vnpay/verify-return${query}`,
+    ),
+  /** M-19: tóm tắt đơn cho trang cảm ơn của khách vãng lai. */
+  guestSummary: (token: string) =>
+    api.get<import('@/components/storefront/OrderThankYou').ThankYouSummary>(
+      `/orders/summary?token=${encodeURIComponent(token)}`,
     ),
   lookupGuest: (token: string) =>
     api.get<import('./types').Order>(`/orders/lookup?token=${encodeURIComponent(token)}`),
@@ -208,10 +243,27 @@ export const ghnApi = {
   quote: (payload: { districtId: number | null; wardCode: string | null }) =>
     api.post<{
       available: boolean;
-      reason: 'missing_destination' | 'district_not_served' | 'parcel_too_heavy' | 'carrier_unavailable' | null;
+      reason: 'missing_destination' | 'district_not_served' | 'parcel_too_heavy'
+        | 'no_pickup' | 'route_not_found' | 'carrier_unavailable' | null;
+      debugMessage?: string;
       feeVnd: number; carrierFeeVnd: number; freeShipping: boolean;
       weightGram: number; usedDefaultWeight: boolean; carrier: string;
     }>('/shipping/ghn/quote', payload),
+  /** M-22: các phương thức GHN (nhanh/chuẩn/tiết kiệm) cho giỏ hiện tại. */
+  quoteOptions: (payload: { districtId: number | null; wardCode: string | null }) =>
+    api.post<{
+      available: boolean;
+      reason: 'missing_destination' | 'district_not_served' | 'parcel_too_heavy'
+        | 'no_pickup' | 'route_not_found' | 'carrier_unavailable' | null;
+      debugMessage?: string;
+      weightGram: number; usedDefaultWeight: boolean;
+      options: {
+        serviceId: number; serviceTypeId: number;
+        name: string; description: string;
+        feeVnd: number; freeShipping: boolean;
+        leadtimeAt: number | null; leadtimeDays: number | null;
+      }[];
+    }>('/shipping/ghn/quote-options', payload),
 };
 
 export const shippingMethodsApi = {
@@ -386,6 +438,8 @@ export const adminShipmentApi = {
   create: (token: string, orderId: number, data: unknown) => api.post<import('./types').Shipment>(`/admin/orders/${orderId}/shipment`, data, { token }),
   update: (token: string, orderId: number, data: unknown) => api.put<import('./types').Shipment>(`/admin/orders/${orderId}/shipment`, data, { token }),
   createViaProvider: (token: string, orderId: number) => api.post<import('./types').Shipment>(`/admin/orders/${orderId}/shipment/provider`, {}, { token }),
+  createGhn: (token: string, orderId: number) => api.post<import('./types').Shipment>(`/admin/orders/${orderId}/shipment/ghn`, {}, { token }),
+  syncGhn: (token: string, orderId: number) => api.post<{ synced: boolean; ghnStatus: string | null }>(`/admin/orders/${orderId}/shipment/ghn/sync`, {}, { token }),
   simulate: (token: string, orderId: number, status: string) => api.post<import('./types').Shipment>(`/admin/orders/${orderId}/shipment/simulate`, { status }, { token }),
   remove: (token: string, orderId: number) => api.delete<void>(`/admin/orders/${orderId}/shipment`, { token }),
 };
@@ -406,7 +460,9 @@ export const authApi = {
 
 export const adminAuthApi = {
   login: (email: string, password: string) =>
-    api.post<{ accessToken: string }>('/admin/auth/login', { email, password }),
+    api.post<{ accessToken: string; refreshToken: string }>('/admin/auth/login', { email, password }),
+  refresh: (refreshToken: string) =>
+    api.post<{ accessToken: string; refreshToken: string }>('/admin/auth/refresh', { refreshToken }),
 };
 
 /* Multipart image upload — bypasses the JSON `request()` helper. Returns the URL. */

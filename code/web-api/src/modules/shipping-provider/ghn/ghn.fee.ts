@@ -58,7 +58,9 @@ export type QuoteBlockedReason =
   | 'missing_destination'   // khách chưa chọn đủ quận + phường
   | 'district_not_served'   // GHN không giao tới quận này
   | 'parcel_too_heavy'      // vượt giới hạn cân của dịch vụ
-  | 'carrier_unavailable';  // GHN lỗi/không phản hồi
+  | 'no_pickup'             // chưa cấu hình địa chỉ kho lấy hàng
+  | 'route_not_found'       // GHN không có tuyến kho -> điểm đến
+  | 'carrier_unavailable';  // GHN lỗi/không phản hồi (tạm thời)
 
 export function quoteBlockedReason(input: {
   districtId: number | null;

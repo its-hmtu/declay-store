@@ -1,5 +1,6 @@
 import type {
-  GhnMasterDataProvider, GhnProvince, GhnDistrict, GhnWard, GhnService, GhnShop, GhnFeeRequest, GhnFeeResponse,
+  GhnMasterDataProvider, GhnProvince, GhnDistrict, GhnWard, GhnService, GhnShop,
+  GhnFeeRequest, GhnFeeResponse, GhnCreatedOrder, GhnLeadtimeRequest, GhnLeadtimeResponse,
 } from './ghn.types';
 import { GHN_MAX_WEIGHT_GRAM } from './ghn.parcel';
 
@@ -106,6 +107,17 @@ export class GhnMockProvider implements GhnMasterDataProvider {
     ];
   }
 
+  async createOrder(payload: Record<string, unknown>): Promise<GhnCreatedOrder> {
+    // Mã giả lập nhìn giống thật (8 ký tự in hoa) nhưng có tiền tố MOCK để
+    // không ai nhầm nó với vận đơn thật khi nhìn vào cơ sở dữ liệu.
+    const suffix = String(payload.client_order_code ?? '').replace(/[^A-Z0-9]/gi, '').slice(-4).toUpperCase();
+    return {
+      order_code: `MOCK${suffix.padStart(4, '0')}`,
+      expected_delivery_time: new Date(Date.now() + 3 * 86400_000).toISOString(),
+      total_fee: 36000,
+    };
+  }
+
   async calculateFee(request: GhnFeeRequest): Promise<GhnFeeResponse> {
     const toProvince = provinceOfDistrict(request.to_district_id);
     if (toProvince == null) {
@@ -131,5 +143,18 @@ export class GhnMockProvider implements GhnMasterDataProvider {
       insurance_fee: insuranceFee,
       cod_fee: 0,
     };
+  }
+
+  async getOrderStatus(_ghnOrderCode: string) {
+    // Mock: giả lập đã giao xong để test luồng đồng bộ.
+    return { status: 'delivered', log: [] };
+  }
+
+  async getLeadtime(request: GhnLeadtimeRequest): Promise<GhnLeadtimeResponse> {
+    // Dịch vụ khác nhau -> thời gian khác nhau (nhanh 1 ngày, chuẩn 2, tiết kiệm 4).
+    const daysByService: Record<number, number> = { 53319: 1, 53320: 2, 53321: 4 };
+    const days = daysByService[request.service_id] ?? 3;
+    const now = Math.floor(Date.now() / 1000);
+    return { leadtime: now + days * 86400, order_date: now };
   }
 }

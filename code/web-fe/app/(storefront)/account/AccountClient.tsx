@@ -11,6 +11,7 @@ import { userApi, addressApi } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import VietnamAddressSelect, { type VietnamAddressValue } from '@/components/storefront/VietnamAddressSelect';
 
 const inputCls = 'w-full px-3 py-2 border border-border rounded-lg bg-surface focus:outline-none focus:border-brand text-text text-sm';
 const labelCls = 'block text-xs font-medium text-text mb-1';
@@ -275,6 +276,10 @@ function AddressForm({ address, onSaved, onCancel }: { address?: Address; onSave
     ward:          address?.ward ?? '',
     district:      address?.district ?? '',
     city:          address?.city ?? '',
+    // M-13: mã địa giới GHN — thứ thực sự dùng để tính phí.
+    ghnProvinceId: address?.ghnProvinceId ?? null,
+    ghnDistrictId: address?.ghnDistrictId ?? null,
+    ghnWardCode:   address?.ghnWardCode ?? null,
     country:       address?.country ?? 'Vietnam',
     postalCode:    address?.postalCode ?? '',
     addressType:   (address?.addressType ?? 'home') as AddressType,
@@ -328,21 +333,28 @@ function AddressForm({ address, onSaved, onCancel }: { address?: Address; onSave
           <label className={labelCls}>{t('address.line2')}</label>
           <input value={form.addressLine2} onChange={(e) => set('addressLine2', e.target.value)} className={inputCls} placeholder={t('address.line2Hint')} />
         </div>
-        <div>
-          <label className={labelCls}>Ward *</label>
-          <input required value={form.ward} onChange={(e) => set('ward', e.target.value)} className={inputCls} placeholder="Ben Nghe" />
-        </div>
-        <div>
-          <label className={labelCls}>District *</label>
-          <input required value={form.district} onChange={(e) => set('district', e.target.value)} className={inputCls} placeholder="District 1" />
-        </div>
-        <div>
-          <label className={labelCls}>City *</label>
-          <input required value={form.city} onChange={(e) => set('city', e.target.value)} className={inputCls} placeholder="Ho Chi Minh City" />
-        </div>
-        <div>
-          <label className={labelCls}>Country *</label>
-          <input required value={form.country} onChange={(e) => set('country', e.target.value)} className={inputCls} />
+        <div className="sm:col-span-2">
+          <label className={labelCls}>{t('address.province')} / {t('address.district')} / {t('address.ward')} *</label>
+          <VietnamAddressSelect
+            value={{
+              provinceId: form.ghnProvinceId,
+              districtId: form.ghnDistrictId,
+              wardCode: form.ghnWardCode,
+              provinceName: form.city,
+              districtName: form.district,
+              wardName: form.ward,
+            }}
+            onChange={(next: VietnamAddressValue) => setForm((f) => ({
+              ...f,
+              ghnProvinceId: next.provinceId,
+              ghnDistrictId: next.districtId,
+              ghnWardCode: next.wardCode,
+              // Lưu tên hiển thị để in vận đơn và hiện trong sổ địa chỉ.
+              city: next.provinceName,
+              district: next.districtName,
+              ward: next.wardName,
+            }))}
+          />
         </div>
         <div>
           <label className={labelCls}>{t('address.postalCode')}</label>
