@@ -212,6 +212,12 @@ export default class ProductService implements IProductService {
     return result;
   }
 
+  /** M-35: nạp product (kèm variants/category/metrics) theo danh sách id, giữ thứ tự. */
+  async getByIds(orderedIds: number[]): Promise<IProductWithVariants[]> {
+    const metrics = await this.buildMetrics(orderedIds, 'newest');
+    return (await this.hydrate(orderedIds, metrics)) as unknown as IProductWithVariants[];
+  }
+
   private async hydrate(orderedIds: number[], metrics: Metrics): Promise<IProduct[]> {
     if (orderedIds.length === 0) return [];
 

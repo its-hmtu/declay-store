@@ -11,9 +11,12 @@ import { effectivePrice, formatPrice } from '@/lib/utils';
 import { auth } from '@/lib/auth';
 import { guestSession } from '@/lib/guest';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import { Skeleton } from '@/components/ui/skeleton';
 import VietnamAddressSelect, { emptyVietnamAddress, type VietnamAddressValue } from '@/components/storefront/VietnamAddressSelect';
+import CheckoutAddressPicker from '@/components/storefront/CheckoutAddressPicker';
 import { ghnApi } from '@/lib/api';
 import Button from '@/components/ui/Button';
+import { MapPin } from 'lucide-react';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -41,6 +44,7 @@ export default function CheckoutClient() {
   const [cart,          setCart]          = useState<Cart | null>(null);
   const [addresses,     setAddresses]     = useState<Address[]>([]);
   const [addressId,     setAddressId]     = useState<number | null>(null);
+  const [pickerOpen,    setPickerOpen]    = useState(false);
   const [clientSecret,  setClientSecret]  = useState<string | null>(null);
   const [orderId,       setOrderId]       = useState<number | null>(null);
   const [loading,       setLoading]       = useState(true);
@@ -225,7 +229,10 @@ export default function CheckoutClient() {
 
 
   if (loading) return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-20 text-center text-text-muted">{t('common.loading')}</div>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-20 text-center">
+      <Skeleton className="mx-auto h-6 w-48 mb-4" />
+      <Skeleton className="mx-auto h-6 w-64" />
+    </div>
   );
 
 
@@ -250,26 +257,44 @@ export default function CheckoutClient() {
         <div>
           {isMember ? (
             <>
-              <h2 className="font-medium text-text mb-3">{t('checkout.shippingAddress')}</h2>
-              {addresses.length === 0 ? (
-                <p className="text-sm text-text-muted">No saved addresses. <a href="/account" className="text-brand hover:underline">Add one</a>.</p>
-              ) : (
-                <div className="space-y-2">
-                  {addresses.map((addr) => (
-                    <label key={addr.id} className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-colors ${
-                      addressId === addr.id ? 'border-brand bg-brand-faint' : 'border-border hover:border-brand-lighter'
-                    }`}>
-                      <input type="radio" name="addressId" value={addr.id} checked={addressId === addr.id}
-                        onChange={() => setAddressId(addr.id)} className="mt-0.5 accent-brand" />
-                      <div className="text-sm">
-                        <p className="font-medium text-text">{addr.receiverName} <span className="text-text-faint font-normal">· {addr.receiverPhone}</span></p>
-                        <p className="text-text-muted">{addr.addressLine}, {addr.ward}, {addr.district}</p>
-                        <p className="text-text-muted">{addr.city}, {addr.country}{addr.postalCode ? ` ${addr.postalCode}` : ''}</p>
-                      </div>
-                    </label>
-                  ))}
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-medium text-text">{t('checkout.shippingAddress')}</h2>
+                {addresses.length > 0 && (
+                  <button type="button" onClick={() => setPickerOpen(true)} className="text-xs font-medium text-brand hover:underline">
+                    {t('checkout.changeAddress')}
+                  </button>
+                )}
+              </div>
+
+              {/* M-34: chỉ hiện MỘT địa chỉ; đổi/thêm qua modal. */}
+              {selectedAddress ? (
+                <div className="flex items-start gap-3 rounded-xl border border-border bg-surface p-4 text-sm">
+                  <MapPin size={16} className="mt-0.5 shrink-0 text-text-muted" />
+                  <div>
+                    <p className="font-medium text-text">{selectedAddress.receiverName} <span className="font-normal text-text-faint">· {selectedAddress.receiverPhone}</span></p>
+                    <p className="text-text-muted">{selectedAddress.addressLine}, {selectedAddress.ward}, {selectedAddress.district}</p>
+                    <p className="text-text-muted">{selectedAddress.city}, {selectedAddress.country}{selectedAddress.postalCode ? ` ${selectedAddress.postalCode}` : ''}</p>
+                  </div>
                 </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen(true)}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border p-4 text-sm font-medium text-brand hover:border-brand-lighter"
+                >
+                  <MapPin size={16} /> {t('checkout.addAddress')}
+                </button>
               )}
+
+              <CheckoutAddressPicker
+                open={pickerOpen}
+                onOpenChange={setPickerOpen}
+                addresses={addresses}
+                selectedId={addressId}
+                token={auth.getToken() ?? ''}
+                onSelect={setAddressId}
+                onAdded={(addr) => setAddresses((prev) => [...prev, addr])}
+              />
             </>
           ) : (
             <>

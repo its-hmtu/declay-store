@@ -56,7 +56,7 @@ export default function WishlistButton({ variantId, className = '' }: { variantI
       disabled={busy}
       aria-pressed={saved}
       aria-label={saved ? 'Remove from wishlist' : 'Add to wishlist'}
-      className={`inline-flex items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-50 ${
+      className={`inline-flex items-center justify-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-50 ${
         saved
           ? 'border-accent bg-accent/10 text-accent'
           : 'border-border text-text-muted hover:border-accent hover:text-accent'

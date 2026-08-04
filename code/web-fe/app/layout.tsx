@@ -1,23 +1,11 @@
 import type { Metadata } from "next";
-import { Fraunces, Source_Serif_4, Archivo, Geist_Mono } from "next/font/google";
+import { Archivo, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { TooltipProvider } from '@/components/ui/tooltip';
 
-// Display serif — editorial headlines (the refined serif lines)
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "900"],
-  style: ["normal", "italic"],
-});
-
-// Body serif — paragraph copy
-const sourceSerif4 = Source_Serif_4({
-  variable: "--font-source-serif-4",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
-
-// Grotesque sans — heavy display lines, the wordmark, UI labels
+// Nike-inspired redesign: single grotesque sans family for both display and
+// body copy (mirrors Helvetica Now Display/Text). Editorial serifs (Fraunces,
+// Source Serif 4) dropped in favor of one bold, minimal sans across the site.
 const archivo = Archivo({
   variable: "--font-archivo",
   subsets: ["latin"],
@@ -54,9 +42,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${fraunces.variable} ${sourceSerif4.variable} ${archivo.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${archivo.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-screen flex flex-col">{children}</body>
+      <body className="min-h-screen flex flex-col">
+        <TooltipProvider>
+          {children}
+        </TooltipProvider>
+      </body>
     </html>
   );
 }

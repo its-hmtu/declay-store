@@ -16,4 +16,9 @@ export default class ReportController {
     const limit = typeof req.query.limit === 'string' ? Math.min(Number(req.query.limit) || 20, 100) : 20;
     sendSuccess(res, await this.service.productViews(limit), 'Product views retrieved successfully');
   });
+
+  recommendationCtr = asyncHandler(async (req: Request, res: Response) => {
+    const period = typeof req.query.period === 'string' ? req.query.period : '30d';
+    sendSuccess(res, await this.service.recommendationCtr(period), 'Recommendation CTR retrieved successfully');
+  });
 }

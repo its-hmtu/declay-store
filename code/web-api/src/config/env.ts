@@ -44,6 +44,12 @@ const config = {
     payUrl: process.env.VNPAY_PAY_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
     returnUrl: process.env.VNPAY_RETURN_URL || '',   // trang FE hiển thị kết quả
     expireMinutes: Number(process.env.VNPAY_EXPIRE_MINUTES) || 15,
+    // M-29b: API hoàn tiền. VNPay KHOÁ refund ở sandbox — phải liên hệ VNPAY để
+    // bật. Vì vậy mặc định TẮT: khi tắt, RefundService ghi nhận yêu cầu hoàn ở
+    // trạng thái 'pending' để admin xử lý tay, KHÔNG gọi API thật.
+    refundEnabled: process.env.VNPAY_REFUND_ENABLED === 'true',
+    refundApiUrl: process.env.VNPAY_REFUND_API_URL
+      || 'https://sandbox.vnpayment.vn/merchant_webapi/api/transaction',
   },
   // M-13: GHN — vận chuyển nội địa.
   ghn: {
@@ -70,6 +76,22 @@ const config = {
     // Chính sách phí của cửa hàng (VND).
     freeOverVnd: Number(process.env.SHIPPING_FREE_OVER_VND) || 0,
     subsidyVnd: Number(process.env.SHIPPING_SUBSIDY_VND) || 0,
+    // M-27: job tự động kéo trạng thái vận đơn từ GHN (lưới an toàn khi webhook
+    // không tới — server ngủ, chưa đăng ký URL). Mặc định BẬT khi có token thật;
+    // đặt GHN_SYNC_ENABLED=false để tắt hẳn. KHÔNG chạy ở chế độ mock (getOrderStatus
+    // giả luôn trả 'delivered', sẽ đánh dấu nhầm mọi đơn dev).
+    syncEnabled: process.env.GHN_SYNC_ENABLED
+      ? process.env.GHN_SYNC_ENABLED === 'true'
+      : Boolean((process.env.GHN_TOKEN || '').trim()),
+    // Nhịp quét. 15 phút đủ nhanh cho khách mà không phiền API GHN.
+    syncIntervalMs: Number(process.env.GHN_SYNC_INTERVAL_MS) || 15 * 60 * 1000,
+    // Số vận đơn xử lý mỗi nhịp — chặn một cửa hàng bận làm nghẽn một lượt quét.
+    syncBatchSize: Number(process.env.GHN_SYNC_BATCH_SIZE) || 50,
+    // M-29e: địa chỉ NHẬN hàng trả (kho shop) cho vận đơn chiều về. Thiếu bất kỳ
+    // trường nào -> không tự tạo vận đơn trả, admin nhập mã tay.
+    shopName: (process.env.GHN_SHOP_NAME || '').trim(),
+    shopPhone: (process.env.GHN_SHOP_PHONE || '').trim(),
+    shopAddress: (process.env.GHN_SHOP_ADDRESS || '').trim(),
   },
   easyship: {
     apiKey: process.env.EASYSHIP_API_KEY || '',
@@ -77,13 +99,6 @@ const config = {
     baseUrl: process.env.EASYSHIP_BASE_URL || 'https://public-api.easyship.com',
     sandbox: (process.env.EASYSHIP_SANDBOX ?? 'true') !== 'false',
     incotermDefault: (process.env.EASYSHIP_INCOTERM || 'DDP') as 'DDP' | 'DDU',
-  },
-  shipping: {
-    // Simulated durations so the order lifecycle is observable in development.
-    // In production set dayMs to 86400000 (a real day) and raise the delays.
-    processingDelayMs: Number(process.env.SHIPPING_PROCESSING_DELAY_MS) || 15000, // paid -> processing
-    dispatchDelayMs: Number(process.env.SHIPPING_DISPATCH_DELAY_MS) || 15000,     // processing -> shipped
-    dayMs: Number(process.env.SHIPPING_DAY_MS) || 15000,                          // simulated length of one shipping day
   },
   bankTransfer: {
     bankId: process.env.BANK_ID || '',            // VietQR bank code/BIN, e.g. 'vietcombank'

@@ -7,6 +7,8 @@ import ProductService from './product.service';
 import ProductController from './product.controller';
 import { createProductSchema, updateProductSchema, productIdSchema, productSlugSchema } from './product.validate';
 import { createVariantRouter, createAdminVariantRouter } from '@/modules/product-variant/product-variant.route';
+import { optionalAuth } from '@/middlewares/auth.middleware';
+import { getRecommendations, recordProductView, recordRecoClick, getRecentlyViewed } from '@/modules/recommendation/recommendation.controller';
 
 export function createProductRouter(): Router {
   const router = Router();
@@ -14,6 +16,12 @@ export function createProductRouter(): Router {
 
   // Public
   router.get('/', controller.list);
+
+  // M-35: gợi ý + ghi view — ĐẶT TRƯỚC '/:id' để route tĩnh không bị nuốt.
+  router.get('/recommendations', optionalAuth, getRecommendations);
+  router.get('/recently-viewed', optionalAuth, getRecentlyViewed);
+  router.post('/view', optionalAuth, recordProductView);
+  router.post('/reco-click', optionalAuth, recordRecoClick);
 
   router.get(
     '/slug/:slug',

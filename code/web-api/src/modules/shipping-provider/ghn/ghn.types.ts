@@ -96,6 +96,14 @@ export interface GhnCreatedOrder {
   fee?: Record<string, number>;
 }
 
+/** Phản hồi huỷ vận đơn /v2/switch-status/cancel (M-29c). */
+export interface GhnCancelResult {
+  orderCode: string;
+  success: boolean;
+  message?: string | null;
+  raw?: unknown;
+}
+
 export interface GhnMasterDataProvider {
   readonly name: string;
   readonly isMock: boolean;
@@ -113,4 +121,6 @@ export interface GhnMasterDataProvider {
   getOrderStatus(ghnOrderCode: string): Promise<{ status: string; log?: { status: string; updated_date?: string }[] } | null>;
   /** ⚠️ THAO TÁC GHI: tạo vận đơn thật, phát sinh cước. */
   createOrder(payload: Record<string, unknown>): Promise<GhnCreatedOrder>;
+  /** ⚠️ THAO TÁC GHI: huỷ vận đơn (M-29c). Chỉ chạy ở mode 'live'. */
+  cancelOrder(ghnOrderCode: string): Promise<GhnCancelResult>;
 }

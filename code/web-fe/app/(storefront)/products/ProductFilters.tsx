@@ -50,14 +50,14 @@ export default function ProductFilters({
   const noPrice = !curMin && !curMax;
 
   const rowCls = (active: boolean) =>
-    cn('w-full text-left text-sm px-2 py-1.5 rounded-md transition-colors',
-      active ? 'text-brand font-medium bg-brand-faint' : 'text-text-muted hover:text-text');
+    cn('w-full text-left text-sm px-0 py-1.5 transition-colors',
+      active ? 'text-text font-semibold underline underline-offset-2' : 'text-text-muted hover:text-text');
 
   return (
     <div>
       {/* Search */}
       <div className="pb-4 border-b border-border">
-        <p className="text-xs font-semibold uppercase tracking-widest text-text-muted mb-3">{t('shop.filterSearch')}</p>
+        <p className="text-sm font-semibold text-text mb-3">{t('shop.filterSearch')}</p>
         <form onSubmit={(e) => {
           e.preventDefault();
           const q = (e.currentTarget.elements.namedItem('q') as HTMLInputElement).value;

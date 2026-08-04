@@ -7,6 +7,7 @@ import type { Tag } from '@/lib/types';
 import { adminTagsApi } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function TagsClient() {
   const [tags, setTags]         = useState<Tag[]>([]);
@@ -32,7 +33,17 @@ export default function TagsClient() {
     catch (err: unknown) { toast.error(err instanceof Error ? err.message : 'Delete failed.'); }
   }
 
-  if (loading) return <div className="text-text-muted">Loading…</div>;
+  if (loading) return (
+    <div>
+      <Skeleton className="h-8 w-48 mb-4" />
+      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+        <div className="p-4">
+          <Skeleton className="h-4 w-64 mb-2" />
+          <Skeleton className="h-3 w-40" />
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div>

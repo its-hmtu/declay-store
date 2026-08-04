@@ -3,15 +3,15 @@
  * Flip a flag to `true` to bring a deferred feature back into the UI.
  */
 export const FEATURES = {
-  collections: false,
-  blog: false,
-  careers: false,
-  wishlist: false,
-  chat: false,
-  campaigns: false,
-  banners: false,
-  articles: false,
-  jobs: false,
+  collections: true,
+  blog: true,
+  careers: true,
+  wishlist: true,
+  chat: true,
+  campaigns: true,
+  banners: true,
+  articles: true,
+  jobs: true,
 } as const;
 
 export type FeatureKey = keyof typeof FEATURES;

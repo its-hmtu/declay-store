@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useT } from '@/lib/i18n/LocaleProvider';
+import LanguageSwitcher from '@/components/storefront/LanguageSwitcher';
 
 /* Brand glyphs — lucide dropped social brand icons, so inline them. */
 function IgIcon() {
@@ -82,8 +83,12 @@ export default function Footer() {
   const { t } = useT();
   return (
     <footer className="mt-auto border-t border-border bg-surface-alt">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-14">
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-x-6 gap-y-10">
+      <div className="relative">
+        <div className="absolute right-4 top-4 hidden md:block">
+          <LanguageSwitcher />
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-14">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-x-6 gap-y-10">
           {/* Brand */}
           <div className="col-span-2">
             <Link href="/" className="inline-flex items-center" aria-label="Declay Store — home">
@@ -110,7 +115,7 @@ export default function Footer() {
           {/* Link columns */}
           {COLUMNS.map((col) => (
             <div key={col.title}>
-              <p className="eyebrow mb-4">{col.title}</p>
+              <p className="font-sans text-sm font-semibold text-text mb-4">{col.title}</p>
               <ul className="space-y-2.5">
                 {col.links.map((l) => (
                   <li key={l.label}>
@@ -123,15 +128,16 @@ export default function Footer() {
             </div>
           ))}
         </div>
+        </div>
       </div>
 
       {/* Bottom bar */}
       <div className="border-t border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <p className="font-mono text-xs text-text-faint">
+          <p className="font-sans text-xs text-text-faint">
             &copy; {new Date().getFullYear()} Declay Studio. {t('footer.rights')}
           </p>
-          <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-xs text-text-muted">
+          <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 font-sans text-xs text-text-muted">
             <span className="text-text-faint">Vietnam</span>
             <Link href="/terms" className="hover:text-text transition-colors">{t('footer.terms')}</Link>
             <Link href="/policies" className="hover:text-text transition-colors">{t('footer.privacy')}</Link>

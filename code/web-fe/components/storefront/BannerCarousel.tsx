@@ -90,10 +90,17 @@ function BannerSlide({ banner }: { banner: Banner }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={banner.imageUrl} alt={banner.title ?? ''} className="w-full h-full object-cover" />
       {(banner.title || banner.subtitle) && (
-        <div className="absolute inset-0 flex flex-col justify-center bg-linear-to-r from-black/55 via-black/20 to-transparent">
-          <div className="max-w-7xl w-full mx-auto px-6 sm:px-10">
-            {banner.title && <p className="font-serif text-4xl sm:text-6xl md:text-7xl font-bold text-white max-w-2xl leading-tight">{banner.title}</p>}
+        <div className="absolute inset-0 flex flex-col justify-end bg-linear-to-t from-black/60 via-black/10 to-transparent">
+          <div className="max-w-7xl w-full mx-auto px-6 sm:px-10 pb-12 sm:pb-16">
+            {banner.title && (
+              <p className="font-sans text-4xl sm:text-6xl md:text-7xl font-black uppercase text-white max-w-2xl leading-[0.95]">
+                {banner.title}
+              </p>
+            )}
             {banner.subtitle && <p className="mt-4 text-white/90 text-base sm:text-xl max-w-xl">{banner.subtitle}</p>}
+            {banner.linkUrl && (
+              <span className="btn-pill-light mt-6">Shop</span>
+            )}
           </div>
         </div>
       )}

@@ -1,4 +1,5 @@
-import { Op, fn, col, literal } from 'sequelize';
+import { Op, fn, col, literal, QueryTypes } from 'sequelize';
+import { sequelize } from '@/config/sequelize';
 import { Order, OrderItem } from '@/modules/order/order.entity';
 import ProductVariant from '@/modules/product-variant/product-variant.entity';
 import Product from '@/modules/product/product.entity';
@@ -68,6 +69,43 @@ export default class ReportService {
       from: from ? from.toISOString() : null,
       rows: rankSkus(rows, limit),
       totals: summariseSales(rows),
+    };
+  }
+
+  /**
+   * M-35 (đo lường): CTR của gợi ý theo NGỮ CẢNH trong kỳ. CTR = click / impression.
+   * Giúp shop biết vị trí gợi ý nào hiệu quả (giỏ / chi tiết / trang chủ / tài khoản).
+   */
+  async recommendationCtr(period = '30d'): Promise<{
+    period: string;
+    from: string | null;
+    rows: Array<{ context: string; impressions: number; clicks: number; ctr: number }>;
+    totals: { impressions: number; clicks: number; ctr: number };
+  }> {
+    const from = periodStart(period);
+    const raw = (await sequelize.query(
+      `SELECT context,
+              COUNT(*) FILTER (WHERE kind = 'impression') AS impressions,
+              COUNT(*) FILTER (WHERE kind = 'click')      AS clicks
+         FROM recommendation_events
+        WHERE (:from IS NULL OR created_at >= :from)
+        GROUP BY context
+        ORDER BY impressions DESC`,
+      { type: QueryTypes.SELECT, replacements: { from: from ? from.toISOString() : null } },
+    )) as Array<{ context: string; impressions: string; clicks: string }>;
+
+    const rows = raw.map((r) => {
+      const impressions = Number(r.impressions) || 0;
+      const clicks = Number(r.clicks) || 0;
+      return { context: r.context, impressions, clicks, ctr: impressions ? clicks / impressions : 0 };
+    });
+    const impressions = rows.reduce((s, r) => s + r.impressions, 0);
+    const clicks = rows.reduce((s, r) => s + r.clicks, 0);
+    return {
+      period,
+      from: from ? from.toISOString() : null,
+      rows,
+      totals: { impressions, clicks, ctr: impressions ? clicks / impressions : 0 },
     };
   }
 

@@ -49,6 +49,12 @@ export interface ICreateOrderData {
   paymentMethod?: 'cod' | 'stripe' | 'vnpay';
 }
 
+/** M-29d: kết quả huỷ đơn — huỷ ngay, hay tạo yêu cầu chờ admin duyệt. */
+export interface CancelOutcome {
+  outcome: 'cancelled' | 'cancel_requested';
+  order: IOrder;
+}
+
 export interface IOrderService {
   createFromCart(data: ICreateOrderData): Promise<{ order: IOrder; clientSecret: string | null; paymentUrl?: string | null }>;
   findByGuestToken(token: string): Promise<IOrder>;
@@ -61,7 +67,10 @@ export interface IOrderService {
   updateStatus(orderId: number, status: OrderStatus): Promise<IOrder>;
   markAsPaid(stripePaymentIntentId: string): Promise<void>;
   markPaymentFailed(stripePaymentIntentId: string): Promise<void>;
-  cancelOrder(orderId: number, userId: number): Promise<IOrder>;
+  cancelOrder(orderId: number, userId: number): Promise<CancelOutcome>;
+  approveCancellation(requestId: number, adminId: number): Promise<{ status: string; refundId: number | null }>;
+  rejectCancellation(requestId: number, adminId: number, reason?: string): Promise<void>;
+  listPendingCancellations(): Promise<unknown[]>;
   listAll(page: number, limit: number, status?: OrderStatus): Promise<{ rows: IOrder[]; count: number }>;
 }
 

@@ -29,11 +29,14 @@
   --color-error:          #C0392B;
   --color-info:           #2D6BFF;
 
-  /* ── Typography ────────────────────────────────────────── */
-  --font-display: var(--font-fraunces), "Georgia", serif;     /* editorial serif headlines */
-  --font-serif:   var(--font-source-serif-4), "Georgia", serif; /* body copy */
+  /* ── Typography (Nike-inspired: single bold grotesque sans) ── */
+  --font-display: var(--font-archivo), system-ui, sans-serif;  /* big, bold, uppercase-friendly headlines */
+  --font-serif:   var(--font-archivo), system-ui, sans-serif;  /* body copy — kept as sans, no serif anywhere */
   --font-sans:    var(--font-archivo), system-ui, sans-serif;  /* heavy grotesque display + UI */
   --font-mono:    var(--font-geist-mono), monospace;           /* eyebrows, meta, buttons, nav */
+
+  /* ── Radius ────────────────────────────────────────────── */
+  --radius-pill:  9999px; /* fully-rounded CTA buttons, Nike-style */
 }
 
 :root {
@@ -114,4 +117,104 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 1rem;
+}
+
+/* M-30: dòng thời gian đơn hàng — icon tick "bung" ra khi một mốc hoàn thành. */
+@keyframes tl-tick-pop {
+  0%   { transform: scale(0.5); opacity: 0; }
+  55%  { transform: scale(1.18); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-tick { animation: tl-tick-pop 0.45s ease-out both; }
+
+/* ── Nike-inspired storefront primitives ─────────────────── */
+
+/* Fully-rounded CTA pill — dark fill, used on light backgrounds */
+.btn-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background: var(--color-brand);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 0.95rem;
+  line-height: 1;
+  border-radius: var(--radius-pill);
+  padding: 0.85rem 1.5rem;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.btn-pill:hover {
+  background: var(--color-brand-light);
+}
+
+/* Fully-rounded CTA pill — light fill, used on dark/photo backgrounds */
+.btn-pill-light {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background: #fff;
+  color: var(--color-brand);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 0.95rem;
+  line-height: 1;
+  border-radius: var(--radius-pill);
+  padding: 0.85rem 1.5rem;
+  transition: background 0.15s ease;
+}
+.btn-pill-light:hover {
+  background: var(--color-surface-alt);
+}
+
+/* Outline pill variant */
+.btn-pill-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background: transparent;
+  color: var(--color-brand);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 0.95rem;
+  line-height: 1;
+  border: 1px solid var(--color-brand);
+  border-radius: var(--radius-pill);
+  padding: 0.8rem 1.45rem;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.btn-pill-outline:hover {
+  background: var(--color-brand);
+  color: #fff;
+}
+
+/* Flat product card — no border, no shadow, image does the work */
+.card-flat {
+  background: var(--color-surface);
+  border-radius: 0;
+}
+
+/* Status label on product cards (Bestseller, New, Sold Out) — text only, no chip */
+.badge-status {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--color-error);
+}
+
+/* Discount percentage — success green, next to the struck-through price */
+.price-discount {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  color: var(--color-success);
+}
+
+/* Original price, struck through, muted */
+.price-original {
+  font-family: var(--font-sans);
+  color: var(--color-text-faint);
+  text-decoration: line-through;
 }

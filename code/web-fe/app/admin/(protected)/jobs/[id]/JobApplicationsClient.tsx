@@ -7,6 +7,7 @@ import type { Job, JobApplication, ApplicationStatus } from '@/lib/types';
 import { api } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Badge from '@/components/ui/Badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const STATUS_VARIANT: Record<ApplicationStatus, 'default' | 'success' | 'warning' | 'error' | 'info'> = {
   received:  'default',
@@ -51,7 +52,15 @@ export default function JobApplicationsClient({ jobId }: { jobId: number }) {
     }
   }
 
-  if (loading) return <div className="text-text-muted">Loading…</div>;
+  if (loading) return (
+    <div>
+      <Skeleton className="h-8 w-48 mb-4" />
+      <div className="py-16 text-center rounded-xl border border-border bg-surface">
+        <Skeleton className="h-4 w-64 mx-auto mb-2" />
+        <Skeleton className="h-3 w-40 mx-auto" />
+      </div>
+    </div>
+  );
 
   return (
     <div>

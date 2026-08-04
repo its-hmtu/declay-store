@@ -7,6 +7,7 @@ import type { Article } from '@/lib/types';
 import { api } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import ArticleForm from '../ArticleForm';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function EditArticleClient({ articleId }: { articleId: number }) {
   const [article, setArticle] = useState<Article | null>(null);
@@ -21,7 +22,16 @@ export default function EditArticleClient({ articleId }: { articleId: number }) 
       .finally(() => setLoading(false));
   }, [articleId]);
 
-  if (loading) return <div className="text-text-muted">Loading…</div>;
+  if (loading) return (
+    <div>
+      <Skeleton className="h-8 w-56 mb-4" />
+      <div className="space-y-3">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-1/2" />
+      </div>
+    </div>
+  );
   if (!article) return <div className="text-text-muted">Article not found.</div>;
 
   return (

@@ -9,6 +9,7 @@ import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import AdminToolbar, { FilterSelect } from '@/components/admin/AdminToolbar';
+import { Skeleton } from '@/components/ui/skeleton';
 import Pagination from '@/components/admin/Pagination';
 import { usePagination } from '@/lib/usePagination';
 import { formatPrice } from '@/lib/utils';
@@ -53,7 +54,17 @@ export default function DiscountsClient() {
     }
   }
 
-  if (loading) return <div className="text-text-muted">Loading…</div>;
+  if (loading) return (
+    <div>
+      <Skeleton className="h-8 w-48 mb-4" />
+      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+        <div className="p-4">
+          <Skeleton className="h-4 w-64 mb-2" />
+          <Skeleton className="h-3 w-40" />
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div>

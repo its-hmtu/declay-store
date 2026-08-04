@@ -10,6 +10,8 @@ import { createWebhookRouter } from './modules/payment/payment.route';
 import { createHealthRouter } from './modules/health/health.route';
 import passport from './config/passport-google';
 import config from './config/env';
+// M-29a: nạp entity huỷ/trả để đăng ký model + associations lúc khởi động.
+import './modules/order/order-requests.entity';
 
 export function createApp(): Express {
   const app = express();

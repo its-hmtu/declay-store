@@ -6,6 +6,7 @@ import type { Order } from '@/lib/types';
 import { ordersApi } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import Badge from '@/components/ui/Badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { formatPrice } from '@/lib/utils';
 import { orderLabel } from '@/lib/utils';
 import TrackingCode from '@/components/storefront/TrackingCode';
@@ -42,7 +43,19 @@ export default function OrdersClient() {
   }, []);
 
   if (loading) return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-20 text-center text-text-muted">Loading orders…</div>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-20 text-center">
+      <Skeleton className="mx-auto h-6 w-40 mb-4" />
+      <div className="space-y-4">
+        <div className="block p-5 rounded-xl border border-border bg-surface">
+          <Skeleton className="h-4 w-48 mb-2" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+        <div className="block p-5 rounded-xl border border-border bg-surface">
+          <Skeleton className="h-4 w-48 mb-2" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+      </div>
+    </div>
   );
 
   if (!auth.isLoggedIn()) return (

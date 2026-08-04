@@ -1,17 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import type { Product, ProductVariant } from '@/lib/types';
-import { cartApi } from '@/lib/api';
+import { cartApi, recommendationsApi } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import { guestSession } from '@/lib/guest';
 import Button from '@/components/ui/Button';
 import { ShoppingCart } from 'lucide-react';
 import WishlistButton from '@/components/storefront/WishlistButton';
 import ProductReviews from '@/components/storefront/ProductReviews';
+import Badge from '@/components/ui/Badge';
+import {Separator} from '@/components/ui/separator';
 import RelatedProducts from '@/components/storefront/RelatedProducts';
+import RecentlyViewed from '@/components/storefront/RecentlyViewed';
 import { formatPrice } from '@/lib/utils';
 import { useCart } from '@/lib/cart/CartProvider';
 import { useT } from '@/lib/i18n/LocaleProvider';
@@ -24,6 +27,11 @@ export default function ProductDetail({ product }: { product: Product }) {
   const [qty,      setQty]      = useState(1);
   const [loading,  setLoading]  = useState(false);
   const [imgIdx,   setImgIdx]   = useState(0);
+
+  // M-35: ghi sự kiện xem sản phẩm (phục vụ gợi ý theo hành vi). Fire-and-forget.
+  useEffect(() => {
+    recommendationsApi.recordView(product.id, auth.getToken() ?? undefined).catch(() => undefined);
+  }, [product.id]);
 
   const isValidSrc = (src: string) => src.startsWith('/') || src.startsWith('http');
   const images = (selected?.images ?? []).filter(isValidSrc);
@@ -48,23 +56,16 @@ export default function ProductDetail({ product }: { product: Product }) {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-      <div className="grid md:grid-cols-2 gap-12">
-        {/* Images */}
-        <div>
-          <div className="aspect-square rounded-2xl overflow-hidden bg-surface-alt border border-border">
-            {images[imgIdx] ? (
-              <Image src={images[imgIdx]} alt={product.name} width={600} height={600} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-text-faint text-sm">No image</div>
-            )}
-          </div>
+      <div className="grid md:grid-cols-2 gap-12 items-start">
+        {/* Images — vertical thumbnail rail + main image, Nike PDP style */}
+        <div className="flex gap-3">
           {images.length > 1 && (
-            <div className="mt-3 flex gap-2">
+            <div className="hidden sm:flex flex-col gap-2 shrink-0">
               {images.map((src, i) => (
                 <button
                   key={i}
                   onClick={() => setImgIdx(i)}
-                  className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                  className={`w-16 h-16 card-flat overflow-hidden border transition-colors ${
                     i === imgIdx ? 'border-brand' : 'border-border hover:border-brand-lighter'
                   }`}
                 >
@@ -73,14 +74,38 @@ export default function ProductDetail({ product }: { product: Product }) {
               ))}
             </div>
           )}
+          <div className="flex-1">
+            <div className="aspect-square card-flat overflow-hidden bg-surface-alt">
+              {images[imgIdx] ? (
+                <Image src={images[imgIdx]} alt={product.name} width={600} height={600} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-text-faint text-sm">No image</div>
+              )}
+            </div>
+            {images.length > 1 && (
+              <div className="sm:hidden mt-3 flex gap-2">
+                {images.map((src, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setImgIdx(i)}
+                    className={`w-16 h-16 card-flat overflow-hidden border transition-colors ${
+                      i === imgIdx ? 'border-brand' : 'border-border hover:border-brand-lighter'
+                    }`}
+                  >
+                    <Image src={src} alt="" width={64} height={64} className="w-full h-full object-contain" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Info */}
-        <div>
+        {/* Info — sticky panel, Nike PDP style */}
+        <div className="md:sticky md:top-24">
           {product.category && (
-            <p className="text-sm text-text-muted uppercase tracking-wider mb-2">{product.category.name}</p>
+            <p className="font-sans text-sm font-semibold text-accent uppercase tracking-wide mb-2">{product.category.name}</p>
           )}
-          <h1 className="font-serif text-4xl font-bold text-text leading-tight">{product.name}</h1>
+          <h1 className="font-sans text-3xl font-bold text-text leading-tight">{product.name}</h1>
 
           {selected && (
             (() => {
@@ -94,20 +119,24 @@ export default function ProductDetail({ product }: { product: Product }) {
               const best = Math.min(...cands);
               const onSale = best < base;
               return onSale ? (
-                <p className="mt-4 flex items-baseline gap-2">
-                  <span className="text-2xl font-semibold text-error">{formatPrice(best)}</span>
-                  <span className="text-lg text-text-faint line-through">{formatPrice(base)}</span>
-                  <span className="text-xs font-bold text-white bg-error rounded px-1.5 py-0.5">-{Math.round((1 - best / base) * 100)}%</span>
-                </p>
+                <div className="mt-4">
+                  <p className="flex items-baseline gap-2">
+                    <span className="text-2xl font-semibold text-text">{formatPrice(best)}</span>
+                    <span className="text-lg price-original">{formatPrice(base)}</span>
+                    <span className="text-sm price-discount font-semibold">-{Math.round((1 - best / base) * 100)}%</span>
+                  </p>
+                  <StockInfo selected={selected} />
+                </div>
               ) : (
-                <p className="mt-4 text-2xl font-semibold text-brand">{formatPrice(base)}</p>
+                <div className="mt-4">
+                  <p className="text-2xl font-semibold text-text">{formatPrice(base)}</p>
+                  <StockInfo selected={selected} />
+                </div>
               );
             })()
           )}
 
-          {product.description && (
-            <p className="mt-4 text-text-muted leading-relaxed">{product.description}</p>
-          )}
+          {/* Description moved to tabbed section below (see Tabs after grid) */}
 
           {/* Variant selector */}
           {variants.length > 1 && (
@@ -119,9 +148,9 @@ export default function ProductDetail({ product }: { product: Product }) {
                     key={v.id}
                     onClick={() => { setSelected(v); setImgIdx(0); }}
                     disabled={v.stock === 0}
-                    className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                    className={`px-4 py-2 border text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                       selected?.id === v.id
-                        ? 'border-brand bg-brand-faint text-brand'
+                        ? 'border-brand text-brand'
                         : 'border-border text-text-muted hover:border-brand-lighter'
                     }`}
                   >
@@ -133,12 +162,7 @@ export default function ProductDetail({ product }: { product: Product }) {
             </div>
           )}
 
-          {/* Stock info */}
-          {selected && (
-            <p className="mt-3 text-sm text-text-muted">
-              {selected.stock > 0 ? `${selected.stock} in stock` : <span className="text-error font-medium">Sold out</span>}
-            </p>
-          )}
+          {/* old stock info removed; now shown under price via StockInfo component */}
 
           {/* Qty + Add to cart */}
           <div className="mt-6 flex items-center gap-3">
@@ -162,6 +186,7 @@ export default function ProductDetail({ product }: { product: Product }) {
               onClick={addToCart}
               loading={loading}
               disabled={!selected || selected.stock === 0}
+              pill
               className="flex-1 mt-3 w-full"
             >
               <ShoppingCart size={18} />
@@ -175,8 +200,102 @@ export default function ProductDetail({ product }: { product: Product }) {
         </div>
       </div>
 
+      {/* Tabs: Description / Specifications */}
+      <div className="max-w-full mx-auto mt-8">
+        <Tabs product={product} selected={selected} />
+      </div>
+
+      <Separator className="my-6" />
       <ProductReviews productId={product.id} />
       <RelatedProducts product={product} />
+      <RecentlyViewed excludeIds={[product.id]} />
     </div>
   );
+}
+
+function Tabs({ product, selected }: { product: Product; selected: ProductVariant | null }) {
+  const [tab, setTab] = useState<'description' | 'specs'>('description');
+
+  function renderSpecs() {
+    const v = selected;
+    if (!v) {
+      return <p className="text-sm text-text-muted">No specifications available.</p>;
+    }
+
+    const rows: { label: string; value: string }[] = [];
+    if (v.weightGram != null) rows.push({ label: 'Weight', value: `${v.weightGram} g` });
+    if (v.lengthCm != null || v.widthCm != null || v.heightCm != null) {
+      const parts: string[] = [];
+      if (v.lengthCm != null) parts.push(`${v.lengthCm} ×`);
+      if (v.widthCm != null) parts.push(`${v.widthCm} ×`);
+      if (v.heightCm != null) parts.push(`${v.heightCm} cm`);
+      rows.push({ label: 'Dimensions', value: parts.join(' ') });
+    }
+
+    if (rows.length === 0) {
+      return <p className="text-sm text-text-muted">No specifications provided for this variant.</p>;
+    }
+
+    return (
+      <table className="w-full text-sm">
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.label} className="border-b border-border">
+              <td className="py-2 pr-4 font-medium text-text-muted w-40">{r.label}</td>
+              <td className="py-2 text-text">{r.value}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
+
+  return (
+    <div className="w-full border border-border rounded-xl bg-surface p-4">
+      <div className="flex items-center gap-3 border-b border-border pb-2">
+        <button
+          type="button"
+          onClick={() => setTab('description')}
+          className={`px-3 py-1 text-sm ${tab === 'description' ? 'font-semibold text-text' : 'text-text-muted'}`}
+        >
+          Description
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('specs')}
+          className={`px-3 py-1 text-sm ${tab === 'specs' ? 'font-semibold text-text' : 'text-text-muted'}`}
+        >
+          Specifications
+        </button>
+      </div>
+
+      <div className="mt-4">
+        {tab === 'description' ? (
+          product.description ? (
+            <div className="text-sm text-text-muted leading-relaxed">{product.description}</div>
+          ) : (
+            <p className="text-sm text-text-muted">No description available.</p>
+          )
+        ) : (
+          renderSpecs()
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StockInfo({ selected }: { selected: ProductVariant }) {
+  if (!selected) return null;
+  const stock = selected.stock ?? 0;
+  if (stock <= 0) {
+    return (
+      <p className="mt-2 text-sm">
+        <Badge variant="error">Sold out</Badge>
+      </p>
+    );
+  }
+  if (stock < 10) {
+    return <p className="mt-2 text-sm text-error font-semibold">Just a few left. Order soon.</p>;
+  }
+  return <p className="mt-2 text-sm text-text-muted">In stock</p>;
 }

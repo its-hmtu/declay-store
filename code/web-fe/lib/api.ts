@@ -155,6 +155,30 @@ export const productsApi = {
     api.get<import('./types').Product>(`/products/slug/${slug}`, { next: { revalidate: 60 } }),
 };
 
+/** Ngữ cảnh gợi ý dùng chung cho FE (khớp RecoContext ở BE). */
+export type RecoContext = 'cart' | 'detail' | 'post_purchase' | 'home' | 'account';
+
+/** M-35: gợi ý sản phẩm theo ngữ cảnh + ghi sự kiện xem/click (đo lường CTR). */
+export const recommendationsApi = {
+  get: (params: { context: RecoContext; productIds?: number[]; limit?: number }, token?: string) => {
+    const qs = new URLSearchParams();
+    qs.set('context', params.context);
+    if (params.productIds && params.productIds.length) qs.set('productIds', params.productIds.join(','));
+    if (params.limit) qs.set('limit', String(params.limit));
+    return api.get<import('./types').Product[]>(`/products/recommendations?${qs}`, { token });
+  },
+  recordView: (productId: number, token?: string) =>
+    api.post<null>('/products/view', { productId }, { token }),
+  recordClick: (productId: number, context: RecoContext, token?: string) =>
+    api.post<null>('/products/reco-click', { productId, context }, { token }),
+  recentlyViewed: (params: { limit?: number; excludeIds?: number[] } = {}, token?: string) => {
+    const qs = new URLSearchParams();
+    if (params.limit) qs.set('limit', String(params.limit));
+    if (params.excludeIds && params.excludeIds.length) qs.set('excludeIds', params.excludeIds.join(','));
+    return api.get<import('./types').Product[]>(`/products/recently-viewed?${qs}`, { token });
+  },
+};
+
 export const categoriesApi = {
   list: () => api.get<import('./types').Category[]>('/categories', { next: { revalidate: 300 } }),
   detail: (id: number) => api.get<import('./types').Category>(`/categories/${id}`),
@@ -224,6 +248,59 @@ export const ordersApi = {
     ),
   lookupGuest: (token: string) =>
     api.get<import('./types').Order>(`/orders/lookup?token=${encodeURIComponent(token)}`),
+  /**
+   * M-29d: khách huỷ đơn. Kết quả có thể là huỷ ngay ('cancelled') hoặc — khi
+   * đơn đã có vận đơn GHN — một yêu cầu huỷ chờ duyệt ('cancel_requested').
+   */
+  cancel: (token: string, id: number) =>
+    api.post<{ outcome: 'cancelled' | 'cancel_requested'; order: import('./types').Order }>(
+      `/orders/${id}/cancel`, {}, { token },
+    ),
+  /** M-29e: khách gửi yêu cầu trả hàng lỗi theo món. */
+  createReturn: (token: string, id: number, payload: {
+    type?: 'defective' | 'wrong_item';
+    items: { orderItemId: number; quantity: number; reason?: string; photoUrls: string[] }[];
+  }) => api.post<{ id: number; status: string }>(`/orders/${id}/returns`, payload, { token }),
+};
+
+/** M-29d: yêu cầu huỷ đơn (admin duyệt). */
+export interface AdminCancellationRequest {
+  id: number;
+  orderId: number;
+  reason: string | null;
+  status: string;
+  createdAt: string;
+  order?: { orderCode: string; status: string; totalAmount: string };
+}
+export const adminCancellationApi = {
+  list: (token: string) =>
+    api.get<AdminCancellationRequest[]>('/admin/orders/cancellations', { token }),
+  approve: (token: string, id: number) =>
+    api.post<{ status: string; refundId: number | null }>(`/admin/orders/cancellations/${id}/approve`, {}, { token }),
+  reject: (token: string, id: number, reason?: string) =>
+    api.post<null>(`/admin/orders/cancellations/${id}/reject`, { reason }, { token }),
+};
+
+/** M-29e: yêu cầu trả hàng (admin xử lý). */
+export interface AdminReturnRequest {
+  id: number;
+  orderId: number;
+  type: string;
+  status: string;
+  returnTrackingNumber: string | null;
+  createdAt: string;
+  order?: { orderCode: string; status: string; totalAmount: string };
+  items?: { id: number; orderItemId: number; quantity: number; reason: string | null; photoUrls: string[] }[];
+}
+export const adminReturnApi = {
+  list: (token: string) =>
+    api.get<AdminReturnRequest[]>('/admin/orders/returns', { token }),
+  approve: (token: string, id: number, returnTrackingNumber?: string) =>
+    api.post<null>(`/admin/orders/returns/${id}/approve`, { returnTrackingNumber }, { token }),
+  reject: (token: string, id: number, reason?: string) =>
+    api.post<null>(`/admin/orders/returns/${id}/reject`, { reason }, { token }),
+  receive: (token: string, id: number) =>
+    api.post<{ refundId: number | null; wholeOrder: boolean }>(`/admin/orders/returns/${id}/receive`, {}, { token }),
 };
 
 /* ── Wishlist (customer) ───────────────────────────────── */
@@ -472,6 +549,23 @@ export async function uploadImage(file: File, token: string): Promise<string> {
   const res = await fetch(`${BASE_URL}/admin/upload`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` }, // no Content-Type — browser sets the boundary
+    body: fd,
+  });
+  const json = await res.json();
+  if (!res.ok) {
+    const err = json as ApiError;
+    throw new ApiRequestError(err.message || 'Upload failed', res.status, err.errorCode);
+  }
+  return (json as ApiResponse<{ url: string }>).data.url;
+}
+
+/* M-29e: khách đăng nhập tải ảnh bằng chứng trả hàng. Returns the URL. */
+export async function uploadReturnPhoto(file: File, token: string): Promise<string> {
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch(`${BASE_URL}/returns/upload`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
     body: fd,
   });
   const json = await res.json();

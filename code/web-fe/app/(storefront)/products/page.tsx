@@ -40,7 +40,7 @@ export default async function ProductsPage({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-      <h1 className="font-serif text-4xl font-bold text-text mb-8">{t('shop.title')}</h1>
+      <h1 className="font-sans text-3xl font-bold text-text mb-8">{t('shop.title')}</h1>
 
       <div className="flex gap-8 items-start">
         {/* Sidebar filters (sticky) */}
@@ -57,7 +57,7 @@ export default async function ProductsPage({
         {/* Grid */}
         <div className="flex-1 min-w-0">
           {/* Sticky toolbar */}
-          <div className="sticky top-16 z-30 -mt-2 mb-4 bg-surface/95 backdrop-blur py-3 flex items-center justify-between gap-4">
+          <div className="sticky top-24 z-30 -mt-2 mb-4 bg-surface/95 backdrop-blur py-3 flex items-center justify-between gap-4">
             <p className="text-sm text-text-muted">
               {t('shop.productCount', { count: total })}
             </p>

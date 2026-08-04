@@ -5,6 +5,7 @@ import { assertOperationAllowed, GhnPermissionError, type GhnMode } from './ghn.
 import type {
   GhnMasterDataProvider, GhnProvince, GhnDistrict, GhnWard, GhnService, GhnShop,
   GhnFeeRequest, GhnFeeResponse, GhnCreatedOrder, GhnLeadtimeRequest, GhnLeadtimeResponse,
+  GhnCancelResult,
 } from './ghn.types';
 
 /**
@@ -150,6 +151,25 @@ export class GhnProvider implements GhnMasterDataProvider {
       ? '/v2/shipping-order/preview'
       : '/v2/shipping-order/create';
     return this.call<GhnCreatedOrder>(path, payload);
+  }
+
+  /**
+   * ⚠️ THAO TÁC GHI: huỷ vận đơn (M-29c). Bị `assertOperationAllowed` chặn trừ
+   * khi mode = 'live'. GHN trả về mảng kết quả theo từng mã; `result: true` là
+   * huỷ thành công. Không huỷ được thường vì GHN ĐÃ lấy hàng — lúc đó cần chuyển
+   * sang luồng hoàn hàng, không phải huỷ.
+   */
+  async cancelOrder(ghnOrderCode: string): Promise<GhnCancelResult> {
+    const data = await this.call<Array<{ order_code?: string; result?: boolean; message?: string }>>(
+      '/v2/switch-status/cancel', { order_codes: [ghnOrderCode] },
+    );
+    const row = Array.isArray(data) ? data[0] : (data as { result?: boolean; message?: string } | null);
+    return {
+      orderCode: ghnOrderCode,
+      success: row?.result === true,
+      message: row?.message ?? null,
+      raw: data,
+    };
   }
 
   async calculateFee(request: GhnFeeRequest): Promise<GhnFeeResponse> {

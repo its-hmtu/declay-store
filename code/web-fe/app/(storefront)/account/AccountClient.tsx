@@ -12,9 +12,10 @@ import { auth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import VietnamAddressSelect, { type VietnamAddressValue } from '@/components/storefront/VietnamAddressSelect';
-
-const inputCls = 'w-full px-3 py-2 border border-border rounded-lg bg-surface focus:outline-none focus:border-brand text-text text-sm';
-const labelCls = 'block text-xs font-medium text-text mb-1';
+import OrdersSection from '../../../components/storefront/account/OrdersSection';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AccountClient() {
   const { t } = useT();
@@ -31,21 +32,108 @@ export default function AccountClient() {
       .finally(() => setLoading(false));
   }, [router]);
 
-  if (loading) return <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 text-text-muted">Loading…</div>;
-  if (!user)   return <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 text-text-muted">{t('account.loadFailed')}</div>;
-
-  return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 space-y-10">
-      <div className="flex items-center justify-between">
-        <h1 className="font-serif text-4xl font-bold text-text">{t('account.myProfile')}</h1>
-        <Link href="/orders" className="inline-flex items-center gap-1.5 text-sm text-brand hover:underline">
-          <Package size={15} /> My orders
-        </Link>
+  if (loading) return (
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+      <div className="mb-8">
+        <Skeleton className="h-12 w-72" />
       </div>
 
-      <ProfileSection user={user} onUpdated={setUser} />
-      {user.authProvider === 'local' && <PasswordSection />}
-      <AddressSection />
+      <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">
+        <aside className="hidden md:block">
+          <div className="sticky top-6 space-y-4">
+            <div className="rounded-2xl border border-border bg-surface p-6 text-center space-y-3">
+              <Skeleton className="mx-auto mb-3 h-20 w-20 rounded-full" />
+              <Skeleton className="h-4 w-32 mx-auto" />
+              <Skeleton className="h-3 w-48 mx-auto" />
+            </div>
+
+            <nav className="rounded-2xl border border-border bg-surface p-4">
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-full" />
+              </div>
+            </nav>
+          </div>
+        </aside>
+
+        <main className="space-y-6">
+          <section className="rounded-2xl border border-border bg-surface p-6">
+            <Skeleton className="h-6 w-48 mb-4" />
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-border bg-surface p-6 max-w-md">
+            <Skeleton className="h-6 w-56 mb-3" />
+            <Skeleton className="h-10 w-full" />
+          </section>
+        </main>
+      </div>
+    </div>
+  );
+  if (!user) return <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 text-text-muted">{t('account.loadFailed')}</div>;
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+      <div className="mb-8">
+        <h1 className="font-serif text-4xl font-bold text-text">{t('account.myProfile')}</h1>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">
+        <aside className="hidden md:block">
+          <div className="sticky top-6 space-y-4">
+            <div className="rounded-2xl border border-border bg-surface p-6 text-center">
+              <div className="mx-auto mb-3 h-20 w-20 rounded-full bg-surface-alt flex items-center justify-center text-2xl text-text-faint">
+                <UserIcon size={36} />
+              </div>
+              <div className="font-medium text-text">{user.fullName ?? user.email}</div>
+              <div className="text-sm text-text-muted">{user.email}</div>
+              <div className="mt-4 flex items-center justify-center gap-2">
+                <Link href="#profile" className="text-sm text-text-muted hover:text-text">Profile</Link>
+                <span className="text-text-muted">·</span>
+                <Link href="#addresses" className="text-sm text-text-muted hover:text-text">Addresses</Link>
+              </div>
+            </div>
+
+            <nav className="rounded-2xl border border-border bg-surface p-4">
+              <ul className="space-y-1">
+                <li><a href="#profile" className="block px-3 py-2 rounded hover:bg-surface-alt">Account details</a></li>
+                {user.authProvider === 'local' && <li><a href="#password" className="block px-3 py-2 rounded hover:bg-surface-alt">Change password</a></li>}
+                <li><a href="#addresses" className="block px-3 py-2 rounded hover:bg-surface-alt">Addresses</a></li>
+                <li><a href="#orders" className="block px-3 py-2 rounded hover:bg-surface-alt">{t('account.orders')}</a></li>
+              </ul>
+            </nav>
+          </div>
+        </aside>
+
+        <main className="space-y-6">
+          <section id="profile">
+            <ProfileSection user={user} onUpdated={setUser} />
+          </section>
+
+          {user.authProvider === 'local' && (
+            <section id="password">
+              <PasswordSection />
+            </section>
+          )}
+
+          <section id="addresses">
+            <AddressSection />
+          </section>
+
+          <section id="orders" className="scroll-mt-6">
+            <OrdersSection />
+          </section>
+        </main>
+      </div>
     </div>
   );
 }
@@ -90,25 +178,25 @@ function ProfileSection({ user, onUpdated }: { user: User; onUpdated: (u: User) 
       <form onSubmit={save} className="space-y-4">
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className={labelCls}>{t('account.email')}</label>
-            <input value={user.email} disabled className={`${inputCls} opacity-60`} />
+            <Label>{t('account.email')}</Label>
+            <Input value={user.email} disabled className="opacity-60" />
             <p className="mt-1 text-xs text-text-faint">{user.isEmailVerified ? '✓ Verified' : 'Not verified'}</p>
           </div>
           <div>
-            <label className={labelCls}>{t('account.fullName')}</label>
-            <input value={form.fullName} onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} className={inputCls} placeholder="Alice Nguyen" />
+            <Label>{t('account.fullName')}</Label>
+            <Input value={form.fullName} onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} placeholder="Alice Nguyen" />
           </div>
           <div>
-            <label className={labelCls}>{t('account.username')}</label>
-            <input value={form.username} onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))} className={inputCls} placeholder="alice" />
+            <Label>{t('account.username')}</Label>
+            <Input value={form.username} onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))} placeholder="alice" />
           </div>
           <div>
-            <label className={labelCls}>{t('account.phone')}</label>
-            <input value={form.phoneNumber} onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))} className={inputCls} placeholder="0901234567" />
+            <Label>{t('account.phone')}</Label>
+            <Input value={form.phoneNumber} onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))} placeholder="0901234567" />
           </div>
           <div>
-            <label className={labelCls}>{t('account.dob')}</label>
-            <input type="date" value={form.dateOfBirth} onChange={(e) => setForm((f) => ({ ...f, dateOfBirth: e.target.value }))} className={inputCls} />
+            <Label>{t('account.dob')}</Label>
+            <Input type="date" value={form.dateOfBirth} onChange={(e) => setForm((f) => ({ ...f, dateOfBirth: e.target.value }))} />
           </div>
         </div>
         <Button type="submit" size="sm" loading={saving}>{t('account.save')}</Button>
@@ -147,17 +235,17 @@ function PasswordSection() {
       </h2>
       <form onSubmit={save} className="space-y-4 max-w-md">
         <div>
-          <label className={labelCls}>{t('account.currentPassword')}</label>
-          <input type="password" required value={form.currentPassword} onChange={(e) => setForm((f) => ({ ...f, currentPassword: e.target.value }))} className={inputCls} />
+          <Label>{t('account.currentPassword')}</Label>
+          <Input type="password" required value={form.currentPassword} onChange={(e) => setForm((f) => ({ ...f, currentPassword: e.target.value }))} />
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className={labelCls}>{t('account.newPassword')}</label>
-            <input type="password" required value={form.newPassword} onChange={(e) => setForm((f) => ({ ...f, newPassword: e.target.value }))} className={inputCls} placeholder={t('account.passwordHint')} />
+            <Label>{t('account.newPassword')}</Label>
+            <Input type="password" required value={form.newPassword} onChange={(e) => setForm((f) => ({ ...f, newPassword: e.target.value }))} placeholder={t('account.passwordHint')} />
           </div>
           <div>
-            <label className={labelCls}>{t('account.confirmPassword')}</label>
-            <input type="password" required value={form.confirmPassword} onChange={(e) => setForm((f) => ({ ...f, confirmPassword: e.target.value }))} className={inputCls} />
+            <Label>{t('account.confirmPassword')}</Label>
+            <Input type="password" required value={form.confirmPassword} onChange={(e) => setForm((f) => ({ ...f, confirmPassword: e.target.value }))} />
           </div>
         </div>
         <Button type="submit" size="sm" loading={saving}>{t('account.updatePassword')}</Button>
@@ -318,23 +406,23 @@ function AddressForm({ address, onSaved, onCancel }: { address?: Address; onSave
       <h3 className="font-medium text-text">{isEdit ? 'Edit address' : 'New address'}</h3>
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
-          <label className={labelCls}>Receiver name *</label>
-          <input required value={form.receiverName} onChange={(e) => set('receiverName', e.target.value)} className={inputCls} placeholder="Alice Nguyen" />
+          <Label>Receiver name *</Label>
+          <Input required value={form.receiverName} onChange={(e) => set('receiverName', e.target.value)} placeholder="Alice Nguyen" />
         </div>
         <div>
-          <label className={labelCls}>Phone *</label>
-          <input required value={form.receiverPhone} onChange={(e) => set('receiverPhone', e.target.value)} className={inputCls} placeholder="0901234567" />
+          <Label>Phone *</Label>
+          <Input required value={form.receiverPhone} onChange={(e) => set('receiverPhone', e.target.value)} placeholder="0901234567" />
         </div>
         <div className="sm:col-span-2">
-          <label className={labelCls}>Address line *</label>
-          <input required value={form.addressLine} onChange={(e) => set('addressLine', e.target.value)} className={inputCls} placeholder="12 Nguyen Hue" />
+          <Label>Address line *</Label>
+          <Input required value={form.addressLine} onChange={(e) => set('addressLine', e.target.value)} placeholder="12 Nguyen Hue" />
         </div>
         <div className="sm:col-span-2">
-          <label className={labelCls}>{t('address.line2')}</label>
-          <input value={form.addressLine2} onChange={(e) => set('addressLine2', e.target.value)} className={inputCls} placeholder={t('address.line2Hint')} />
+          <Label>{t('address.line2')}</Label>
+          <Input value={form.addressLine2} onChange={(e) => set('addressLine2', e.target.value)} placeholder={t('address.line2Hint')} />
         </div>
         <div className="sm:col-span-2">
-          <label className={labelCls}>{t('address.province')} / {t('address.district')} / {t('address.ward')} *</label>
+          <Label>{t('address.province')} / {t('address.district')} / {t('address.ward')} *</Label>
           <VietnamAddressSelect
             value={{
               provinceId: form.ghnProvinceId,
@@ -355,18 +443,18 @@ function AddressForm({ address, onSaved, onCancel }: { address?: Address; onSave
               ward: next.wardName,
             }))}
           />
-        </div>
-        <div>
-          <label className={labelCls}>{t('address.postalCode')}</label>
-          <input value={form.postalCode} onChange={(e) => set('postalCode', e.target.value)} className={inputCls} placeholder="700000" />
-        </div>
-        <div>
-          <label className={labelCls}>{t('address.type')}</label>
-          <select value={form.addressType} onChange={(e) => set('addressType', e.target.value as AddressType)} className={inputCls}>
-            <option value="home">{t('address.home')}</option>
-            <option value="work">{t('address.work')}</option>
-            <option value="other">{t('address.other')}</option>
-          </select>
+          <div>
+            <Label>{t('address.postalCode')}</Label>
+            <Input value={form.postalCode} onChange={(e) => set('postalCode', e.target.value)} placeholder="700000" />
+          </div>
+          <div>
+            <Label>{t('address.type')}</Label>
+            <select value={form.addressType} onChange={(e) => set('addressType', e.target.value as any)} className="flex h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text">
+              <option value="home">{t('address.home')}</option>
+              <option value="work">{t('address.work')}</option>
+              <option value="other">{t('address.other')}</option>
+            </select>
+          </div>
         </div>
       </div>
       <label className="flex items-center gap-2 cursor-pointer">

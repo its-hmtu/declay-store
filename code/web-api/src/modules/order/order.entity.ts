@@ -30,6 +30,11 @@ export class Order extends Model<InferAttributes<Order>, InferCreationAttributes
   declare deliveredAt: CreationOptional<Date | null>;
   declare returnedAt: CreationOptional<Date | null>;
   declare returnReason: CreationOptional<string | null>;
+  // M-30: mốc thời gian thanh toán thành công + bắt đầu xử lý (cho dòng thời gian).
+  declare paidAt: CreationOptional<Date | null>;
+  declare processingAt: CreationOptional<Date | null>;
+  /** M-29 (P13): true khi đơn đã trả MỘT PHẦN (status vẫn 'delivered'). */
+  declare partialReturned: CreationOptional<boolean>;
   declare status: CreationOptional<OrderStatus>;
   declare totalAmount: number;
   declare stripePaymentIntentId: CreationOptional<string | null>;
@@ -69,8 +74,11 @@ Order.init(
     guestPhone: { type: DataTypes.STRING(32), allowNull: true, field: 'guest_phone' },
     guestToken: { type: DataTypes.STRING(64), allowNull: true, field: 'guest_token' },
     deliveredAt: { type: DataTypes.DATE, allowNull: true, field: 'delivered_at' },
+    paidAt: { type: DataTypes.DATE, allowNull: true, field: 'paid_at' },
+    processingAt: { type: DataTypes.DATE, allowNull: true, field: 'processing_at' },
     returnedAt: { type: DataTypes.DATE, allowNull: true, field: 'returned_at' },
     returnReason: { type: DataTypes.STRING(500), allowNull: true, field: 'return_reason' },
+    partialReturned: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false, field: 'partial_returned' },
     status: {
       type: DataTypes.ENUM('pending_payment', 'paid', 'processing', 'shipped', 'delivered', 'returned', 'cancelled'),
       allowNull: false,

@@ -11,6 +11,7 @@ export function createAdminReportRouter(): Router {
   router.use(adminProtect, requireRole('admin', 'super_admin'));
   router.get('/top-skus', controller.topSkus);
   router.get('/product-views', controller.productViews);
+  router.get('/recommendation-ctr', controller.recommendationCtr);
 
   return router;
 }

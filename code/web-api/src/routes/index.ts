@@ -30,7 +30,7 @@ import { createApplicationRouter } from '@/modules/job-application/job-applicati
 // Admin modules
 import { createAdminAuthRouter } from '@/modules/admin-auth/admin-auth.route';
 import { createAdminUserRouter } from '@/modules/admin-user/admin-user.route';
-import { createUploadRouter, createCvUploadRouter } from '@/modules/upload/upload.route';
+import { createUploadRouter, createCvUploadRouter, createReturnUploadRouter } from '@/modules/upload/upload.route';
 import { createAdminArticleRouter } from '@/modules/article/artical.route';
 import { createAdminCategoryRouter } from '@/modules/category/category.route';
 import { createAdminProductRouter } from '@/modules/product/product.route';
@@ -80,6 +80,7 @@ export function createRoutes(): Router {
   router.use('/settings', createSettingRouter());
   router.use('/chat', createChatRouter());
   router.use('/orders', createOrderRouter());
+  router.use('/returns', createReturnUploadRouter());   // M-29e: khách tải ảnh trả hàng
   // Nested: GET /api/orders/:orderId/shipment
   router.use('/orders/:orderId/shipment', createShipmentRouter());
   router.use('/jobs', createJobRouter());

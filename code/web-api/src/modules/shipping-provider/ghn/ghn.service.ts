@@ -7,7 +7,7 @@ import { resolveGhnMode, describeMode, PREVIEW_TRACKING_PREFIX, type GhnMode } f
 import { GhnMockProvider } from './ghn.mock';
 import type { GhnMasterDataProvider } from './ghn.types';
 import { buildParcel, type ParcelItemInput } from './ghn.parcel';
-import { buildCreateOrderPayload, type CreateOrderInput } from './ghn.order';
+import { buildCreateOrderPayload, buildReturnOrderPayload, type CreateOrderInput, type ReturnOrderInput } from './ghn.order';
 import { applyFeePolicy, quoteBlockedReason, districtSupportsDelivery, type QuoteBlockedReason } from './ghn.fee';
 import { serviceMeta, serviceSortWeight, leadtimeDays } from './ghn.services-meta';
 
@@ -88,6 +88,31 @@ export default class GhnService {
   /** M-26: trạng thái hiện tại của vận đơn (Order Info) — chỉ đọc. */
   async getOrderStatus(ghnOrderCode: string) {
     return this.provider.getOrderStatus(ghnOrderCode);
+  }
+
+  /**
+   * M-29c: huỷ vận đơn GHN.
+   *
+   * Bỏ qua gọi GHN cho vận đơn KHÔNG có thật: chế độ mock, và vận đơn preview
+   * (mã có tiền tố PREVIEW-) — chúng chưa từng tồn tại bên GHN nên "huỷ" chỉ là
+   * dọn phía mình. Vận đơn thật thì gọi API cancel (bị chặn nếu chưa mode 'live').
+   */
+  /**
+   * M-29e: tạo vận đơn TRẢ hàng (chiều về, shop chịu cước). Đảo điểm đi/đến so
+   * với vận đơn thường. Bị mode-safety chặn nếu chưa 'live' (là thao tác ghi).
+   */
+  async createReturnShipment(input: ReturnOrderInput): Promise<{ providerOrderCode: string; isMock: boolean }> {
+    const payload = buildReturnOrderPayload(input);
+    const created = await this.provider.createOrder(payload as Record<string, unknown>);
+    const code = created.order_code || `${PREVIEW_TRACKING_PREFIX}${input.orderCode}`;
+    return { providerOrderCode: code, isMock: this.provider.isMock };
+  }
+
+  async cancelShipment(ghnOrderCode: string) {
+    if (this.isMock || ghnOrderCode.startsWith(PREVIEW_TRACKING_PREFIX)) {
+      return { orderCode: ghnOrderCode, success: true, message: 'skip (mock/preview)', raw: null };
+    }
+    return this.provider.cancelOrder(ghnOrderCode);
   }
 
   /* ── Dữ liệu địa giới (đọc từ cache trong DB) ───────────── */

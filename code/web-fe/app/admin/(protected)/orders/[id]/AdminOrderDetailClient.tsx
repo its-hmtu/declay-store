@@ -8,6 +8,7 @@ import type { Order, Shipment } from '@/lib/types';
 import { api, adminShipmentApi } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
+import { Skeleton } from '@/components/ui/skeleton';
 import Badge from '@/components/ui/Badge';
 import { formatPrice } from '@/lib/utils';
 import { orderLabel } from '@/lib/utils';
@@ -44,7 +45,15 @@ export default function AdminOrderDetailClient({ orderId }: { orderId: number })
     }
   }
 
-  if (loading)  return <div className="text-text-muted">Loading…</div>;
+  if (loading)  return (
+    <div>
+      <Skeleton className="h-8 w-48 mb-4" />
+      <div className="rounded-xl border border-border bg-surface p-5 mb-6 space-y-3">
+        <Skeleton className="h-4 w-64 mb-2" />
+        <Skeleton className="h-4 w-32" />
+      </div>
+    </div>
+  );
   if (!order)   return <div className="text-text-muted">Order not found.</div>;
 
   const items = order.items ?? [];

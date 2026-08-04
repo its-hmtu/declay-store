@@ -3,20 +3,19 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ShoppingCart, User, LogOut, Menu, X, ChevronDown, Heart, Package } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useEffect, useState } from 'react';
 import { auth } from '@/lib/auth';
 import { authApi } from '@/lib/api';
-import NotificationBell from '@/components/NotificationBell';
 import SearchBox from '@/components/storefront/SearchBox';
 import type { Category, Collection } from '@/lib/types';
 import { isEnabled } from '@/lib/features';
 import { useT } from '@/lib/i18n/LocaleProvider';
-import LanguageSwitcher from '@/components/storefront/LanguageSwitcher';
 import { useCart } from '@/lib/cart/CartProvider';
 
 const NAV = [
   { href: '/products',    label: 'Shop', i18n: 'nav.shop' as const },
-  { href: '/collections', label: 'Collections', feature: 'collections' as const },
+  // { href: '/collections', label: 'Collections', feature: 'collections' as const },
   { href: '/blog',     label: 'Journal', feature: 'blog' as const },
   { href: '/careers',  label: 'Careers', feature: 'careers' as const },
 ];
@@ -73,6 +72,13 @@ export default function Header({ categories = [], collections = [] }: { categori
       className="sticky top-0 z-40 bg-surface/90 backdrop-blur"
       onMouseLeave={closeShop}
     >
+      {/* Promo strip — Nike-style thin announcement bar, real shipping/return facts */}
+      <div className="bg-surface-alt border-b border-border">
+        <p className="max-w-7xl mx-auto px-4 sm:px-6 py-2 text-center font-sans text-xs text-text-muted">
+          {t('promo.announcement')}
+        </p>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-6">
         {/* Logo */}
         <Link href="/" className="flex items-center shrink-0" onMouseEnter={closeShop} aria-label="Declay Store — home">
@@ -80,8 +86,8 @@ export default function Header({ categories = [], collections = [] }: { categori
           <img src="/DeCLAYStudioLogo.avif" alt="Declay Studio" className="h-9 w-auto" />
         </Link>
 
-        {/* Desktop nav (monospace) */}
-        <nav className="hidden md:flex items-center gap-7 flex-1 justify-center">
+        {/* Desktop nav (plain sans, Nike-style) */}
+        <nav className="hidden md:flex items-center gap-7 flex-1 justify-start">
           {visibleNav.map((n) => {
             const { href, label } = n;
             const active = pathname.startsWith(href);
@@ -91,7 +97,7 @@ export default function Header({ categories = [], collections = [] }: { categori
                 key={href}
                 href={href}
                 onMouseEnter={() => (isShop ? setShopOpen(true) : closeShop())}
-                className={`flex items-center gap-1 font-mono text-sm transition-colors ${
+                className={`flex items-center gap-1 font-sans text-sm font-medium transition-colors ${
                   active || (isShop && shopOpen) ? 'text-text' : 'text-text-muted hover:text-text'
                 }`}
               >
@@ -110,30 +116,39 @@ export default function Header({ categories = [], collections = [] }: { categori
           <div className="hidden md:block">
             <SearchBox variant="desktop" popularTerms={popularTerms} />
           </div>
-          <div className="hidden md:block ml-1"><LanguageSwitcher /></div>
+          {/* <div className="hidden md:block ml-1"><LanguageSwitcher /></div> */}
           {isEnabled('wishlist') && (
-          <Link
-            href="/wishlist"
-            className="p-2 text-text-muted hover:text-text transition-colors"
-            aria-label="Wishlist"
-          >
-            <Heart size={19} />
-          </Link>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link
+                href="/account/favorites"
+                className="p-2 text-text-muted hover:text-text transition-colors"
+                aria-label="Favorites"
+              >
+                <Heart size={19} />
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent side="top">Wishlist</TooltipContent>
+          </Tooltip>
           )}
-          <Link
-            href="/cart"
-            className="relative p-2 text-text-muted hover:text-text transition-colors"
-            aria-label="Cart"
-          >
-            <ShoppingCart size={19} />
-            {cartCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 size-4 flex items-center justify-center bg-accent text-white text-[10px] font-bold rounded-full">
-                {cartCount > 9 ? '9+' : cartCount}
-              </span>
-            )}
-          </Link>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link
+                href="/cart"
+                className="relative p-2 text-text-muted hover:text-text transition-colors"
+                aria-label="Cart"
+              >
+                <ShoppingCart size={19} />
+                {cartCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 size-4 flex items-center justify-center bg-accent text-white text-[10px] font-bold rounded-full">
+                    {cartCount > 9 ? '9+' : cartCount}
+                  </span>
+                )}
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent side="top">Cart</TooltipContent>
+          </Tooltip>
 
-          {isLoggedIn && <NotificationBell variant="customer" />}
 
           {isLoggedIn ? (
             <div className="relative group">
@@ -146,9 +161,10 @@ export default function Header({ categories = [], collections = [] }: { categori
                   <Link href="/account" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-text-muted hover:text-text hover:bg-surface-alt transition-colors">
                     <User size={15} /> {t('nav.profile')}
                   </Link>
-                  <Link href="/orders" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-text-muted hover:text-text hover:bg-surface-alt transition-colors">
+                  <Link href="/account/orders" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-text-muted hover:text-text hover:bg-surface-alt transition-colors">
                     <Package size={15} /> {t('nav.orders')}
                   </Link>
+                  
                   <div className="my-1 h-px bg-border" />
                   <button onClick={logout} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-error hover:bg-error/10 transition-colors">
                     <LogOut size={15} /> {t('nav.logout')}
@@ -157,8 +173,8 @@ export default function Header({ categories = [], collections = [] }: { categori
               </div>
             </div>
           ) : (
-            <Link href="/login" className="hidden sm:inline-flex font-mono text-sm text-text-muted hover:text-text transition-colors ml-1">
-              {t('nav.signIn')}&nbsp;&rarr;
+            <Link href="/login" className="hidden sm:inline-flex font-sans text-sm font-medium text-text-muted hover:text-text transition-colors ml-1">
+              {t('nav.signIn')}
             </Link>
           )}
 
@@ -187,7 +203,7 @@ export default function Header({ categories = [], collections = [] }: { categori
 
           {/* By Category — the real catalogue */}
           <div className="col-span-1">
-            <p className="eyebrow mb-4">By Category</p>
+            <p className="font-sans text-sm font-semibold text-text mb-4">By Category</p>
             <ul className="space-y-2.5">
               {categories.map((cat) => (
                 <li key={cat.id}>
@@ -206,7 +222,7 @@ export default function Header({ categories = [], collections = [] }: { categori
           {/* By Collection */}
           {collectionLinks.length > 0 && (
             <div className="col-span-1">
-              <p className="eyebrow mb-4">By Collection</p>
+              <p className="font-sans text-sm font-semibold text-text mb-4">By Collection</p>
               <ul className="space-y-2.5">
                 {collectionLinks.map((l) => (
                   <li key={l.href}>
@@ -237,7 +253,7 @@ export default function Header({ categories = [], collections = [] }: { categori
               <Link
                 href={href}
                 onClick={() => setOpen(false)}
-                className="font-mono text-text-muted hover:text-text py-1 block"
+                className="font-sans font-medium text-text-muted hover:text-text py-1 block"
               >
                 {'i18n' in n && n.i18n ? t(n.i18n) : label}
               </Link>
@@ -273,19 +289,19 @@ export default function Header({ categories = [], collections = [] }: { categori
           <div className="mt-2 pt-4 border-t border-border flex flex-col gap-3">
             {isLoggedIn ? (
               <>
-                <Link href="/account" onClick={() => setOpen(false)} className="flex items-center gap-2.5 font-mono text-text-muted hover:text-text py-1">
+                <Link href="/account" onClick={() => setOpen(false)} className="flex items-center gap-2.5 font-sans font-medium text-text-muted hover:text-text py-1">
                   <User size={16} /> {t('nav.profile')}
                 </Link>
-                <Link href="/orders" onClick={() => setOpen(false)} className="flex items-center gap-2.5 font-mono text-text-muted hover:text-text py-1">
+                <Link href="/account/orders" onClick={() => setOpen(false)} className="flex items-center gap-2.5 font-sans font-medium text-text-muted hover:text-text py-1">
                   <Package size={16} /> {t('nav.orders')}
                 </Link>
-                <button onClick={() => { setOpen(false); logout(); }} className="flex items-center gap-2.5 font-mono text-error py-1 text-left">
+                <button onClick={() => { setOpen(false); logout(); }} className="flex items-center gap-2.5 font-sans font-medium text-error py-1 text-left">
                   <LogOut size={16} /> {t('nav.logout')}
                 </button>
               </>
             ) : (
-              <Link href="/login" onClick={() => setOpen(false)} className="font-mono text-text-muted hover:text-text py-1">
-                {t('nav.signIn')} &rarr;
+              <Link href="/login" onClick={() => setOpen(false)} className="font-sans font-medium text-text-muted hover:text-text py-1">
+                {t('nav.signIn')}
               </Link>
             )}
           </div>
@@ -305,7 +321,7 @@ function MegaColumn({
 }) {
   return (
     <div className="col-span-1">
-      <p className="eyebrow mb-4">{title}</p>
+      <p className="font-sans text-sm font-semibold text-text mb-4">{title}</p>
       <ul className="space-y-2.5">
         {links.map((l) => (
           <li key={l.label}>

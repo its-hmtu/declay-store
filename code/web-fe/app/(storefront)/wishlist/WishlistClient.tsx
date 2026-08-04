@@ -9,6 +9,7 @@ import type { Wishlist } from '@/lib/types';
 import { wishlistApi, cartApi } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { formatPrice } from '@/lib/utils';
 import { useCart } from '@/lib/cart/CartProvider';
 
@@ -59,14 +60,42 @@ export default function WishlistClient() {
     }
   }
 
-  if (loading) return <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 text-text-muted">Loading…</div>;
+  if (loading) return (
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+      <Skeleton className="h-12 w-48 mb-6" />
+      <div className="space-y-3">
+        <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-surface">
+          <Skeleton className="size-20 rounded-lg h-20 w-20" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-44" />
+            <Skeleton className="h-3 w-32" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+          <div className="w-36">
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+        <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-surface">
+          <Skeleton className="size-20 rounded-lg h-20 w-20" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-44" />
+            <Skeleton className="h-3 w-32" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+          <div className="w-36">
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   const items = wishlist?.items ?? [];
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
       <h1 className="font-serif text-4xl font-bold text-text mb-8 flex items-center gap-3">
-        <Heart className="text-accent" /> Wishlist
+        Wishlist
       </h1>
 
       {items.length === 0 ? (

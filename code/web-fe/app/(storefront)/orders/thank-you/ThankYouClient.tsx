@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { CheckCircle, Loader2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ordersApi } from '@/lib/api';
 import { useT } from '@/lib/i18n/LocaleProvider';
 import Button from '@/components/ui/Button';
@@ -38,7 +39,8 @@ export default function ThankYouClient() {
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-24 text-center">
-        <Loader2 size={36} className="mx-auto animate-spin text-text-muted" />
+        <Skeleton className="mx-auto h-12 w-48 mb-4" />
+        <Skeleton className="mx-auto h-6 w-64" />
       </div>
     );
   }

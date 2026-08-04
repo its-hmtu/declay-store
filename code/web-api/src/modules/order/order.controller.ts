@@ -2,15 +2,24 @@ import type { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { sendSuccess } from '@/utils/response';
 import { httpError } from '@/utils/http-error';
+import ReturnService from './return.service';
 import type { IOrderController, IOrderService } from './order.interface';
 
 export default class OrderController implements IOrderController {
+  private returnService = new ReturnService();
+
   constructor(private orderService: IOrderService) {}
 
   private getUserId(req: Request): number {
     const user = req.user as { userId: number };
     if (!user?.userId) throw httpError(401, 'Not authenticated');
     return user.userId;
+  }
+
+  private getAdminId(req: Request): number {
+    const admin = req.admin as { adminId: number } | undefined;
+    if (!admin?.adminId) throw httpError(401, 'Not authenticated');
+    return admin.adminId;
   }
 
   createCheckout = asyncHandler(async (req: Request, res: Response) => {
@@ -67,8 +76,56 @@ export default class OrderController implements IOrderController {
   });
 
   cancelOrder = asyncHandler(async (req: Request, res: Response) => {
-    const order = await this.orderService.cancelOrder(Number(req.params.id), this.getUserId(req));
-    sendSuccess(res, order, 'Order cancelled successfully');
+    const result = await this.orderService.cancelOrder(Number(req.params.id), this.getUserId(req));
+    const message = result.outcome === 'cancelled'
+      ? 'Đã huỷ đơn hàng.'
+      : 'Đơn đã có vận đơn — yêu cầu huỷ đã gửi, chờ cửa hàng duyệt.';
+    sendSuccess(res, result, message);
+  });
+
+  // M-29d: admin xử lý yêu cầu huỷ.
+  adminListCancellations = asyncHandler(async (_req: Request, res: Response) => {
+    const rows = await this.orderService.listPendingCancellations();
+    sendSuccess(res, rows, 'Pending cancellation requests');
+  });
+
+  adminApproveCancellation = asyncHandler(async (req: Request, res: Response) => {
+    const result = await this.orderService.approveCancellation(Number(req.params.id), this.getAdminId(req));
+    sendSuccess(res, result, 'Đã duyệt và huỷ đơn.');
+  });
+
+  adminRejectCancellation = asyncHandler(async (req: Request, res: Response) => {
+    await this.orderService.rejectCancellation(Number(req.params.id), this.getAdminId(req), req.body?.reason);
+    sendSuccess(res, null, 'Đã từ chối yêu cầu huỷ.');
+  });
+
+  // M-29e: trả hàng lỗi/sai.
+  createReturn = asyncHandler(async (req: Request, res: Response) => {
+    const request = await this.returnService.createReturn(Number(req.params.id), this.getUserId(req), {
+      type: req.body?.type,
+      items: req.body?.items ?? [],
+    });
+    sendSuccess(res, request, 'Đã gửi yêu cầu trả hàng, chờ cửa hàng duyệt.', 201);
+  });
+
+  adminListReturns = asyncHandler(async (_req: Request, res: Response) => {
+    const rows = await this.returnService.listPendingReturns();
+    sendSuccess(res, rows, 'Pending return requests');
+  });
+
+  adminApproveReturn = asyncHandler(async (req: Request, res: Response) => {
+    await this.returnService.approveReturn(Number(req.params.id), this.getAdminId(req), req.body?.returnTrackingNumber);
+    sendSuccess(res, null, 'Đã duyệt yêu cầu trả.');
+  });
+
+  adminRejectReturn = asyncHandler(async (req: Request, res: Response) => {
+    await this.returnService.rejectReturn(Number(req.params.id), this.getAdminId(req), req.body?.reason);
+    sendSuccess(res, null, 'Đã từ chối yêu cầu trả.');
+  });
+
+  adminReceiveReturn = asyncHandler(async (req: Request, res: Response) => {
+    const result = await this.returnService.markReceived(Number(req.params.id), this.getAdminId(req));
+    sendSuccess(res, result, 'Đã nhận hàng trả và xử lý hoàn tiền.');
   });
 
   adminGetOrder = asyncHandler(async (req: Request, res: Response) => {

@@ -106,6 +106,27 @@ export async function sendOrderStatusEmail(
 
 
 /**
+ * M-33: email thông báo chung cho khách (thay cho thông báo on-site đã bỏ).
+ * Dùng cho các sự kiện trước đây chỉ hiện trên chuông (vd duyệt/từ chối trả hàng).
+ */
+export async function sendCustomerNotice(to: string, subject: string, body: string): Promise<void> {
+  const url = `${config.oauth.frontendUrl}/account/orders`;
+  await getTransporter().sendMail({
+    from: config.email.from,
+    to,
+    subject,
+    html: `
+      <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px">
+        <h2 style="color:#7c5c3e">${subject}</h2>
+        <p>${body}</p>
+        <p><a href="${url}" style="color:#7c5c3e">Xem đơn hàng của bạn</a></p>
+        <p style="color:#888;font-size:12px">Nếu bạn không mong đợi thông báo này, vui lòng liên hệ hỗ trợ.</p>
+      </div>
+    `,
+  });
+}
+
+/**
  * M-17: email xác nhận đơn hàng, đầy đủ sản phẩm và số tiền.
  *
  * Gửi cho CẢ khách vãng lai. Với họ đây là hoá đơn duy nhất — không có tài

@@ -10,6 +10,8 @@ import { Order } from '@/modules/order/order.entity';
 
 export type PaymentStatus = 'pending' | 'succeeded' | 'failed';
 export type RefundStatus = 'pending' | 'succeeded' | 'failed';
+export type RefundMethod = 'vnpay' | 'stripe' | 'bank_transfer';
+export type RefundType = 'cancel' | 'return';
 
 export class Payment extends Model<InferAttributes<Payment>, InferCreationAttributes<Payment>> {
   declare id: CreationOptional<number>;
@@ -18,6 +20,9 @@ export class Payment extends Model<InferAttributes<Payment>, InferCreationAttrib
   declare method: CreationOptional<string | null>;
   declare provider: CreationOptional<string | null>;
   declare providerRef: CreationOptional<string | null>;
+  // M-29b: cần cho API hoàn tiền VNPay (vnp_TxnRef gốc + vnp_PayDate).
+  declare providerTxnRef: CreationOptional<string | null>;
+  declare providerPayDate: CreationOptional<string | null>;
   // M-07: COD cash reconciliation (BR-11).
   // M-12 FX: số tiền/tỉ giá đã chốt khi tạo đơn (VNPay chỉ nhận VND).
   declare chargedAmount: CreationOptional<number | null>;
@@ -42,6 +47,8 @@ Payment.init(
     method: { type: DataTypes.STRING(30), allowNull: true },
     provider: { type: DataTypes.STRING(30), allowNull: true },
     providerRef: { type: DataTypes.STRING(255), allowNull: true, field: 'provider_ref' },
+    providerTxnRef: { type: DataTypes.STRING(100), allowNull: true, field: 'provider_txn_ref' },
+    providerPayDate: { type: DataTypes.STRING(20), allowNull: true, field: 'provider_pay_date' },
     chargedAmount: { type: DataTypes.DECIMAL(18, 2), allowNull: true, field: 'charged_amount' },
     chargedCurrency: { type: DataTypes.STRING(3), allowNull: true, field: 'charged_currency' },
     fxRate: { type: DataTypes.DECIMAL(18, 6), allowNull: true, field: 'fx_rate' },
@@ -66,7 +73,17 @@ export class Refund extends Model<InferAttributes<Refund>, InferCreationAttribut
   declare amount: number;
   declare reason: CreationOptional<string | null>;
   declare status: CreationOptional<RefundStatus>;
+  // M-29: hoàn tiền đa kênh + liên kết yêu cầu huỷ/trả.
+  declare method: CreationOptional<RefundMethod | null>;
+  declare provider: CreationOptional<string | null>;
+  declare providerRef: CreationOptional<string | null>;
+  declare type: CreationOptional<RefundType | null>;
+  declare cancellationRequestId: CreationOptional<number | null>;
+  declare returnRequestId: CreationOptional<number | null>;
+  declare initiatedBy: CreationOptional<number | null>;
+  declare currency: CreationOptional<string>;
   declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
 }
 
 Refund.init(
@@ -78,9 +95,18 @@ Refund.init(
     amount: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
     reason: { type: DataTypes.STRING(255), allowNull: true },
     status: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'succeeded' },
+    method: { type: DataTypes.STRING(20), allowNull: true },
+    provider: { type: DataTypes.STRING(30), allowNull: true },
+    providerRef: { type: DataTypes.STRING(255), allowNull: true, field: 'provider_ref' },
+    type: { type: DataTypes.STRING(20), allowNull: true },
+    cancellationRequestId: { type: DataTypes.BIGINT, allowNull: true, field: 'cancellation_request_id' },
+    returnRequestId: { type: DataTypes.BIGINT, allowNull: true, field: 'return_request_id' },
+    initiatedBy: { type: DataTypes.INTEGER, allowNull: true, field: 'initiated_by' },
+    currency: { type: DataTypes.STRING(10), allowNull: false, defaultValue: 'vnd' },
     createdAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'created_at' },
+    updatedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'updated_at' },
   },
-  { sequelize, tableName: 'refunds', modelName: 'Refund', timestamps: false, underscored: true },
+  { sequelize, tableName: 'refunds', modelName: 'Refund', timestamps: true, underscored: true },
 );
 
 // Associations

@@ -22,8 +22,21 @@ export default function SearchBox({
   const [query, setQuery]     = useState('');
   const [results, setResults] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
-  const [active, setActive]   = useState(false); // overlay open (desktop)
+  const [active, setActive]   = useState(false); // visible / highlighted (drives the enter transition)
+  const [mounted, setMounted] = useState(false); // present in the DOM (kept true a beat longer for the exit transition)
   const inputRef = useRef<HTMLInputElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (closeTimer.current) clearTimeout(closeTimer.current); }, []);
+
+  // Lock page scroll behind the mask while the overlay is up — the darkened
+  // background shouldn't scroll while the search panel floats on top of it.
+  useEffect(() => {
+    if (!mounted) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [mounted]);
 
   // Debounced product suggestions (search by name) as the user types.
   useEffect(() => {
@@ -52,13 +65,23 @@ export default function SearchBox({
   }, [active]);
 
   function open() {
-    setActive(true);
+    if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
+    setMounted(true);
+    // Mount in the closed visual state first, then flip to active on the next
+    // frame so the opacity/scale/translate transition actually has something
+    // to animate from (setting both at once would skip straight to "open").
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setActive(true));
+    });
     requestAnimationFrame(() => inputRef.current?.focus());
   }
   function close() {
-    setActive(false);
-    setQuery('');
-    setResults([]);
+    setActive(false); // plays the fade/slide-out transition
+    closeTimer.current = setTimeout(() => {
+      setMounted(false);
+      setQuery('');
+      setResults([]);
+    }, 200); // matches the duration-200 transition below
   }
 
   function goToResults(term?: string) {
@@ -152,26 +175,46 @@ export default function SearchBox({
         type="button"
         onClick={open}
         aria-label="Search"
-        className="inline-flex items-center gap-2 h-9 pl-3 pr-4 rounded-full bg-surface-alt text-text-muted hover:bg-border/60 transition-colors"
+        className="inline-flex items-center gap-2 h-9 w-44 lg:w-64 xl:w-72 pl-3 pr-4 rounded-full bg-surface-alt text-text-muted hover:bg-border/60 transition-colors"
       >
-        <Search size={18} />
-        <span className="hidden lg:inline text-sm">Search</span>
+        <Search size={18} className="shrink-0" />
+        <span className="text-sm truncate">Search</span>
       </button>
 
-      {active && (
+      {mounted && (
         <>
-          {/* Scrim */}
-          <div className="fixed inset-0 z-50 bg-black/30 animate-in fade-in-0" onClick={close} aria-hidden />
+          {/* Mask — dims (and slightly blurs) the page behind the search overlay, fades with `active` */}
+          <div
+            className={cn(
+              'fixed inset-0 top-0 left-0 right-0 bottom-0 h-screen z-50 bg-black/50 backdrop-blur-sm transition-opacity duration-200 ease-out',
+              active ? 'opacity-100' : 'opacity-0',
+            )}
+            onClick={close}
+            aria-hidden
+          />
 
-          {/* Full-width search bar + panel */}
-          <div className="fixed top-0 inset-x-0 z-[60] bg-surface border-b border-border shadow-sm">
+          {/* Full-width search bar + panel — slides down and fades with `active` */}
+          <div
+            className={cn(
+              'fixed top-0 inset-x-0 z-[60] bg-surface border-b border-border shadow-lg transition-all duration-200 ease-out',
+              active ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3',
+            )}
+          >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
               <Link href="/" onClick={close} className="shrink-0" aria-label="Declay Store — home">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/DeCLAYStudioLogo.avif" alt="Declay" className="h-8 w-auto" />
               </Link>
 
-              <form onSubmit={(e) => { e.preventDefault(); goToResults(); }} className="flex-1 flex items-center gap-2.5 rounded-full bg-surface-alt px-4 h-11 focus-within:ring-2 focus-within:ring-accent/30">
+              {/* Highlighted search field — accent ring calls it out as the focal control */}
+              <form
+                onSubmit={(e) => { e.preventDefault(); goToResults(); }}
+                className={cn(
+                  'flex-1 flex items-center gap-2.5 rounded-full bg-surface-alt px-4 h-11 ring-2 transition-all duration-200 ease-out delay-75',
+                  'focus-within:ring-accent focus-within:bg-surface',
+                  active ? 'ring-accent/50 scale-100 opacity-100' : 'ring-transparent scale-[0.98] opacity-0',
+                )}
+              >
                 <Search size={18} className="text-text-faint shrink-0" />
                 <input
                   ref={inputRef}

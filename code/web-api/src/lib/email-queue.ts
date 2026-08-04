@@ -2,14 +2,14 @@ import { Queue, Worker, type Job } from 'bullmq';
 import { redisConfig } from '@/config/redis';
 import {
   sendVerificationEmail, sendPasswordResetEmail, sendOrderStatusEmail,
-  sendOrderConfirmation, sendShipmentNotification,
+  sendOrderConfirmation, sendShipmentNotification, sendCustomerNotice,
 } from '@/lib/email';
 import { Order, type OrderStatus } from '@/modules/order/order.entity';
 import User from '@/modules/user/user.entity';
 
 export type EmailJobName =
   | 'verify-email' | 'reset-password' | 'order-status-update'
-  | 'order-confirmation' | 'order-shipped';
+  | 'order-confirmation' | 'order-shipped' | 'customer-notice';
 
 export interface VerifyEmailJobData {
   to: string;
@@ -38,9 +38,16 @@ export interface OrderShippedJobData {
   orderId: number;
 }
 
+/** M-33: email thông báo chung cho khách (thay thông báo on-site). */
+export interface CustomerNoticeJobData {
+  orderId: number;
+  subject: string;
+  body: string;
+}
+
 export type EmailJobData =
   | VerifyEmailJobData | ResetPasswordJobData | OrderStatusUpdateJobData
-  | OrderConfirmationJobData | OrderShippedJobData;
+  | OrderConfirmationJobData | OrderShippedJobData | CustomerNoticeJobData;
 
 // BullMQ requires maxRetriesPerRequest: null — already set in redisConfig
 const connection = {
@@ -102,6 +109,16 @@ export function startEmailWorker(): void {
         // M-18: email thứ hai, báo mã vận đơn khi hàng đã bàn giao cho hãng.
         const { orderId } = job.data as OrderShippedJobData;
         await sendShipmentNotification(orderId);
+      } else if (job.name === 'customer-notice') {
+        // M-33: thông báo chung -> email (khách không còn thông báo on-site).
+        const { orderId, subject, body } = job.data as CustomerNoticeJobData;
+        const order = await Order.findByPk(orderId, {
+          include: [{ model: User, as: 'user', attributes: ['email'] }],
+        });
+        if (!order) return;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const recipient = ((order as any)?.user?.email as string | undefined) ?? order.guestEmail ?? null;
+        if (recipient) await sendCustomerNotice(recipient, subject, body);
       }
     },
     { connection, concurrency: 5 },
@@ -129,6 +146,11 @@ export async function closeEmailWorker(): Promise<void> {
 
 export async function queueOrderStatusEmail(data: OrderStatusUpdateJobData): Promise<void> {
   await emailQueue.add('order-status-update', data);
+}
+
+/** M-33: gửi email thông báo chung cho khách của một đơn. */
+export async function queueCustomerNotice(orderId: number, subject: string, body: string): Promise<void> {
+  await emailQueue.add('customer-notice', { orderId, subject, body });
 }
 
 /** M-17: email xác nhận đơn — gửi cho cả thành viên lẫn khách vãng lai. */

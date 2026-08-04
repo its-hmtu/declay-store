@@ -83,6 +83,57 @@ export interface GhnCreateOrderPayload {
   }[];
 }
 
+/** M-29e: vận đơn TRẢ hàng (chiều về). Đảo điểm đi/đến: from = khách, to = shop. */
+export interface ReturnOrderInput {
+  /** Mã chống tạo trùng, vd `RET-<orderCode>`. */
+  orderCode: string;
+  from: { name: string; phone: string; address: string; wardCode: string; districtId: number };
+  to: { name: string; phone: string; address: string; wardCode: string; districtId: number };
+  parcel: { weightGram: number; lengthCm: number; widthCm: number; heightCm: number };
+  items: { name: string; code?: string | null; quantity: number; priceVnd: number; weightGram: number }[];
+  serviceTypeId?: number;
+}
+
+export function buildReturnOrderPayload(input: ReturnOrderInput): Record<string, unknown> {
+  if (!input.orderCode) throw new GhnOrderError('Thiếu mã vận đơn trả.');
+  if (!input.from.wardCode || !input.from.districtId) throw new GhnOrderError('Địa chỉ khách (điểm lấy hàng trả) thiếu mã GHN.');
+  if (!input.to.wardCode || !input.to.districtId) throw new GhnOrderError('Địa chỉ kho shop (điểm nhận hàng trả) thiếu mã GHN.');
+  if (input.items.length === 0) throw new GhnOrderError('Vận đơn trả không có món nào.');
+
+  const weight = Math.max(1, Math.ceil(Number(input.parcel.weightGram) || 1));
+  return {
+    // Shop chịu cước chiều về (P5); hàng lỗi nên KHÔNG thu hộ.
+    payment_type_id: PAYMENT_TYPE_SHOP,
+    required_note: 'KHONGCHOXEMHANG' as RequiredNote,
+    client_order_code: input.orderCode,
+    from_name: input.from.name,
+    from_phone: input.from.phone,
+    from_address: input.from.address,
+    from_ward_code: String(input.from.wardCode),
+    from_district_id: input.from.districtId,
+    to_name: input.to.name,
+    to_phone: input.to.phone,
+    to_address: input.to.address,
+    to_ward_code: String(input.to.wardCode),
+    to_district_id: input.to.districtId,
+    cod_amount: 0,
+    content: input.items.map((i) => `${i.name} x${i.quantity}`).join(', ').slice(0, 2000),
+    weight,
+    length: clampDimension(input.parcel.lengthCm, 'Chiều dài'),
+    width: clampDimension(input.parcel.widthCm, 'Chiều rộng'),
+    height: clampDimension(input.parcel.heightCm, 'Chiều cao'),
+    insurance_value: 0,
+    service_type_id: input.serviceTypeId ?? 2,
+    items: input.items.map((i) => ({
+      name: i.name.slice(0, 1024),
+      ...(i.code ? { code: String(i.code).slice(0, 50) } : {}),
+      quantity: Math.max(1, Math.ceil(i.quantity)),
+      price: Math.max(0, Math.round(i.priceVnd)),
+      weight: Math.max(1, Math.ceil(i.weightGram)),
+    })),
+  };
+}
+
 function clampDimension(value: number, label: string): number {
   const v = Math.max(1, Math.ceil(Number(value) || 1));
   if (v > GHN_MAX_DIMENSION_CM) {

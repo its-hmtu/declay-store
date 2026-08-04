@@ -8,7 +8,10 @@ import { effectivePrice, formatPrice } from '@/lib/utils';
 import { auth } from '@/lib/auth';
 import { useT } from '@/lib/i18n/LocaleProvider';
 import Button from '@/components/ui/Button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/lib/cart/CartProvider';
+import RecommendedProducts from '@/components/storefront/RecommendedProducts';
+import RecentlyViewed from '@/components/storefront/RecentlyViewed';
 
 export default function CartClient() {
   const { t } = useT();
@@ -34,7 +37,33 @@ export default function CartClient() {
   }
 
   if (loading) return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-20 text-center text-text-muted">{t('common.loading')}</div>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-20 text-center">
+      <Skeleton className="mx-auto h-6 w-48 mb-4" />
+      <div className="space-y-4">
+        <div className="flex gap-4 p-4 rounded-xl border border-border bg-surface">
+          <Skeleton className="h-20 w-20 rounded-lg" />
+          <div className="flex-1">
+            <Skeleton className="h-4 w-64 mb-2" />
+            <Skeleton className="h-3 w-40 mb-2" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+          <div className="w-36">
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+        <div className="flex gap-4 p-4 rounded-xl border border-border bg-surface">
+          <Skeleton className="h-20 w-20 rounded-lg" />
+          <div className="flex-1">
+            <Skeleton className="h-4 w-64 mb-2" />
+            <Skeleton className="h-3 w-40 mb-2" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+          <div className="w-36">
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 
   // M-01: no login wall — an empty cart simply shows the empty state below.
@@ -52,6 +81,9 @@ export default function CartClient() {
       <Link href="/products" className="inline-flex items-center px-7 py-3 bg-brand text-white rounded-lg hover:bg-brand-light transition-colors font-medium">
         Shop Now
       </Link>
+      <div className="text-left">
+        <RecommendedProducts />
+      </div>
     </div>
   );
 
@@ -126,6 +158,14 @@ export default function CartClient() {
           </div>
         </div>
       </div>
+
+      <RecommendedProducts
+        context="cart"
+        productIds={items.map((i) => i.variant?.product?.id).filter((x): x is number => typeof x === 'number')}
+      />
+      <RecentlyViewed
+        excludeIds={items.map((i) => i.variant?.product?.id).filter((x): x is number => typeof x === 'number')}
+      />
     </div>
   );
 }

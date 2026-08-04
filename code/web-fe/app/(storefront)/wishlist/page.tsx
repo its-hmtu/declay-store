@@ -1,8 +1,6 @@
-import type { Metadata } from 'next';
-import WishlistClient from './WishlistClient';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = { title: 'My Wishlist' };
-
+// M-32: Yêu thích giờ nằm trong khu vực Tài khoản. Giữ route cũ để link cũ không gãy.
 export default function WishlistPage() {
-  return <WishlistClient />;
+  redirect('/account/favorites');
 }

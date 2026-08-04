@@ -65,7 +65,14 @@ async function settleFromParams(
 
   if (decision.action === 'settle' && orderId) {
     await Payment.update(
-      { providerRef: params.vnp_TransactionNo ?? params.vnp_TxnRef, status: 'succeeded' },
+      {
+        providerRef: params.vnp_TransactionNo ?? params.vnp_TxnRef,
+        // M-29b: giữ lại để hoàn tiền — API refund VNPay cần cả TxnRef gốc và
+        // ngày giao dịch (vnp_PayDate), không suy ra được về sau.
+        providerTxnRef: params.vnp_TxnRef ?? null,
+        providerPayDate: params.vnp_PayDate ?? null,
+        status: 'succeeded',
+      },
       { where: { orderId } },
     );
     await orderService.markVnpayPaid(orderId);

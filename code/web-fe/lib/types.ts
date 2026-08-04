@@ -196,6 +196,8 @@ export interface OrderItem {
   priceAtPurchase: string;
   variantNameAtPurchase: string;
   productNameAtPurchase: string;
+  /** M-30: ảnh sản phẩm cho trang chi tiết đơn. */
+  variant?: { id: number; name: string; images: string[] } | null;
 }
 
 export interface Order {
@@ -205,9 +207,18 @@ export interface Order {
   userId: number;
   status: OrderStatus;
   totalAmount: string;
+  // M-30: tách tiền để hiển thị bảng thanh toán.
+  subtotal?: string;
+  shippingFee?: string;
+  discountAmount?: string;
+  discountCode?: { id: number; code: string } | null;
+  shippingAddress?: Address | null;
   stripePaymentIntentId?: string;
   shippingAddressId?: number;
   notes?: string;
+  // M-30: mốc thời gian trạng thái cho dòng thời gian.
+  paidAt?: string | null;
+  processingAt?: string | null;
   // M-06: return window (7 days after delivery).
   deliveredAt?: string | null;
   returnedAt?: string | null;

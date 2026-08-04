@@ -7,6 +7,7 @@ import type { ProductReview } from '@/lib/types';
 import { adminReviewsApi } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ReviewsClient() {
   const [reviews, setReviews] = useState<ProductReview[]>([]);
@@ -37,7 +38,15 @@ export default function ReviewsClient() {
     }
   }
 
-  if (loading) return <div className="text-text-muted">Loading…</div>;
+  if (loading) return (
+    <div>
+      <Skeleton className="h-8 w-48 mb-4" />
+      <div className="rounded-xl border border-border bg-surface p-8 text-center">
+        <Skeleton className="h-4 w-64 mx-auto mb-2" />
+        <Skeleton className="h-3 w-40 mx-auto" />
+      </div>
+    </div>
+  );
 
   return (
     <div>

@@ -1,4 +1,6 @@
+import { Op } from 'sequelize';
 import { sequelize } from '@/config/sequelize';
+import { logger } from '@/lib/logger';
 import { Order, OrderItem, OrderShipment } from '@/modules/order/order.entity';
 import ProductVariant from '@/modules/product-variant/product-variant.entity';
 import Address from '@/modules/address/address.entity';
@@ -356,6 +358,59 @@ export default class OrderShipmentService implements IOrderShipmentService {
       description: `Đồng bộ thủ công từ GHN: ${info.status}`,
     });
     return { synced: true, ghnStatus: info.status };
+  }
+
+  /**
+   * M-27: quét toàn bộ vận đơn GHN đang giao dở và kéo trạng thái mới nhất từ GHN.
+   *
+   * Đây là job nền chạy định kỳ — lưới an toàn khi webhook không tới được. Chỉ
+   * đọc bên GHN (không tốn cước), áp bằng đúng luật forward-only của webhook.
+   *
+   * Bỏ qua:
+   *   - vận đơn preview (provider 'ghn-preview') và vận đơn nhập tay (provider khác).
+   *   - vận đơn đã ở trạng thái CUỐI (delivered/returned/cancelled) — không còn gì để kéo.
+   *   - chế độ mock: getOrderStatus giả luôn trả 'delivered', quét sẽ đánh dấu nhầm.
+   *
+   * Một vận đơn lỗi (GHN timeout, mã lạ) không được làm hỏng cả lượt — mỗi đơn
+   * bọc try/catch riêng.
+   */
+  async syncActiveGhnShipments(limit = 50): Promise<{ scanned: number; synced: number; failed: number }> {
+    if (new GhnService().isMock) {
+      logger.info('GHN sync: bỏ qua vì đang ở chế độ mock (không có token thật).');
+      return { scanned: 0, synced: 0, failed: 0 };
+    }
+
+    const shipments = await OrderShipment.findAll({
+      where: {
+        provider: 'ghn',
+        trackingNumber: { [Op.ne]: null },
+        status: { [Op.notIn]: ['delivered', 'returned', 'cancelled'] },
+      },
+      // Đơn lâu chưa cập nhật được ưu tiên trước, để tải trải đều qua các lượt.
+      order: [['updatedAt', 'ASC']],
+      limit,
+    });
+
+    let synced = 0;
+    let failed = 0;
+    for (const shipment of shipments) {
+      try {
+        const res = await this.syncFromGhn(shipment.orderId);
+        if (res.synced) synced += 1;
+      } catch (err) {
+        failed += 1;
+        logger.warn('GHN sync: lỗi đồng bộ một vận đơn', {
+          orderId: shipment.orderId,
+          trackingNumber: shipment.trackingNumber,
+          error: (err as Error).message,
+        });
+      }
+    }
+
+    if (shipments.length > 0) {
+      logger.info('GHN sync batch xong', { scanned: shipments.length, synced, failed });
+    }
+    return { scanned: shipments.length, synced, failed };
   }
 
   async remove(orderId: number): Promise<void> {

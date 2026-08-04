@@ -1,18 +1,21 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bell } from 'lucide-react';
 import type { Notification } from '@/lib/types';
 import { notificationsApi, adminNotificationsApi } from '@/lib/api';
 import { auth, adminAuth } from '@/lib/auth';
 
-export default function NotificationBell({ variant = 'customer' }: { variant?: 'customer' | 'admin' }) {
+const NotificationBell = React.forwardRef<HTMLDivElement, { variant?: 'customer' | 'admin' }>(
+  ({ variant = 'customer' }, ref) => {
   const router = useRouter();
   const [open, setOpen]     = useState(false);
   const [items, setItems]   = useState<Notification[]>([]);
   const [unread, setUnread] = useState(0);
-  const ref = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  // support forwarded ref
+  React.useImperativeHandle(ref, () => innerRef.current as HTMLDivElement);
 
   const api = variant === 'admin' ? adminNotificationsApi : notificationsApi;
   const getToken = variant === 'admin' ? adminAuth.getToken : auth.getToken;
@@ -29,14 +32,22 @@ export default function NotificationBell({ variant = 'customer' }: { variant?: '
 
   useEffect(() => {
     load();
-    const id = setInterval(load, 60000);
-    return () => clearInterval(id);
+    // M-33: admin gần real-time — poll nhanh (15s) + nạp lại ngay khi quay lại tab.
+    const id = setInterval(load, 15000);
+    const onVisible = () => { if (document.visibilityState === 'visible') load(); };
+    window.addEventListener('focus', load);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener('focus', load);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (innerRef.current && !innerRef.current.contains(e.target as Node)) setOpen(false);
     }
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
@@ -62,7 +73,7 @@ export default function NotificationBell({ variant = 'customer' }: { variant?: '
   }
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={innerRef} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
         className="relative p-2 text-text-muted hover:text-text transition-colors"
@@ -103,4 +114,8 @@ export default function NotificationBell({ variant = 'customer' }: { variant?: '
       )}
     </div>
   );
-}
+});
+
+NotificationBell.displayName = 'NotificationBell';
+
+export default NotificationBell;

@@ -1,8 +1,7 @@
-import type { Metadata } from 'next';
-import AccountClient from './AccountClient';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = { title: 'My Profile' };
+export const metadata = { title: 'My Profile' };
 
 export default function AccountPage() {
-  return <AccountClient />;
+  redirect('/account/profile');
 }

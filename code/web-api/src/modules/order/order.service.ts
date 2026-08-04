@@ -9,6 +9,7 @@ import ProductVariant from '@/modules/product-variant/product-variant.entity';
 import Product from '@/modules/product/product.entity';
 import { httpError } from '@/utils/http-error';
 import DiscountService from '@/modules/discount/discount.service';
+import DiscountCode from '@/modules/discount/discount.entity';
 import { enqueueReservationExpiry } from '@/lib/reservation-queue';
 import { Payment, Refund } from '@/modules/payment/payment.entity';
 import ShippingMethod from '@/modules/shipping-method/shipping-method.entity';
@@ -19,15 +20,18 @@ import { effectiveUnitPrice } from '@/lib/pricing';
 import { initialOrderStatusFor } from './order.payment';
 import { normalizeGuestContact, generateGuestToken } from './order.guest';
 import { returnRejectionReason } from './order.returns';
+import { cancelRoute, shouldRefundOnCancel } from './order.cancel';
 import { buildVnpayPaymentUrl } from '@/modules/payment-provider/vnpay/vnpay.provider';
 import GhnService from '@/modules/shipping-provider/ghn/ghn.service';
+import RefundService from '@/modules/refund/refund.service';
+import { CancellationRequest } from './order-requests.entity';
 import { generateOrderCode } from './order.code';
 import { maskEmail, formatAddressLine, countItems } from './order.summary';
 import { normalizeVnd, assertPayableVnd, FxConfigurationError } from '@/modules/payment-provider/vnpay/vnpay.fx';
 import { resolveCartOwner, ownerWhere } from '@/modules/cart/cart.owner';
 import CampaignService from '@/modules/campaign/campaign.service';
 import { queueOrderStatusEmail, queueOrderConfirmationEmail } from '@/lib/email-queue';
-import type { IOrder, IOrderService, ICreateOrderData } from './order.interface';
+import type { IOrder, IOrderService, ICreateOrderData, CancelOutcome } from './order.interface';
 
 const stripe = new Stripe(config.stripe.secretKey);
 
@@ -35,6 +39,7 @@ export default class OrderService implements IOrderService {
   private discountService = new DiscountService();
   private notificationService = new NotificationService();
   private campaignService = new CampaignService();
+  private refundService = new RefundService();
 
   async createFromCart(data: ICreateOrderData): Promise<{ order: IOrder; clientSecret: string | null; paymentUrl?: string | null }> {
     const { userId, guestSessionId, guest, shippingAddressId, shippingAddress, notes, discountCode, shippingMethodId, paymentMethod } = data;
@@ -194,6 +199,8 @@ export default class OrderService implements IOrderService {
           guestPhone: guestContact?.phone ?? null,
           guestToken: isGuest ? generateGuestToken() : null,
           status: initialOrderStatusFor(method),
+          // COD vào thẳng 'processing' -> ghi mốc xử lý ngay từ lúc tạo đơn.
+          processingAt: initialOrderStatusFor(method) === 'processing' ? new Date() : null,
           subtotal,
           // M-16: mã hiển thị, sinh ngay khi tạo đơn. Chỉ số 4 ký tự ngẫu nhiên
           // nên xác suất trùng trong cùng một ngày rất thấp; ràng buộc UNIQUE ở
@@ -321,10 +328,16 @@ export default class OrderService implements IOrderService {
     const offset = (page - 1) * limit;
     const { rows, count } = await Order.findAndCountAll({
       where: { userId },
-      include: [{ model: OrderItem, as: 'items' }],
+      // M-32: kèm ảnh sản phẩm (variant) + vận đơn để danh sách hiển thị thumbnail
+      // và trạng thái giao như thẻ ở trang chi tiết.
+      include: [
+        { model: OrderItem, as: 'items', include: [{ model: ProductVariant, as: 'variant', attributes: ['id', 'name', 'images'] }] },
+        { model: OrderShipment, as: 'shipment' },
+      ],
       order: [['createdAt', 'DESC']],
       limit,
       offset,
+      distinct: true,
     });
     return { rows: rows.map((o) => o.toJSON() as IOrder), count };
   }
@@ -333,9 +346,19 @@ export default class OrderService implements IOrderService {
     const where: Record<string, unknown> = { id };
     if (userId) where.userId = userId;
 
+    // M-30: trang chi tiết đơn cần đủ dữ liệu để hiển thị: ảnh sản phẩm (từ
+    // variant), địa chỉ nhận, vận đơn, và mã giảm giá đã dùng.
     const order = await Order.findOne({
       where,
-      include: [{ model: OrderItem, as: 'items' }],
+      include: [
+        {
+          model: OrderItem, as: 'items',
+          include: [{ model: ProductVariant, as: 'variant', attributes: ['id', 'name', 'images'] }],
+        },
+        { model: Address, as: 'shippingAddress' },
+        { model: OrderShipment, as: 'shipment' },
+        { model: DiscountCode, as: 'discountCode', attributes: ['id', 'code'] },
+      ],
     });
 
     if (!order) throw httpError(404, 'Order not found');
@@ -376,7 +399,13 @@ export default class OrderService implements IOrderService {
 
     const previousStatus = order.status;
     // M-06: remember when delivery happened — it starts the 7-day return window.
-    await order.update({ status, ...(status === 'delivered' ? { deliveredAt: new Date() } : {}) });
+    await order.update({
+      status,
+      ...(status === 'delivered' ? { deliveredAt: new Date() } : {}),
+      // M-30: ghi mốc khi admin chuyển sang paid (vd xác nhận chuyển khoản) / processing.
+      ...(status === 'paid' && !order.paidAt ? { paidAt: new Date() } : {}),
+      ...(status === 'processing' && !order.processingAt ? { processingAt: new Date() } : {}),
+    });
 
     if (previousStatus !== status) {
       await queueOrderStatusEmail({ orderId: order.id, status });
@@ -541,7 +570,7 @@ export default class OrderService implements IOrderService {
       // nên giỏ của khách vãng lai trả qua VNPay không bao giờ được dọn — họ
       // quay lại vẫn thấy hàng cũ và dễ đặt trùng.
       await this.clearCartForOrder(locked, t);
-      await locked.update({ status: 'paid' }, { transaction: t });
+      await locked.update({ status: 'paid', paidAt: new Date() }, { transaction: t });
       return true;
     });
 
@@ -586,7 +615,7 @@ export default class OrderService implements IOrderService {
       await this.clearCartForOrder(locked, t);
 
       // The reservation becomes a firm sale.
-      await locked.update({ status: 'paid' }, { transaction: t });
+      await locked.update({ status: 'paid', paidAt: new Date() }, { transaction: t });
       await Payment.update({ status: 'succeeded' }, { where: { stripePaymentIntentId }, transaction: t });
       return true;
     });
@@ -609,42 +638,144 @@ export default class OrderService implements IOrderService {
     await Payment.update({ status: 'failed' }, { where: { stripePaymentIntentId } });
   }
 
-  async cancelOrder(orderId: number, userId: number): Promise<IOrder> {
+  /**
+   * M-29d: khách huỷ đơn.
+   *
+   * Cho tự huỷ tới trước khi bàn giao GHN (pending_payment/paid/processing). Nếu
+   * đơn ĐÃ có vận đơn GHN thật thì không huỷ ngay mà tạo YÊU CẦU HUỶ chờ admin
+   * duyệt (admin phải huỷ vận đơn với GHN trước). Hoàn tiền đi qua RefundService
+   * (đa kênh), hoàn kho + hoàn lượt mã giảm giá.
+   */
+  async cancelOrder(orderId: number, userId: number): Promise<CancelOutcome> {
     const order = await Order.findOne({ where: { id: orderId, userId } });
     if (!order) throw httpError(404, 'Order not found');
 
-    if (!['pending_payment', 'paid'].includes(order.status)) {
-      throw httpError(400, `Cannot cancel an order that is already ${order.status}`);
+    const shipment = await OrderShipment.findOne({ where: { orderId } });
+    const hasRealWaybill = shipment?.provider === 'ghn' && Boolean(shipment.trackingNumber);
+    const route = cancelRoute(order.status, hasRealWaybill);
+
+    if (route === 'blocked') {
+      throw httpError(400, `Không thể huỷ đơn đang ở trạng thái "${order.status}".`);
     }
 
-    const wasPaid = order.status === 'paid';
+    if (route === 'request') {
+      // Đã có vận đơn -> yêu cầu huỷ, admin duyệt. Idempotent: đã có yêu cầu mở thì trả lại.
+      const existing = await CancellationRequest.findOne({ where: { orderId, status: 'pending' } });
+      if (!existing) {
+        await CancellationRequest.create({
+          orderId, requestedBy: userId, reason: 'Khách yêu cầu huỷ', status: 'pending',
+        });
+        await this.notificationService.notifyAdmins({
+          type: 'order_status', title: `Yêu cầu huỷ đơn ${order.orderCode}`,
+          body: 'Đơn đã có vận đơn GHN — cần duyệt và huỷ vận đơn trước khi hoàn tiền.',
+          link: `/admin/orders/${orderId}`,
+        });
+      }
+      return { outcome: 'cancel_requested', order: order.toJSON() as IOrder };
+    }
 
-    // Restore the reserved/sold stock and mark cancelled atomically (W-03). The status
-    // transition also guards re-cancellation, so stock is never restored twice.
-    await sequelize.transaction(async (t) => {
+    await this.performCancellation(order, {});
+    const fresh = await Order.findByPk(orderId);
+    return { outcome: 'cancelled', order: fresh!.toJSON() as IOrder };
+  }
+
+  /**
+   * Thực thi huỷ: hoàn kho + hoàn lượt mã + đổi trạng thái (nguyên tử, có guard
+   * chống huỷ hai lần), rồi hoàn tiền QUA RefundService nếu đã thực thu tiền.
+   * Dùng chung cho huỷ tức thì và huỷ sau khi admin duyệt.
+   */
+  private async performCancellation(
+    order: Order,
+    opts: { cancellationRequestId?: number; initiatedBy?: number | null },
+  ): Promise<Refund | null> {
+    const done = await sequelize.transaction(async (t) => {
+      const locked = await Order.findOne({ where: { id: order.id }, lock: t.LOCK.UPDATE, transaction: t });
+      if (!locked || !['pending_payment', 'paid', 'processing'].includes(locked.status)) return false;
+
       const items = await OrderItem.findAll({ where: { orderId: order.id }, transaction: t });
       for (const item of items) {
         await ProductVariant.increment('stock', { by: item.quantity, where: { id: item.variantId }, transaction: t });
       }
-      await order.update({ status: 'cancelled' }, { transaction: t });
+      // BR-C7: huỷ thì hoàn lại lượt dùng mã giảm giá.
+      if (locked.discountCodeId) await this.discountService.decrementUsage(locked.discountCodeId, t);
+      await locked.update({ status: 'cancelled' }, { transaction: t });
+      return true;
     });
+    if (!done) return null; // đã huỷ trước đó -> idempotent, không hoàn kho/tiền lần hai
 
-    // Refund only after the order is safely cancelled: a refund failure then leaves a
-    // cancelled order for an admin to reconcile, rather than risking a double refund.
-    if (order.stripePaymentIntentId && wasPaid) {
-      const refund = await stripe.refunds.create({ payment_intent: order.stripePaymentIntentId });
-      const payment = await Payment.findOne({ where: { stripePaymentIntentId: order.stripePaymentIntentId } });
-      await Refund.create({
-        orderId: order.id,
-        paymentId: payment?.id ?? null,
-        stripeRefundId: refund.id,
-        amount: Number(order.totalAmount),
-        reason: 'order_cancelled',
-        status: 'succeeded',
+    // Chỉ hoàn tiền khi ĐÃ thực thu (VNPay/Stripe succeeded). COD chưa giao =
+    // chưa có tiền -> không phát sinh hoàn (A3).
+    const paid = await Payment.findOne({ where: { orderId: order.id, status: 'succeeded' } });
+    let refund: Refund | null = null;
+    if (shouldRefundOnCancel(Boolean(paid))) {
+      refund = await this.refundService.issueRefund({
+        order,
+        amountVnd: Number(order.totalAmount),
+        reason: `Huỷ đơn ${order.orderCode}`,
+        type: 'cancel',
+        cancellationRequestId: opts.cancellationRequestId ?? null,
+        initiatedBy: opts.initiatedBy ?? null,
       });
     }
 
-    return order.toJSON() as IOrder;
+    await queueOrderStatusEmail({ orderId: order.id, status: 'cancelled' });
+    if (order.userId) await this.notificationService.notifyUser(order.userId, {
+      type: 'order_status', title: `Đơn ${order.orderCode} đã được huỷ`, link: `/orders/${order.id}`,
+    });
+    return refund;
+  }
+
+  /** M-29d: admin duyệt yêu cầu huỷ — huỷ vận đơn GHN trước, rồi huỷ đơn + hoàn tiền. */
+  async approveCancellation(requestId: number, adminId: number): Promise<{ status: string; refundId: number | null }> {
+    const request = await CancellationRequest.findByPk(requestId);
+    if (!request) throw httpError(404, 'Không tìm thấy yêu cầu huỷ.');
+    if (request.status !== 'pending') throw httpError(400, `Yêu cầu đã ở trạng thái "${request.status}".`);
+
+    const order = await Order.findByPk(request.orderId);
+    if (!order) throw httpError(404, 'Order not found');
+    const shipment = await OrderShipment.findOne({ where: { orderId: order.id } });
+
+    // 1) Huỷ vận đơn GHN TRƯỚC. Không huỷ được (đã lấy hàng) -> needs_manual, dừng.
+    let cancelResult: { success: boolean; message?: string | null } | null = null;
+    if (shipment?.trackingNumber && shipment.provider === 'ghn') {
+      cancelResult = await new GhnService().cancelShipment(shipment.trackingNumber);
+      if (!cancelResult.success) {
+        await request.update({
+          status: 'needs_manual', resolvedBy: adminId,
+          ghnCancelResult: cancelResult as unknown as Record<string, unknown>,
+        });
+        throw httpError(409, `GHN không huỷ được vận đơn (${cancelResult.message ?? 'có thể đã lấy hàng'}). Cần xử lý tay.`);
+      }
+    }
+
+    // 2) Huỷ đơn + hoàn kho + hoàn tiền.
+    const refund = await this.performCancellation(order, { cancellationRequestId: requestId, initiatedBy: adminId });
+    await request.update({
+      status: 'approved', resolvedBy: adminId, resolvedAt: new Date(),
+      refundId: refund?.id ?? null,
+      ghnCancelResult: (cancelResult ?? null) as unknown as Record<string, unknown> | null,
+    });
+    return { status: 'approved', refundId: refund?.id ?? null };
+  }
+
+  /** M-29d: admin từ chối yêu cầu huỷ. */
+  async rejectCancellation(requestId: number, adminId: number, reason?: string): Promise<void> {
+    const request = await CancellationRequest.findByPk(requestId);
+    if (!request) throw httpError(404, 'Không tìm thấy yêu cầu huỷ.');
+    if (request.status !== 'pending') throw httpError(400, `Yêu cầu đã ở trạng thái "${request.status}".`);
+    await request.update({
+      status: 'rejected', resolvedBy: adminId, resolvedAt: new Date(),
+      reason: reason ?? request.reason,
+    });
+  }
+
+  /** M-29d: danh sách yêu cầu huỷ đang chờ (cho màn admin). */
+  async listPendingCancellations(): Promise<CancellationRequest[]> {
+    return CancellationRequest.findAll({
+      where: { status: 'pending' },
+      include: [{ model: Order, as: 'order', attributes: ['id', 'orderCode', 'status', 'totalAmount'] }],
+      order: [['createdAt', 'ASC']],
+    });
   }
 
   async listAll(page: number, limit: number, status?: OrderStatus): Promise<{ rows: IOrder[]; count: number }> {

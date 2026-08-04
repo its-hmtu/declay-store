@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useCart } from '@/lib/cart/CartProvider';
 import { MessageCircle, X, Send } from 'lucide-react';
 import { streamSSE } from '@/lib/sse';
 import { auth } from '@/lib/auth';
@@ -16,9 +17,16 @@ export default function ChatWidget() {
   const sessionId = useRef<number | undefined>(undefined);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const { drawerOpen } = useCart();
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [msgs, open]);
+
+  // If the cart drawer opens, hide/close the chat widget to avoid z-index clash.
+  useEffect(() => {
+    if (drawerOpen) setOpen(false);
+  }, [drawerOpen]);
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
@@ -112,15 +120,17 @@ export default function ChatWidget() {
   return (
     <>
       {/* Launcher */}
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-5 right-5 z-50 size-14 rounded-full bg-brand text-white shadow-lg flex items-center justify-center hover:bg-brand-light transition-colors"
-        aria-label="Chat with us"
-      >
-        {open ? <X size={22} /> : <MessageCircle size={22} />}
-      </button>
+      {!drawerOpen && (
+        <>
+          <button
+            onClick={() => setOpen((v) => !v)}
+            className="fixed bottom-5 right-5 z-50 size-14 rounded-full bg-brand text-white shadow-lg flex items-center justify-center hover:bg-brand-light transition-colors"
+            aria-label="Chat with us"
+          >
+            {open ? <X size={22} /> : <MessageCircle size={22} />}
+          </button>
 
-      {open && (
+          {open && (
         <div className="fixed bottom-24 right-5 z-50 w-[22rem] max-w-[calc(100vw-2.5rem)] h-[28rem] flex flex-col rounded-2xl border border-border bg-surface shadow-2xl overflow-hidden">
           <div className="px-4 py-3 border-b border-border bg-brand text-white">
             <p className="font-serif font-semibold">Declay Assistant</p>
@@ -177,6 +187,8 @@ export default function ChatWidget() {
             </button>
           </form>
         </div>
+          )}
+        </>
       )}
     </>
   );

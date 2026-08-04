@@ -7,6 +7,7 @@ import type { SiteSetting } from '@/lib/types';
 import { adminSettingsApi } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Row { key: string; value: string }
 
@@ -56,7 +57,15 @@ export default function SettingsClient() {
     }
   }
 
-  if (loading) return <div className="text-text-muted">Loading…</div>;
+  if (loading) return (
+    <div>
+      <Skeleton className="h-8 w-48 mb-4" />
+      <div className="rounded-xl border border-border bg-surface p-8">
+        <Skeleton className="h-4 w-64 mb-2" />
+        <Skeleton className="h-3 w-40" />
+      </div>
+    </div>
+  );
 
   const inputCls = 'w-full px-3 py-2 border border-border rounded-lg bg-surface focus:outline-none focus:border-brand text-text text-sm';
 

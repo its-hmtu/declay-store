@@ -1,6 +1,7 @@
 import type {
   GhnMasterDataProvider, GhnProvince, GhnDistrict, GhnWard, GhnService, GhnShop,
   GhnFeeRequest, GhnFeeResponse, GhnCreatedOrder, GhnLeadtimeRequest, GhnLeadtimeResponse,
+  GhnCancelResult,
 } from './ghn.types';
 import { GHN_MAX_WEIGHT_GRAM } from './ghn.parcel';
 
@@ -148,6 +149,11 @@ export class GhnMockProvider implements GhnMasterDataProvider {
   async getOrderStatus(_ghnOrderCode: string) {
     // Mock: giả lập đã giao xong để test luồng đồng bộ.
     return { status: 'delivered', log: [] };
+  }
+
+  async cancelOrder(ghnOrderCode: string): Promise<GhnCancelResult> {
+    // Mock: luôn huỷ thành công, không gọi mạng.
+    return { orderCode: ghnOrderCode, success: true, message: 'mock cancel', raw: null };
   }
 
   async getLeadtime(request: GhnLeadtimeRequest): Promise<GhnLeadtimeResponse> {

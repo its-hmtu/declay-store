@@ -5,6 +5,7 @@ import { Hand, Sparkles, Truck } from 'lucide-react';
 import { productsApi, articlesApi } from '@/lib/api';
 import ProductCard from '@/components/storefront/ProductCard';
 import BannerCarousel from '@/components/storefront/BannerCarousel';
+import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 
 export const metadata: Metadata = {
   title: 'Declay Store',
@@ -77,6 +78,11 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* ── Gợi ý cho bạn (M-35d/e: cá nhân hoá + vừa xem) ─── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-4">
+        <RecommendedProducts context="home" limit={4} />
+      </section>
 
       {/* ── Numbered process list ────────────────────────── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12 md:py-20 grid md:grid-cols-2 gap-10 lg:gap-16 items-center">

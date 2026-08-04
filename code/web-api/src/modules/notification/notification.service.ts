@@ -15,12 +15,15 @@ export default class NotificationService implements INotificationService {
     }
   }
 
-  async notifyUser(userId: number, data: ICreateNotification): Promise<void> {
-    try {
-      await Notification.create({ recipientType: 'user', recipientId: userId, ...data });
-    } catch (err) {
-      console.error('⚠️  Failed to create user notification:', (err as Error).message);
-    }
+  /**
+   * M-33: khách KHÔNG còn thông báo on-site — chỉ nhận qua email. Giữ chữ ký để
+   * các lời gọi cũ vẫn biên dịch, nhưng không tạo bản ghi in-app nữa. Các sự kiện
+   * cho khách được gửi bằng email ở tầng service (queueOrderStatusEmail /
+   * queueCustomerNotice).
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async notifyUser(_userId: number, _data: ICreateNotification): Promise<void> {
+    // no-op
   }
 
   async listForUser(userId: number, page: number, limit: number): Promise<INotificationList> {

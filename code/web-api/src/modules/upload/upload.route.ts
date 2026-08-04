@@ -2,6 +2,7 @@ import { Router, type Request, type Response, type RequestHandler } from 'expres
 import multer from 'multer';
 import asyncHandler from 'express-async-handler';
 import { adminProtect } from '@/middlewares/admin.middleware';
+import { routeProtect } from '@/middlewares/auth.middleware';
 import { uploadLimiter } from '@/middlewares/rate-limit.middleware';
 import { sendSuccess } from '@/utils/response';
 import { httpError } from '@/utils/http-error';
@@ -58,6 +59,23 @@ export function createUploadRouter(): Router {
     asyncHandler(async (req: Request, res: Response) => {
       if (!req.file) throw httpError(400, 'No file provided');
       const url = await storeFile(req.file, { folder: 'declay/products', resourceType: 'image' });
+      sendSuccess(res, { url }, 'File uploaded successfully', 201);
+    }),
+  );
+  return router;
+}
+
+// M-29e: khách đăng nhập tải ảnh bằng chứng trả hàng: POST /api/returns/upload
+export function createReturnUploadRouter(): Router {
+  const router = Router();
+  router.post(
+    '/upload',
+    routeProtect,
+    uploadLimiter,
+    handleUpload(imageUpload.single('file')),
+    asyncHandler(async (req: Request, res: Response) => {
+      if (!req.file) throw httpError(400, 'No file provided');
+      const url = await storeFile(req.file, { folder: 'declay/returns', resourceType: 'image' });
       sendSuccess(res, { url }, 'File uploaded successfully', 201);
     }),
   );
