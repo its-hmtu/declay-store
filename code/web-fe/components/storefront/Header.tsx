@@ -13,9 +13,11 @@ import { isEnabled } from '@/lib/features';
 import { useT } from '@/lib/i18n/LocaleProvider';
 import { useCart } from '@/lib/cart/CartProvider';
 
+// M-46: Collections is deliberately NOT a top-level nav item. It lives inside the
+// Shop mega-menu's "By Collection" column, because a collection is a way of
+// browsing the shop — not a separate destination competing with it.
 const NAV = [
-  { href: '/products',    label: 'Shop', i18n: 'nav.shop' as const },
-  // { href: '/collections', label: 'Collections', feature: 'collections' as const },
+  { href: '/products', label: 'Shop', i18n: 'nav.shop' as const },
   { href: '/blog',     label: 'Journal', feature: 'blog' as const },
   { href: '/careers',  label: 'Careers', feature: 'careers' as const },
 ];
@@ -235,6 +237,19 @@ export default function Header({ categories = [], collections = [] }: { categori
                     </Link>
                   </li>
                 ))}
+                {/* M-46: replaces the removed top-level nav item. Separated and
+                    emphasised so it reads as "see them all", not as one more
+                    collection in the list. */}
+                <li className="pt-2.5 mt-1 border-t border-border">
+                  <Link
+                    href="/collections"
+                    onClick={closeShop}
+                    className="inline-flex items-center gap-1 text-sm font-medium text-text hover:text-brand transition-colors"
+                  >
+                    {t('collection.allCollections')}
+                    <ChevronDown size={13} className="-rotate-90" />
+                  </Link>
+                </li>
               </ul>
             </div>
           )}
@@ -279,6 +294,16 @@ export default function Header({ categories = [], collections = [] }: { categori
                       {l.label}
                     </Link>
                   ))}
+                  {/* M-46: same entry point as the desktop mega-menu. */}
+                  {isEnabled('collections') && (
+                    <Link
+                      href="/collections"
+                      onClick={() => setOpen(false)}
+                      className="text-sm font-medium text-text hover:text-brand py-0.5"
+                    >
+                      {t('collection.allCollections')}
+                    </Link>
+                  )}
                 </div>
               )}
             </div>

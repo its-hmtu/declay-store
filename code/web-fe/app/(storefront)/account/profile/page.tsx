@@ -7,7 +7,6 @@ import { auth } from '@/lib/auth';
 import { userApi } from '@/lib/api';
 import { toast } from 'sonner';
 import ProfileSection from '@/components/storefront/account/ProfileSection';
-import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { User } from '@/lib/types';
 
@@ -42,8 +41,6 @@ export default function ProfilePage() {
   return (
     <>
       <ProfileSection user={user} onUpdated={setUser} />
-      {/* M-35: gợi ý cá nhân hoá theo lịch sử mua + sản phẩm vừa xem. */}
-      <RecommendedProducts context="account" limit={4} />
     </>
   );
 }

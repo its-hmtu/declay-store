@@ -8,6 +8,8 @@ import { adminSettingsApi } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 
 interface Row { key: string; value: string }
 
@@ -60,14 +62,12 @@ export default function SettingsClient() {
   if (loading) return (
     <div>
       <Skeleton className="h-8 w-48 mb-4" />
-      <div className="rounded-xl border border-border bg-surface p-8">
+      <Card className="p-8 py-8">
         <Skeleton className="h-4 w-64 mb-2" />
         <Skeleton className="h-3 w-40" />
-      </div>
+      </Card>
     </div>
   );
-
-  const inputCls = 'w-full px-3 py-2 border border-border rounded-lg bg-surface focus:outline-none focus:border-brand text-text text-sm';
 
   return (
     <div className="max-w-3xl">
@@ -79,20 +79,20 @@ export default function SettingsClient() {
         Keys prefixed with <code className="font-mono">public.</code> are exposed to the storefront. Leave a value empty to clear it.
       </p>
 
-      <div className="rounded-xl border border-border bg-surface p-4 space-y-3">
+      <Card className="p-4 py-4 space-y-3">
         <div className="grid grid-cols-[1fr_1.5fr_auto] gap-3 text-xs uppercase tracking-wider text-text-muted px-1">
           <span>Key</span><span>Value</span><span />
         </div>
         {rows.length === 0 && <p className="text-sm text-text-muted py-4 text-center">No settings yet. Add one below.</p>}
         {rows.map((row, i) => (
           <div key={i} className="grid grid-cols-[1fr_1.5fr_auto] gap-3 items-center">
-            <input value={row.key} onChange={(e) => update(i, 'key', e.target.value)} placeholder="public.site_name" className={`${inputCls} font-mono`} />
-            <input value={row.value} onChange={(e) => update(i, 'value', e.target.value)} placeholder="Declay Store" className={inputCls} />
+            <Input value={row.key} onChange={(e) => update(i, 'key', e.target.value)} placeholder="public.site_name"  className="font-mono" />
+            <Input value={row.value} onChange={(e) => update(i, 'value', e.target.value)} placeholder="Declay Store" />
             <button onClick={() => removeRow(i)} className="p-2 text-text-faint hover:text-error transition-colors" aria-label="Remove"><Trash2 size={15} /></button>
           </div>
         ))}
         <Button variant="ghost" size="sm" onClick={addRow}><Plus size={14} /> Add setting</Button>
-      </div>
+      </Card>
     </div>
   );
 }

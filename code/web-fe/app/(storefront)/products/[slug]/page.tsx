@@ -10,7 +10,7 @@ import ProductDetail from './ProductDetail';
 function displayPrice(product: Product): number | null {
   const prices = (product.variants ?? [])
     .filter((v) => v.isActive)
-    .map((v) => effectivePrice(v.price, v.specialPrice, product.campaignDiscountPercent));
+    .map((v) => effectivePrice(v, product.campaignDiscountPercent));
   return prices.length ? Math.min(...prices) : null;
 }
 

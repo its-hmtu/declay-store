@@ -8,6 +8,9 @@ import { adminTagsApi } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export default function TagsClient() {
   const [tags, setTags]         = useState<Tag[]>([]);
@@ -36,12 +39,12 @@ export default function TagsClient() {
   if (loading) return (
     <div>
       <Skeleton className="h-8 w-48 mb-4" />
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <Card className="overflow-hidden py-0">
         <div className="p-4">
           <Skeleton className="h-4 w-64 mb-2" />
           <Skeleton className="h-3 w-40" />
         </div>
-      </div>
+      </Card>
     </div>
   );
 
@@ -62,7 +65,7 @@ export default function TagsClient() {
         />
       )}
 
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <Card className="overflow-hidden py-0">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-alt text-text-muted text-xs uppercase tracking-wider">
@@ -88,7 +91,7 @@ export default function TagsClient() {
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -118,25 +121,25 @@ function TagForm({ tag, onSaved, onCancel }: { tag?: Tag; onSaved: () => void; o
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 border border-border rounded-lg bg-surface focus:outline-none focus:border-brand text-text text-sm';
-
   return (
-    <form onSubmit={save} className="mb-6 p-5 rounded-xl border border-brand-lighter bg-brand-faint space-y-4">
-      <h3 className="font-medium text-text">{isEdit ? 'Edit Tag' : 'New Tag'}</h3>
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} placeholder="Handmade" />
+    <Card className="mb-6 p-5 py-5 border-brand-lighter bg-brand-faint">
+      <form onSubmit={save} className="space-y-4">
+        <h3 className="font-medium text-text">{isEdit ? 'Edit Tag' : 'New Tag'}</h3>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <Label className="mb-1.5 block text-xs">Name</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Handmade" />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs">Slug <span className="text-text-faint">(optional)</span></Label>
+            <Input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="auto from name" />
+          </div>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Slug <span className="text-text-faint">(optional)</span></label>
-          <input value={slug} onChange={(e) => setSlug(e.target.value)} className={inputCls} placeholder="auto from name" />
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" loading={loading}>{isEdit ? 'Save' : 'Create'}</Button>
+          <Button type="button" size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
         </div>
-      </div>
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" loading={loading}>{isEdit ? 'Save' : 'Create'}</Button>
-        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
-      </div>
-    </form>
+      </form>
+    </Card>
   );
 }

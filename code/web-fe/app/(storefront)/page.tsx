@@ -2,10 +2,15 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Hand, Sparkles, Truck } from 'lucide-react';
-import { productsApi, articlesApi } from '@/lib/api';
-import ProductCard from '@/components/storefront/ProductCard';
+import { productsApi, articlesApi, collectionsApi, homeCategoriesApi } from '@/lib/api';
+import { isEnabled } from '@/lib/features';
 import BannerCarousel from '@/components/storefront/BannerCarousel';
 import RecommendedProducts from '@/components/storefront/RecommendedProducts';
+import CollectionCarousel from '@/components/storefront/CollectionCarousel';
+import ProductRow from '@/components/storefront/ProductRow';
+
+/** Enough to fill a row and leave something to scroll to on desktop. */
+const ROW_SIZE = 8;
 
 export const metadata: Metadata = {
   title: 'Declay Store',
@@ -26,14 +31,55 @@ const VALUES = [
 ];
 
 export default async function HomePage() {
-  const [productsRes, articlesRes] = await Promise.allSettled([
-    productsApi.list({ limit: 8 }),
+  /**
+   * M-47: the home page is a stack of product rows. Every row is its own
+   * `list()` call, which is why the API caches this route for 5 minutes — see
+   * product.route.ts. `allSettled` throughout: one slow or failing row must not
+   * blank the whole page.
+   */
+  const [
+    newestRes, bestSellersRes, trendingRes, articlesRes, collectionsRes, homeCategoriesRes,
+  ] = await Promise.allSettled([
+    productsApi.list({ sort: 'newest', limit: ROW_SIZE }),
+    productsApi.list({ sort: 'best-sellers', limit: ROW_SIZE }),
+    productsApi.list({ sort: 'trending', limit: ROW_SIZE }),
     articlesApi.list({ limit: 3 }),
+    // M-46: empty collections are filtered out server-side.
+    isEnabled('collections') ? collectionsApi.listWithProducts(ROW_SIZE) : Promise.resolve(null),
+    homeCategoriesApi.list(),
   ]);
 
-  const products = productsRes.status === 'fulfilled' ? productsRes.value.data : [];
-  const articles = articlesRes.status === 'fulfilled' ? articlesRes.value.data : [];
-  const featured = products.slice(0, 3);
+  const unwrap = <T,>(res: PromiseSettledResult<{ data: T[] } | null>): T[] =>
+    res.status === 'fulfilled' ? res.value?.data ?? [] : [];
+
+  const newest      = unwrap(newestRes);
+  const bestSellers = unwrap(bestSellersRes);
+  const trending    = unwrap(trendingRes);
+  const articles    = unwrap(articlesRes);
+  // Three rows keeps the page from becoming an endless scroll of carousels;
+  // `sortOrder` is the admin's own curation order.
+  const collections = unwrap(collectionsRes).slice(0, 3);
+
+  // Two category rows, chosen by the admin's `show_on_home` flag.
+  const homeCategories = unwrap(homeCategoriesRes).slice(0, 2);
+  const categoryRows = await Promise.all(
+    homeCategories.map(async (category) => ({
+      category,
+      products: await productsApi
+        .list({ categoryId: category.id, sort: 'best-sellers', limit: ROW_SIZE })
+        .then((r) => r.data)
+        .catch(() => []),
+    })),
+  );
+
+  /**
+   * Trending and best sellers rank the same small catalogue, so early on they can
+   * be nearly identical. Showing the customer the same eight products twice makes
+   * the page look padded — drop the row rather than pretend it is different.
+   */
+  const bestSellerIds = new Set(bestSellers.map((p) => p.id));
+  const trendingIsDistinct =
+    trending.length > 0 && trending.filter((p) => !bestSellerIds.has(p.id)).length >= 2;
 
   return (
     <>
@@ -62,20 +108,38 @@ export default async function HomePage() {
         </div>
       </section> */}
 
-      {/* ── Featured products ────────────────────────────── */}
-      {products.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 py-20">
-          <div className="flex items-end justify-between mb-8">
-            <h2 className="text-3xl md:text-4xl font-display text-text">Latest creations</h2>
-            <Link href="/products" className="font-mono text-sm text-text-muted hover:text-text">
-              View all &rarr;
+      {/* ── M-47: product rows ───────────────────────────────
+          Order is deliberate: what's new first (the shop's own voice), then
+          social proof, then the customer's own interests via categories. */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 divide-y divide-border">
+        <ProductRow title="Latest creations" href="/products?sort=newest" products={newest} />
+        <ProductRow title="Best sellers" href="/products?sort=best-sellers" products={bestSellers} />
+        {trendingIsDistinct && (
+          <ProductRow title="Trending now" href="/products?sort=trending" products={trending} />
+        )}
+
+        {categoryRows.map(({ category, products: items }) => (
+          <ProductRow
+            key={category.id}
+            title={category.name}
+            href={`/products?categoryId=${category.id}`}
+            products={items}
+          />
+        ))}
+      </section>
+
+      {/* ── M-46: Shop by collection ─────────────────────── */}
+      {collections.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-8">
+          <div className="flex items-end justify-between mb-2">
+            <h2 className="text-3xl md:text-4xl font-display text-text">Collections</h2>
+            <Link href="/collections" className="font-mono text-sm text-text-muted hover:text-text">
+              All collections &rarr;
             </Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 md:gap-7">
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          {collections.map((collection, i) => (
+            <CollectionCarousel key={collection.id} collection={collection} priority={i === 0} />
+          ))}
         </section>
       )}
 

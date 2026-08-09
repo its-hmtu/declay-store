@@ -1,32 +1,36 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { collectionsApi } from '@/lib/api';
+import CollectionCarousel from '@/components/storefront/CollectionCarousel';
+import { getServerLocale } from '@/lib/i18n/server';
 
 export const metadata: Metadata = { title: 'Collections' };
 
+/**
+ * M-46: the collections index.
+ *
+ * Previously a grid of text-only cards — a customer had to click through and hope
+ * before seeing a single product. Now each collection shows its actual pieces, so
+ * the page sells on its own and a click is a decision, not a gamble. Same
+ * component as the home page, so the two can never drift apart.
+ */
 export default async function CollectionsPage() {
-  const res = await collectionsApi.list().catch(() => null);
+  const { t } = await getServerLocale();
+
+  // Collections with nothing visible to show are dropped server-side.
+  const res = await collectionsApi.listWithProducts(8).catch(() => null);
   const collections = res?.data ?? [];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-      <h1 className="font-serif text-4xl font-bold text-text mb-2">Collections</h1>
-      <p className="text-text-muted mb-8">Curated groups of handmade pieces.</p>
+      <h1 className="font-sans text-3xl font-bold text-text">{t('collection.exploreTitle')}</h1>
+      <p className="mt-2 text-text-muted">{t('collection.exploreSubtitle')}</p>
 
       {collections.length === 0 ? (
-        <p className="text-text-muted">No collections yet.</p>
+        <p className="py-24 text-center text-text-muted">{t('collection.empty')}</p>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {collections.map((c) => (
-            <Link
-              key={c.id}
-              href={`/collections/${c.slug}`}
-              className="group block rounded-2xl border border-border bg-linear-to-br from-brand-faint to-surface-alt p-6 hover:border-brand-lighter transition-colors"
-            >
-              <p className="eyebrow mb-2">{c.productCount ?? 0} items</p>
-              <h2 className="font-serif text-2xl font-bold text-text group-hover:text-brand transition-colors">{c.name}</h2>
-              {c.description && <p className="mt-2 text-sm text-text-muted line-clamp-2">{c.description}</p>}
-            </Link>
+        <div className="mt-4 divide-y divide-border">
+          {collections.map((collection, i) => (
+            <CollectionCarousel key={collection.id} collection={collection} priority={i === 0} />
           ))}
         </div>
       )}

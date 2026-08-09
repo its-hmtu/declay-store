@@ -172,7 +172,7 @@ export default function CheckoutClient() {
   }
 
   const items    = cart?.items ?? [];
-  const subtotal = items.reduce((s, i) => s + effectivePrice(i.variant?.price, i.variant?.specialPrice, i.variant?.product?.campaignDiscountPercent) * i.quantity, 0);
+  const subtotal = items.reduce((s, i) => s + effectivePrice(i.variant, i.variant?.product?.campaignDiscountPercent) * i.quantity, 0);
   const applicableMethods = shippingMethods.filter((m) => m.zone === 'all' || m.zone === zone);
   const selectedMethod    = applicableMethods.find((m) => m.id === shippingMethodId) ?? null;
   const shippingFee       = selectedMethod
@@ -400,7 +400,7 @@ export default function CheckoutClient() {
             {items.map((item) => (
               <div key={item.id} className="flex justify-between text-text-muted">
                 <span>{item.variant?.product?.name} × {item.quantity}</span>
-                <span>{formatPrice((effectivePrice(item.variant?.price, item.variant?.specialPrice, item.variant?.product?.campaignDiscountPercent) * item.quantity))}</span>
+                <span>{formatPrice(effectivePrice(item.variant, item.variant?.product?.campaignDiscountPercent) * item.quantity)}</span>
               </div>
             ))}
             <div className="flex justify-between text-text-muted">

@@ -5,27 +5,22 @@ import Image from 'next/image';
 import { Star } from 'lucide-react';
 import type { Product } from '@/lib/types';
 import { useT } from '@/lib/i18n/LocaleProvider';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, pricingOf } from '@/lib/utils';
+import { badgeFor } from '@/lib/campaign-display';
 
 export default function ProductCard({ product }: { product: Product }) {
   const { t } = useT();
   const variant   = product.variants?.[0];
   const image     = variant?.images?.[0];
-  const base      = variant ? parseFloat(variant.price) : null;
-  const special   = variant?.specialPrice ? parseFloat(variant.specialPrice) : null;
-  const campaign  = product.campaignDiscountPercent ?? null;
-  // Best price for the customer: lowest of special price and active campaign %.
-  let best = base;
-  if (best !== null) {
-    if (special !== null && special >= 0 && special < best) best = special;
-    if (campaign != null && campaign > 0 && campaign <= 100) {
-      const cp = (base as number) * (1 - campaign / 100);
-      if (cp < best) best = cp;
-    }
-  }
-  const onSale     = base !== null && best !== null && best < base;
-  const price      = onSale ? best : base;
-  const percentOff = onSale ? Math.round((1 - (best as number) / (base as number)) * 100) : 0;
+  // M-40: the server decided this price. We only render it.
+  const pricing   = variant ? pricingOf(variant, product.campaignDiscountPercent) : null;
+  const base      = pricing?.basePrice ?? null;
+  const price     = pricing?.effectivePrice ?? null;
+  const onSale    = pricing?.onSale ?? false;
+  const percentOff = pricing?.discountPercent ?? 0;
+  // M-44: name the campaign when it is what set the price. `source` comes from
+  // the server — the card must not guess why a price is reduced.
+  const badge     = badgeFor(pricing?.source, percentOff, product.campaignName);
   const inStock   = product.variants?.some((v) => v.isActive && v.stock > 0);
   const rating    = product.rating;
   const sold      = product.salesCount ?? 0;
@@ -66,7 +61,11 @@ export default function ProductCard({ product }: { product: Product }) {
               <p className="font-sans text-sm flex items-baseline gap-1.5">
                 <span className="text-text font-medium">{formatPrice(price)}</span>
                 <span className="price-original">{formatPrice((base as number))}</span>
-                <span className="price-discount">-{percentOff}%</span>
+                {badge && (
+                  <span className={badge.kind === 'campaign' ? 'price-discount font-semibold' : 'price-discount'}>
+                    {badge.text}
+                  </span>
+                )}
               </p>
             ) : (
               <p className="font-sans text-sm text-text">{formatPrice(price)}</p>

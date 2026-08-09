@@ -9,6 +9,8 @@ import { adminCodApi } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import { formatPrice } from '@/lib/utils';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 
 export default function CodClient() {
   const [rows, setRows] = useState<CodPendingRow[]>([]);
@@ -71,13 +73,13 @@ export default function CodClient() {
         </p>
       </div>
 
-      <div className="rounded-xl border border-border bg-surface p-4 mb-6 flex items-center gap-3">
+      <Card className="p-4 py-4 mb-6 flex items-center gap-3">
         <Banknote size={18} className="text-brand" />
         <span className="text-sm text-text-muted">Outstanding cash</span>
         <span className="ml-auto font-serif text-xl font-bold text-text">{formatPrice(totalOutstanding)}</span>
-      </div>
+      </Card>
 
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <Card className="overflow-hidden py-0">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-alt text-text-muted text-xs uppercase tracking-wider">
@@ -106,11 +108,12 @@ export default function CodClient() {
                 </td>
                 <td className="px-4 py-3 text-right text-text">{formatPrice(r.amount)}</td>
                 <td className="px-4 py-3 text-right">
-                  <input
+                  <Input
+                    aria-label="Amount collected"
                     type="number" step="0.01" min="0"
                     value={collected[r.paymentId] ?? ''}
                     onChange={(e) => setCollected((c) => ({ ...c, [r.paymentId]: e.target.value }))}
-                    className="w-28 px-2 py-1 text-right border border-border rounded-lg bg-surface focus:outline-none focus:border-brand"
+                    className="ml-auto h-8 w-28 text-right"
                   />
                 </td>
                 <td className="px-4 py-3 text-right">
@@ -122,7 +125,7 @@ export default function CodClient() {
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }

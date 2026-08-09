@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "tsBuildInfoFile": null
+  },
+  "include": [
+    "next-env.d.ts",
+    "lib/**/*.ts",
+    "components/storefront/ChatWidget.tsx",
+    "components/admin/Sidebar.tsx",
+    "app/admin/(protected)/inbox/**/*.tsx",
+    "app/admin/(protected)/campaigns/**/*.tsx",
+    "components/storefront/ProductCard.tsx"
+  ],
+  "exclude": ["node_modules"]
+}

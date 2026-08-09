@@ -8,6 +8,10 @@ import { api } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import ImageUploader from '@/components/admin/ImageUploader';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Props { article?: Article }
 
@@ -53,30 +57,28 @@ export default function ArticleForm({ article }: Props) {
       setLoading(false);
     }
   }
-
-  const inputCls = 'w-full px-4 py-2.5 border border-border rounded-lg bg-surface focus:outline-none focus:border-brand text-text placeholder:text-text-faint';
-  const labelCls = 'block text-sm font-medium text-text mb-1.5';
+  const labelCls = 'mb-1.5 block';
 
   return (
     <form onSubmit={handleSubmit} className="max-w-3xl space-y-5">
       <div className="grid sm:grid-cols-2 gap-5">
         <div>
-          <label className={labelCls} htmlFor="title">Title *</label>
-          <input id="title" name="title" required value={form.title} onChange={handleChange} onBlur={autoSlug} className={inputCls} placeholder="Making a clay dragon" />
+          <Label className={labelCls} htmlFor="title">Title *</Label>
+          <Input id="title" name="title" required value={form.title} onChange={handleChange} onBlur={autoSlug} placeholder="Making a clay dragon" />
         </div>
         <div>
-          <label className={labelCls} htmlFor="slug">Slug *</label>
-          <input id="slug" name="slug" required value={form.slug} onChange={handleChange} className={inputCls} placeholder="making-a-clay-dragon" />
+          <Label className={labelCls} htmlFor="slug">Slug *</Label>
+          <Input id="slug" name="slug" required value={form.slug} onChange={handleChange} placeholder="making-a-clay-dragon" />
         </div>
       </div>
 
       <div>
-        <label className={labelCls} htmlFor="excerpt">Excerpt</label>
-        <input id="excerpt" name="excerpt" value={form.excerpt} onChange={handleChange} className={inputCls} placeholder="Short summary shown in listings…" />
+        <Label className={labelCls} htmlFor="excerpt">Excerpt</Label>
+        <Input id="excerpt" name="excerpt" value={form.excerpt} onChange={handleChange} placeholder="Short summary shown in listings…" />
       </div>
 
       <div>
-        <label className={labelCls}>Cover Image</label>
+        <Label className={labelCls}>Cover Image</Label>
         <ImageUploader
           value={form.coverImage ? [form.coverImage] : []}
           onChange={(urls) => setForm((f) => ({ ...f, coverImage: urls[0] ?? '' }))}
@@ -86,19 +88,19 @@ export default function ArticleForm({ article }: Props) {
       </div>
 
       <div>
-        <label className={labelCls} htmlFor="content">Content (HTML or Markdown) *</label>
-        <textarea
+        <Label className={labelCls} htmlFor="content">Content (HTML or Markdown) *</Label>
+        <Textarea
           id="content" name="content" required rows={16}
           value={form.content} onChange={handleChange}
-          className={`${inputCls} resize-y font-mono text-sm`}
+          className="resize-y font-mono text-sm"
           placeholder="<p>Your article content here…</p>"
         />
       </div>
 
-      <label className="flex items-center gap-3 cursor-pointer">
-        <input type="checkbox" name="isPublished" checked={form.isPublished} onChange={handleChange} className="w-4 h-4 accent-brand" />
-        <span className="text-sm font-medium text-text">Published (visible in storefront)</span>
-      </label>
+      <div className="flex items-center gap-3">
+        <Checkbox id="cb-ispublished" checked={form.isPublished} onCheckedChange={(v) => setForm((f) => ({ ...f, isPublished: v === true }))} />
+        <Label htmlFor="cb-ispublished" className="text-sm font-medium text-text cursor-pointer font-normal">Published (visible in storefront)</Label>
+      </div>
 
       <div className="flex gap-3 pt-2">
         <Button type="submit" loading={loading}>{isEdit ? 'Save Changes' : 'Create Article'}</Button>

@@ -7,12 +7,14 @@ import type { Order } from '@/lib/types';
 import { api, adminCancellationApi, adminReturnApi, type AdminCancellationRequest, type AdminReturnRequest } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Badge from '@/components/ui/Badge';
-import AdminToolbar, { FilterSelect } from '@/components/admin/AdminToolbar';
+import FilterBar from '@/components/admin/FilterBar';
 import { Skeleton } from '@/components/ui/skeleton';
 import Pagination from '@/components/admin/Pagination';
 import { usePagination } from '@/lib/usePagination';
 import { formatPrice } from '@/lib/utils';
 import { orderLabel } from '@/lib/utils';
+import { Card } from '@/components/ui/card';
+import { NativeSelect } from '@/components/ui/native-select';
 
 const STATUS_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'error' | 'info'> = {
   pending_payment: 'warning',
@@ -118,12 +120,12 @@ export default function AdminOrdersClient() {
   if (loading) return (
     <div>
       <Skeleton className="h-8 w-48 mb-4" />
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <Card className="overflow-hidden py-0">
         <div className="p-4">
           <Skeleton className="h-4 w-48 mb-2" />
           <Skeleton className="h-4 w-32" />
         </div>
-      </div>
+      </Card>
     </div>
   );
 
@@ -212,16 +214,17 @@ export default function AdminOrdersClient() {
         </div>
       )}
 
-      <AdminToolbar search={search} onSearch={(v) => { setSearch(v); setPage(1); }} placeholder="Search by order #…">
-        <FilterSelect
-          value={status}
-          onChange={(v) => { setStatus(v); setPage(1); }}
-          label="Status"
-          options={[{ value: 'all', label: 'All status' }, ...STATUS_OPTS.map((s) => ({ value: s, label: s.replace('_', ' ') }))]}
-        />
-      </AdminToolbar>
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search by order #…"
+        fields={[{ key: 'status', label: 'Status', type: 'select', options: [{ value: 'all', label: 'All status' }, ...STATUS_OPTS.map((s) => ({ value: s, label: s.replace('_', ' ') }))] }]}
+        values={{ status }}
+        onValuesChange={(v) => setStatus(v.status)}
+        onApplied={() => setPage(1)}
+      />
 
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <Card className="overflow-hidden py-0">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-alt text-text-muted text-xs uppercase tracking-wider">
@@ -249,13 +252,14 @@ export default function AdminOrdersClient() {
                   <td className="px-4 py-3 font-medium text-brand">{formatPrice(parseFloat(order.totalAmount))}</td>
                   <td className="px-4 py-3">
                     {MANUAL_STATUS_OPTS.includes(order.status) ? (
-                      <select
+                      <NativeSelect
+                        aria-label="Order status"
                         value={order.status}
                         onChange={(e) => updateStatus(order.id, e.target.value)}
-                        className="text-xs border border-border rounded-md px-2 py-1 bg-surface focus:outline-none focus:border-brand text-text"
+                        className="h-8 w-36 text-xs"
                       >
                         {MANUAL_STATUS_OPTS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-                      </select>
+                      </NativeSelect>
                     ) : (
                       // shipped/returned/pending_payment: đặt bởi hệ thống, chỉ xem.
                       <span className="text-xs text-text-muted">{order.status.replace('_', ' ')}</span>
@@ -271,7 +275,7 @@ export default function AdminOrdersClient() {
             )}
           </tbody>
         </table>
-      </div>
+      </Card>
 
       <Pagination page={page} totalPages={totalPages} total={total} onChange={setPage} />
     </div>

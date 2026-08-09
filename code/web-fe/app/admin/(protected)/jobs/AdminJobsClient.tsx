@@ -10,9 +10,14 @@ import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import AdminToolbar, { FilterSelect } from '@/components/admin/AdminToolbar';
+import FilterBar from '@/components/admin/FilterBar';
 import Pagination from '@/components/admin/Pagination';
 import { usePagination } from '@/lib/usePagination';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function AdminJobsClient() {
   const [jobs,    setJobs]    = useState<Job[]>([]);
@@ -57,12 +62,12 @@ export default function AdminJobsClient() {
   if (loading) return (
     <div>
       <Skeleton className="h-8 w-48 mb-4" />
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <Card className="overflow-hidden py-0">
         <div className="p-4">
           <Skeleton className="h-4 w-64 mb-2" />
           <Skeleton className="h-3 w-40" />
         </div>
-      </div>
+      </Card>
     </div>
   );
 
@@ -83,16 +88,17 @@ export default function AdminJobsClient() {
         />
       )}
 
-      <AdminToolbar search={search} onSearch={(v) => { setSearch(v); setPage(1); }} placeholder="Search jobs…">
-        <FilterSelect
-          value={status}
-          onChange={(v) => { setStatus(v); setPage(1); }}
-          label="Status"
-          options={[{ value: 'all', label: 'All status' }, { value: 'open', label: 'Open' }, { value: 'closed', label: 'Closed' }]}
-        />
-      </AdminToolbar>
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search jobs…"
+        fields={[{ key: 'status', label: 'Status', type: 'select', options: [{ value: 'all', label: 'All status' }, { value: 'open', label: 'Open' }, { value: 'closed', label: 'Closed' }] }]}
+        values={{ status }}
+        onValuesChange={(v) => setStatus(v.status)}
+        onApplied={() => setPage(1)}
+      />
 
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <Card className="overflow-hidden py-0">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-alt text-text-muted text-xs uppercase tracking-wider">
@@ -130,7 +136,7 @@ export default function AdminJobsClient() {
             )}
           </tbody>
         </table>
-      </div>
+      </Card>
 
       <Pagination page={page} totalPages={totalPages} total={total} onChange={setPage} />
     </div>
@@ -170,37 +176,37 @@ function JobForm({ job, onSaved, onCancel }: { job?: Job; onSaved: () => void; o
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 border border-border rounded-lg bg-surface focus:outline-none focus:border-brand text-text text-sm';
-
   return (
-    <form onSubmit={save} className="mb-6 p-5 rounded-xl border border-brand-lighter bg-brand-faint space-y-4">
-      <h3 className="font-medium text-text">{isEdit ? 'Edit Job' : 'New Job Listing'}</h3>
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Title *</label>
-          <input name="title" required value={form.title} onChange={handleChange} className={inputCls} placeholder="Studio Artist" />
+    <Card className="mb-6 p-5 py-5 border-brand-lighter bg-brand-faint">
+      <form onSubmit={save} className="space-y-4">
+        <h3 className="font-medium text-text">{isEdit ? 'Edit Job' : 'New Job Listing'}</h3>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <Label className="mb-1.5 block text-xs">Title *</Label>
+            <Input name="title" required value={form.title} onChange={handleChange} placeholder="Studio Artist" />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs">Location</Label>
+            <Input name="location" value={form.location} onChange={handleChange} placeholder="Remote / Ho Chi Minh City" />
+          </div>
         </div>
         <div>
-          <label className="block text-xs font-medium text-text mb-1">Location</label>
-          <input name="location" value={form.location} onChange={handleChange} className={inputCls} placeholder="Remote / Ho Chi Minh City" />
+          <Label className="mb-1.5 block text-xs">Description *</Label>
+          <Textarea name="description" required rows={4} value={form.description} onChange={handleChange}  className="resize-none" />
         </div>
-      </div>
-      <div>
-        <label className="block text-xs font-medium text-text mb-1">Description *</label>
-        <textarea name="description" required rows={4} value={form.description} onChange={handleChange} className={`${inputCls} resize-none`} />
-      </div>
-      <div>
-        <label className="block text-xs font-medium text-text mb-1">Requirements</label>
-        <textarea name="requirements" rows={3} value={form.requirements} onChange={handleChange} className={`${inputCls} resize-none`} />
-      </div>
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input type="checkbox" name="isOpen" checked={form.isOpen} onChange={handleChange} className="w-4 h-4 accent-brand" />
-        <span className="text-sm text-text">Open for applications</span>
-      </label>
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" loading={loading}>{isEdit ? 'Save' : 'Create'}</Button>
-        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
-      </div>
-    </form>
+        <div>
+          <Label className="mb-1.5 block text-xs">Requirements</Label>
+          <Textarea name="requirements" rows={3} value={form.requirements} onChange={handleChange}  className="resize-none" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Checkbox id="cb-isopen" checked={form.isOpen} onCheckedChange={(v) => setForm((f) => ({ ...f, isOpen: v === true }))} />
+          <Label htmlFor="cb-isopen" className="text-sm text-text cursor-pointer font-normal">Open for applications</Label>
+        </div>
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" loading={loading}>{isEdit ? 'Save' : 'Create'}</Button>
+          <Button type="button" size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
+        </div>
+      </form>
+    </Card>
   );
 }

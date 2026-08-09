@@ -5,23 +5,81 @@ export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
 }
 
-// Effective (lowest valid) unit price: special price when set and cheaper, else base.
-export function effectivePrice(
-  price?: string | null,
-  specialPrice?: string | null,
-  campaignPercent?: number | null,
-): number {
-  const base = parseFloat(price ?? '0');
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+export interface VariantPricing {
+  basePrice: number;
+  effectivePrice: number;
+  discountPercent: number;
+  onSale: boolean;
+  source: 'base' | 'special' | 'campaign';
+}
+
+/** Shape we need off a variant. Loose on purpose — cart, product and order items differ. */
+type PricedVariant = {
+  price?: string | number | null;
+  specialPrice?: string | number | null;
+  basePrice?: number;
+  effectivePrice?: number;
+  discountPercent?: number;
+  onSale?: boolean;
+  source?: 'base' | 'special' | 'campaign';
+} | null | undefined;
+
+/**
+ * M-40: read the price the SERVER decided.
+ *
+ * `web-api/src/lib/pricing.ts` is the single source of truth and stamps
+ * `effectivePrice`/`discountPercent`/`onSale`/`source` onto every variant it serves.
+ * This function just reads them. The fallback below only exists for payloads that
+ * predate the decoration (admin endpoints, cached responses) — it mirrors the server
+ * rule exactly, rounding included. Do not add pricing logic anywhere else.
+ */
+export function pricingOf(variant: PricedVariant, campaignPercent?: number | null): VariantPricing {
+  const base = round2(Number(variant?.basePrice ?? variant?.price ?? 0));
+
+  // Server already decided — trust it.
+  if (variant?.effectivePrice != null) {
+    const effective = round2(Number(variant.effectivePrice));
+    return {
+      basePrice: base,
+      effectivePrice: effective,
+      discountPercent: variant.discountPercent ?? (base > 0 && effective < base ? Math.round((1 - effective / base) * 100) : 0),
+      onSale: variant.onSale ?? effective < base,
+      source: variant.source ?? (effective < base ? 'campaign' : 'base'),
+    };
+  }
+
+  // Fallback: mirrors computeVariantPricing() on the server.
   let best = base;
-  if (specialPrice != null) {
-    const special = parseFloat(specialPrice);
-    if (Number.isFinite(special) && special >= 0 && special < best) best = special;
+  let source: 'base' | 'special' | 'campaign' = 'base';
+  const special = variant?.specialPrice == null ? null : Number(variant.specialPrice);
+  if (special != null && Number.isFinite(special) && special >= 0 && special < best) {
+    best = special;
+    source = 'special';
   }
   if (campaignPercent != null && campaignPercent > 0 && campaignPercent <= 100) {
     const campaignPrice = base * (1 - campaignPercent / 100);
-    if (campaignPrice < best) best = campaignPrice;
+    if (campaignPrice < best) {
+      best = campaignPrice;
+      source = 'campaign';
+    }
   }
-  return best;
+  const effective = round2(best);
+  return {
+    basePrice: base,
+    effectivePrice: effective,
+    discountPercent: base > 0 && effective < base ? Math.round((1 - effective / base) * 100) : 0,
+    onSale: effective < base,
+    source,
+  };
+}
+
+/** Convenience for the many call sites that only need the number. */
+export function effectivePrice(variant: PricedVariant, campaignPercent?: number | null): number {
+  return pricingOf(variant, campaignPercent).effectivePrice;
 }
 
 /**

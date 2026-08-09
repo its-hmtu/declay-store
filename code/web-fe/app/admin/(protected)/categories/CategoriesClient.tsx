@@ -7,10 +7,15 @@ import type { Category } from '@/lib/types';
 import { api } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
-import AdminToolbar from '@/components/admin/AdminToolbar';
+import FilterBar from '@/components/admin/FilterBar';
 import { Skeleton } from '@/components/ui/skeleton';
 import Pagination from '@/components/admin/Pagination';
 import { usePagination } from '@/lib/usePagination';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/native-select';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function CategoriesClient() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -53,12 +58,12 @@ export default function CategoriesClient() {
   if (loading) return (
     <div>
       <Skeleton className="h-8 w-48 mb-4" />
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <Card className="overflow-hidden py-0">
         <div className="p-4">
           <Skeleton className="h-4 w-64 mb-2" />
           <Skeleton className="h-3 w-40" />
         </div>
-      </div>
+      </Card>
     </div>
   );
 
@@ -80,9 +85,14 @@ export default function CategoriesClient() {
         />
       )}
 
-      <AdminToolbar search={search} onSearch={(v) => { setSearch(v); setPage(1); }} placeholder="Search categories…" />
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search categories…"
+        onApplied={() => setPage(1)}
+      />
 
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <Card className="overflow-hidden py-0">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-alt text-text-muted text-xs uppercase tracking-wider">
@@ -91,12 +101,13 @@ export default function CategoriesClient() {
               <th className="px-4 py-3 text-left">Slug</th>
               <th className="px-4 py-3 text-left">Parent</th>
               <th className="px-4 py-3 text-left">Status</th>
+              <th className="px-4 py-3 text-left">Home</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {paged.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-text-muted">No categories found.</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-text-muted">No categories found.</td></tr>
             ) : (
               paged.map((cat) => (
                 <tr key={cat.id} className="hover:bg-surface-alt/50 transition-colors">
@@ -105,6 +116,11 @@ export default function CategoriesClient() {
                   <td className="px-4 py-3 text-text-muted font-mono text-xs">{cat.slug}</td>
                   <td className="px-4 py-3 text-text-muted">{categories.find((c) => c.id === cat.parentId)?.name ?? '—'}</td>
                   <td className="px-4 py-3 text-text-muted">{cat.isActive ? '✓ Active' : '✗ Hidden'}</td>
+                  <td className="px-4 py-3">
+                    {cat.showOnHome
+                      ? <span className="text-xs font-medium text-success bg-success/10 rounded px-2 py-0.5">On home</span>
+                      : <span className="text-xs text-text-faint">—</span>}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
                       <Button variant="ghost" size="sm" onClick={() => { setEditing(cat); setShowForm(true); }}><Pencil size={14} /></Button>
@@ -116,7 +132,7 @@ export default function CategoriesClient() {
             )}
           </tbody>
         </table>
-      </div>
+      </Card>
 
       <Pagination page={page} totalPages={totalPages} total={total} onChange={setPage} />
     </div>
@@ -132,7 +148,7 @@ function CategoryForm({
   onCancel: () => void;
 }) {
   const isEdit = !!category;
-  const [form,    setForm]    = useState({ name: category?.name ?? '', slug: category?.slug ?? '', description: category?.description ?? '', parentId: category?.parentId ? String(category.parentId) : '', isActive: category?.isActive ?? true });
+  const [form,    setForm]    = useState({ name: category?.name ?? '', slug: category?.slug ?? '', description: category?.description ?? '', parentId: category?.parentId ? String(category.parentId) : '', isActive: category?.isActive ?? true, showOnHome: category?.showOnHome ?? false });
   const [loading, setLoading] = useState(false);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
@@ -162,38 +178,51 @@ function CategoryForm({
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 border border-border rounded-lg bg-surface focus:outline-none focus:border-brand text-text text-sm';
-
   return (
-    <form onSubmit={save} className="mb-6 p-5 rounded-xl border border-brand-lighter bg-brand-faint space-y-4">
-      <h3 className="font-medium text-text">{isEdit ? 'Edit Category' : 'New Category'}</h3>
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Name *</label>
-          <input name="name" required value={form.name} onChange={handleChange} onBlur={autoSlug} className={inputCls} placeholder="Mythical Creatures" />
+    <Card className="mb-6 p-5 py-5 border-brand-lighter bg-brand-faint">
+      <form onSubmit={save} className="space-y-4">
+        <h3 className="font-medium text-text">{isEdit ? 'Edit Category' : 'New Category'}</h3>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <Label className="mb-1.5 block text-xs">Name *</Label>
+            <Input name="name" required value={form.name} onChange={handleChange} onBlur={autoSlug} placeholder="Mythical Creatures" />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs">Slug *</Label>
+            <Input name="slug" required value={form.slug} onChange={handleChange} placeholder="mythical-creatures" />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs">Parent Category</Label>
+            <NativeSelect name="parentId" value={form.parentId} onChange={handleChange}>
+              <option value="">None</option>
+              {allCategories.filter((c) => !category || c.id !== category.id).map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </NativeSelect>
+          </div>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Slug *</label>
-          <input name="slug" required value={form.slug} onChange={handleChange} className={inputCls} placeholder="mythical-creatures" />
+        <div className="flex items-center gap-2">
+          <Checkbox id="cb-isactive" checked={form.isActive} onCheckedChange={(v) => setForm((f) => ({ ...f, isActive: v === true }))} />
+          <Label htmlFor="cb-isactive" className="text-sm text-text cursor-pointer font-normal">Active</Label>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Parent Category</label>
-          <select name="parentId" value={form.parentId} onChange={handleChange} className={inputCls}>
-            <option value="">None</option>
-            {allCategories.filter((c) => !category || c.id !== category.id).map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+
+        {/* M-47: which categories deserve the home page is a merchandising call
+            that changes with the season, so it is a switch rather than a rule the
+            code guesses at. */}
+        <div className="flex items-start gap-2">
+          <Checkbox id="cb-showonhome" checked={form.showOnHome} onCheckedChange={(v) => setForm((f) => ({ ...f, showOnHome: v === true }))} className="mt-0.5" />
+          <Label htmlFor="cb-showonhome" className="text-sm text-text cursor-pointer font-normal">
+            Show on home page
+            <span className="block text-xs text-text-muted">
+              Adds a product row for this category. The first two flagged categories are used.
+            </span>
+          </Label>
         </div>
-      </div>
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input type="checkbox" name="isActive" checked={form.isActive} onChange={handleChange} className="w-4 h-4 accent-brand" />
-        <span className="text-sm text-text">Active</span>
-      </label>
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" loading={loading}>{isEdit ? 'Save' : 'Create'}</Button>
-        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
-      </div>
-    </form>
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" loading={loading}>{isEdit ? 'Save' : 'Create'}</Button>
+          <Button type="button" size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
+        </div>
+      </form>
+    </Card>
   );
 }

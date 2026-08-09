@@ -8,10 +8,15 @@ import { adminUsersApi } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import AdminToolbar, { FilterSelect } from '@/components/admin/AdminToolbar';
+import FilterBar from '@/components/admin/FilterBar';
 import { Skeleton } from '@/components/ui/skeleton';
 import Pagination from '@/components/admin/Pagination';
 import { usePagination } from '@/lib/usePagination';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/native-select';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const ROLES: AdminRole[] = ['super_admin', 'admin', 'editor'];
 const ROLE_VARIANT: Record<AdminRole, 'info' | 'success' | 'default'> = {
@@ -26,6 +31,16 @@ export default function AdminUsersClient() {
   const [showForm, setShowForm] = useState(false);
   const [search,   setSearch]   = useState('');
   const [role,     setRole]     = useState('all');
+
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return users.filter((u) =>
+      (role === 'all' || u.role === role) &&
+      (term === '' || u.email.toLowerCase().includes(term) || (u.fullName ?? '').toLowerCase().includes(term)),
+    );
+  }, [users, role, search]);
+
+  const { page, setPage, totalPages, total, paged } = usePagination(filtered, 10);
 
   async function load() {
     const token = adminAuth.getToken();
@@ -59,12 +74,12 @@ export default function AdminUsersClient() {
   if (loading) return (
     <div>
       <Skeleton className="h-8 w-48 mb-4" />
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <Card className="overflow-hidden py-0">
         <div className="p-4">
           <Skeleton className="h-4 w-64 mb-2" />
           <Skeleton className="h-3 w-40" />
         </div>
-      </div>
+      </Card>
     </div>
   );
   if (denied)  return (
@@ -91,7 +106,25 @@ export default function AdminUsersClient() {
         />
       )}
 
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search by email or name…"
+        fields={[{
+          key: 'role',
+          label: 'Role',
+          type: 'select',
+          options: [
+            { value: 'all', label: 'All roles' },
+            ...ROLES.map((r) => ({ value: r, label: r.replace('_', ' ') })),
+          ],
+        }]}
+        values={{ role }}
+        onValuesChange={(v) => setRole(v.role)}
+        onApplied={() => setPage(1)}
+      />
+
+      <Card className="overflow-hidden py-0">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-alt text-text-muted text-xs uppercase tracking-wider">
@@ -103,10 +136,10 @@ export default function AdminUsersClient() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {users.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-text-muted">No admins yet.</td></tr>
+            {paged.length === 0 ? (
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-text-muted">No admins match these filters.</td></tr>
             ) : (
-              users.map((u) => (
+              paged.map((u) => (
                 <tr key={u.id} className="hover:bg-surface-alt/50 transition-colors">
                   <td className="px-4 py-3 font-medium text-text">{u.email}</td>
                   <td className="px-4 py-3 text-text-muted">{u.fullName || '—'}</td>
@@ -123,7 +156,11 @@ export default function AdminUsersClient() {
             )}
           </tbody>
         </table>
-      </div>
+      </Card>
+
+      {totalPages > 1 && (
+        <Pagination page={page} totalPages={totalPages} total={total} onChange={setPage} />
+      )}
     </div>
   );
 }
@@ -167,39 +204,40 @@ function AdminUserForm({ admin, onSaved, onCancel }: { admin?: AdminUser; onSave
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 border border-border rounded-lg bg-surface focus:outline-none focus:border-brand text-text text-sm';
 
   return (
-    <form onSubmit={save} className="mb-6 p-5 rounded-xl border border-brand-lighter bg-brand-faint space-y-4">
-      <h3 className="font-medium text-text">{isEdit ? `Edit ${admin.email}` : 'New Admin User'}</h3>
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Email *</label>
-          <input type="email" required disabled={isEdit} value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} className={`${inputCls} disabled:opacity-60`} placeholder="admin@declay.com" />
+    <Card className="mb-6 p-5 py-5 border-brand-lighter bg-brand-faint">
+      <form onSubmit={save} className="space-y-4">
+        <h3 className="font-medium text-text">{isEdit ? `Edit ${admin.email}` : 'New Admin User'}</h3>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <Label className="mb-1.5 block text-xs">Email *</Label>
+            <Input type="email" required disabled={isEdit} value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="admin@declay.com"  className="disabled:opacity-60" />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs">{isEdit ? 'New password (optional)' : 'Password *'}</Label>
+            <Input type="password" required={!isEdit} value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} placeholder="Min 8 chars, 1 upper, 1 number" />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs">Full name</Label>
+            <Input value={form.fullName} onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} placeholder="Jane Doe" />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs">Role</Label>
+            <NativeSelect value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as AdminRole }))}>
+              {ROLES.map((r) => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
+            </NativeSelect>
+          </div>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">{isEdit ? 'New password (optional)' : 'Password *'}</label>
-          <input type="password" required={!isEdit} value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} className={inputCls} placeholder="Min 8 chars, 1 upper, 1 number" />
+        <div className="flex items-center gap-2">
+          <Checkbox id="cb-isactive" checked={form.isActive} onCheckedChange={(v) => setForm((f) => ({ ...f, isActive: v === true }))} />
+          <Label htmlFor="cb-isactive" className="text-sm text-text cursor-pointer font-normal">Active</Label>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Full name</label>
-          <input value={form.fullName} onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} className={inputCls} placeholder="Jane Doe" />
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" loading={loading}>{isEdit ? 'Save' : 'Create'}</Button>
+          <Button type="button" size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Role</label>
-          <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as AdminRole }))} className={inputCls}>
-            {ROLES.map((r) => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
-          </select>
-        </div>
-      </div>
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input type="checkbox" checked={form.isActive} onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))} className="w-4 h-4 accent-brand" />
-        <span className="text-sm text-text">Active</span>
-      </label>
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" loading={loading}>{isEdit ? 'Save' : 'Create'}</Button>
-        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
-      </div>
-    </form>
+      </form>
+    </Card>
   );
 }

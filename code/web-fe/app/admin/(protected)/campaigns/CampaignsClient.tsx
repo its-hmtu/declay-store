@@ -3,12 +3,16 @@
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Campaign, Product } from '@/lib/types';
+import type { Campaign, CampaignImpact, Product } from '@/lib/types';
 import { adminCampaignsApi, productsApi } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 
 function fmt(iso: string | null): string {
   if (!iso) return '—';
@@ -57,12 +61,12 @@ export default function CampaignsClient() {
   if (loading) return (
     <div>
       <Skeleton className="h-8 w-48 mb-4" />
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <Card className="overflow-hidden py-0">
         <div className="p-4">
           <Skeleton className="h-4 w-64 mb-2" />
           <Skeleton className="h-3 w-40" />
         </div>
-      </div>
+      </Card>
     </div>
   );
 
@@ -87,7 +91,7 @@ export default function CampaignsClient() {
         />
       )}
 
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <Card className="overflow-hidden py-0">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-alt text-text-muted text-xs uppercase tracking-wider">
@@ -124,7 +128,7 @@ export default function CampaignsClient() {
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -146,6 +150,36 @@ function CampaignForm({
   const [selected, setSelected]       = useState<Set<number>>(new Set(campaign?.productIds ?? []));
   const [search, setSearch]           = useState('');
   const [saving, setSaving]           = useState(false);
+  // M-41: dry-run the pricing damage while the admin is still editing.
+  const [impact, setImpact]           = useState<CampaignImpact | null>(null);
+
+  const pctNumber = parseFloat(discount);
+  const selectedKey = Array.from(selected).sort((a, b) => a - b).join(',');
+
+  useEffect(() => {
+    const token = adminAuth.getToken();
+    if (!token || !selected.size || !Number.isFinite(pctNumber) || pctNumber <= 0 || pctNumber > 100) {
+      setImpact(null);
+      return;
+    }
+    // Debounced so typing "35" does not fire a request for "3".
+    const timer = setTimeout(() => {
+      adminCampaignsApi
+        .previewImpact(token, {
+          productIds: Array.from(selected),
+          discountPercent: pctNumber,
+          startsAt: startsAt ? startsAt.toISOString() : null,
+          endsAt: endsAt ? endsAt.toISOString() : null,
+          excludeCampaignId: campaign?.id,
+        })
+        .then((res) => setImpact(res.data ?? null))
+        .catch(() => setImpact(null)); // advisory only — never block the form
+    }, 400);
+    return () => clearTimeout(timer);
+    // `discount` (the raw string), not `pctNumber` — an empty field parses to NaN,
+    // and NaN !== NaN would make this effect re-fire on every single render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedKey, discount, startsAt, endsAt, campaign?.id]);
 
   function toggle(id: number) {
     setSelected((prev) => {
@@ -189,66 +223,115 @@ function CampaignForm({
   }
 
   return (
-    <form onSubmit={submit} className="mb-6 rounded-xl border border-border bg-surface p-5 space-y-4">
-      <div className="grid sm:grid-cols-2 gap-4">
+    <Card className="mb-6 p-5 py-5">
+      <form onSubmit={submit} className="space-y-4">
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <Label className="mb-1.5 block">Name *</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} required maxLength={150}
+              placeholder="Summer Sale" />
+          </div>
+          <div>
+            <Label className="mb-1.5 block">Discount % *</Label>
+            <Input value={discount} onChange={(e) => setDiscount(e.target.value)} required type="number" min={0.01} max={100} step="0.01"
+              placeholder="20" />
+          </div>
+        </div>
+
         <div>
-          <label className="block text-sm font-medium text-text mb-1.5">Name *</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} required maxLength={150}
-            className="w-full px-3 py-2 border border-border rounded-lg bg-surface focus:outline-none focus:border-brand text-text"
-            placeholder="Summer Sale" />
+          <Label className="mb-1.5 block">Description</Label>
+          <Input value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500}
+            placeholder="Optional note shown internally" />
         </div>
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <Label className="mb-1.5 block">Starts at</Label>
+            <DatePicker value={startsAt} onChange={setStartsAt} withTime placeholder="No start (immediate)" />
+          </div>
+          <div>
+            <Label className="mb-1.5 block">Ends at</Label>
+            <DatePicker value={endsAt} onChange={setEndsAt} withTime placeholder="No end (open-ended)" />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 text-sm text-text">
+          <Checkbox id="cb-isactive" checked={isActive} onCheckedChange={(v) => setIsActive(v === true)} />
+          <Label htmlFor="cb-isactive" className="cursor-pointer font-normal">Active (uncheck to pause without deleting)</Label>
+        </div>
+
         <div>
-          <label className="block text-sm font-medium text-text mb-1.5">Discount % *</label>
-          <input value={discount} onChange={(e) => setDiscount(e.target.value)} required type="number" min={0.01} max={100} step="0.01"
-            className="w-full px-3 py-2 border border-border rounded-lg bg-surface focus:outline-none focus:border-brand text-text"
-            placeholder="20" />
+          <div className="flex items-center justify-between mb-1.5">
+            <Label className="block">Products ({selected.size} selected)</Label>
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products…"
+              className="h-8 w-56 text-sm" />
+          </div>
+          <div className="max-h-56 overflow-y-auto rounded-lg border border-border divide-y divide-border">
+            {filtered.length === 0 && <p className="px-3 py-4 text-sm text-text-muted text-center">No products.</p>}
+            {filtered.map((p) => (
+              <div key={p.id} className="flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-surface-alt">
+                <Checkbox id={`cb-selected-has-${p.id}`} checked={selected.has(p.id)} onCheckedChange={() => toggle(p.id)} />
+                <Label htmlFor={`cb-selected-has-${p.id}`} className="text-text cursor-pointer font-normal">{p.name}</Label>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <div>
-        <label className="block text-sm font-medium text-text mb-1.5">Description</label>
-        <input value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500}
-          className="w-full px-3 py-2 border border-border rounded-lg bg-surface focus:outline-none focus:border-brand text-text"
-          placeholder="Optional note shown internally" />
-      </div>
+        {/* M-41: advisory only — these never block saving. The shop owner decides
+            whether a loss-leader is worth it; our job is to make sure it is a decision
+            and not an accident. */}
+        {impact && (impact.warnings.length > 0 || impact.overlaps.length > 0) && (
+          <div className="space-y-3">
+            {impact.summary.belowCost > 0 && (
+              <div className="rounded-lg border border-error/40 bg-error/5 p-3">
+                <p className="text-sm font-semibold text-error">
+                  {impact.summary.belowCost} variant{impact.summary.belowCost > 1 ? 's' : ''} would sell BELOW COST at {pctNumber}%
+                </p>
+                <ul className="mt-2 space-y-1 text-xs text-text-muted max-h-32 overflow-y-auto">
+                  {impact.warnings.filter((w) => w.severity === 'below-cost').map((w) => (
+                    <li key={w.variantId}>
+                      {w.productName} — {w.variantName}: sells at {w.effectivePrice.toLocaleString('vi-VN')} ₫,
+                      costs {w.costPrice.toLocaleString('vi-VN')} ₫
+                      <span className="text-error font-medium"> (loses {Math.abs(w.margin).toLocaleString('vi-VN')} ₫/unit)</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-text mb-1.5">Starts at</label>
-          <DatePicker value={startsAt} onChange={setStartsAt} withTime placeholder="No start (immediate)" />
+            {impact.summary.thinMargin > 0 && (
+              <div className="rounded-lg border border-warning/40 bg-warning/5 p-3">
+                <p className="text-sm font-medium text-text">
+                  {impact.summary.thinMargin} variant{impact.summary.thinMargin > 1 ? 's' : ''} left with a margin under 10%
+                </p>
+              </div>
+            )}
+
+            {impact.overlaps.length > 0 && (
+              <div className="rounded-lg border border-border bg-surface-alt p-3">
+                <p className="text-sm font-medium text-text">Overlaps an existing campaign</p>
+                <p className="mt-1 text-xs text-text-muted">
+                  Some selected products are already covered in this period by{' '}
+                  {[...new Set(impact.overlaps.map((o) => `${o.name} (-${o.discountPercent}%)`))].join(', ')}.
+                  The deepest discount wins — the other campaign will have no effect on those products.
+                </p>
+              </div>
+            )}
+
+            {impact.variantsWithoutCost > 0 && (
+              <p className="text-xs text-text-faint">
+                {impact.variantsWithoutCost} variant{impact.variantsWithoutCost > 1 ? 's have' : ' has'} no cost price recorded,
+                so margin could not be checked for {impact.variantsWithoutCost > 1 ? 'them' : 'it'}.
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="flex gap-2 pt-1">
+          <Button type="submit" size="sm" loading={saving}>{campaign ? 'Save changes' : 'Create campaign'}</Button>
+          <Button type="button" variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-text mb-1.5">Ends at</label>
-          <DatePicker value={endsAt} onChange={setEndsAt} withTime placeholder="No end (open-ended)" />
-        </div>
-      </div>
-
-      <label className="flex items-center gap-2 text-sm text-text">
-        <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="accent-brand" />
-        Active (uncheck to pause without deleting)
-      </label>
-
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <label className="block text-sm font-medium text-text">Products ({selected.size} selected)</label>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products…"
-            className="px-3 py-1.5 text-sm border border-border rounded-lg bg-surface focus:outline-none focus:border-brand text-text" />
-        </div>
-        <div className="max-h-56 overflow-y-auto rounded-lg border border-border divide-y divide-border">
-          {filtered.length === 0 && <p className="px-3 py-4 text-sm text-text-muted text-center">No products.</p>}
-          {filtered.map((p) => (
-            <label key={p.id} className="flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer hover:bg-surface-alt">
-              <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggle(p.id)} className="accent-brand" />
-              <span className="text-text">{p.name}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex gap-2 pt-1">
-        <Button type="submit" size="sm" loading={saving}>{campaign ? 'Save changes' : 'Create campaign'}</Button>
-        <Button type="button" variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
-      </div>
-    </form>
+      </form>
+    </Card>
   );
 }

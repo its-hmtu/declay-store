@@ -4,11 +4,19 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronRight } from 'lucide-react';
 
+/** M-48: kept in step with the sidebar labels — a crumb that reads "jobs" while
+ *  the menu says "Careers" makes the two look like different screens. */
 const LABELS: Record<string, string> = {
-  dashboard: 'Dashboard', products: 'Products', categories: 'Categories',
-  orders: 'Orders', articles: 'Articles', jobs: 'Jobs', discounts: 'Discounts',
-  banners: 'Banners', reviews: 'Reviews', users: 'Admin Users', settings: 'Settings',
-  new: 'New',
+  dashboard: 'Dashboard',
+  reports: 'Reports', cod: 'COD reconciliation',
+  products: 'Products', categories: 'Categories', collections: 'Collections',
+  orders: 'Orders', 'shipping-methods': 'Shipping',
+  campaigns: 'Campaigns', discounts: 'Discount Codes', banners: 'Banners',
+  inbox: 'Inbox', reviews: 'Reviews',
+  articles: 'Articles', jobs: 'Careers',
+  users: 'Admin Users',
+  pages: 'Site pages', settings: 'Site Settings',
+  new: 'New', edit: 'Edit',
 };
 
 /** Auto-generated breadcrumb trail from the current /admin/... path. */

@@ -107,7 +107,7 @@ export default function FavoritesSection() {
           <Skeleton className="h-24 w-full rounded-xl" />
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-xl border border-border bg-surface py-14 text-center text-text-muted">
+        <div className="rounded-xl bg-surface py-14 text-center text-text-muted">
           <Heart size={28} className="mx-auto mb-3 text-text-faint" />
           <p>{t('favorites.empty')}</p>
           <Link href="/products" className="mt-3 inline-block font-medium text-brand hover:underline">{t('cart.continueShopping')}</Link>

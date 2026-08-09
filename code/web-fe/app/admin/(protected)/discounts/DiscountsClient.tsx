@@ -8,11 +8,16 @@ import { adminDiscountsApi } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import AdminToolbar, { FilterSelect } from '@/components/admin/AdminToolbar';
+import FilterBar from '@/components/admin/FilterBar';
 import { Skeleton } from '@/components/ui/skeleton';
 import Pagination from '@/components/admin/Pagination';
 import { usePagination } from '@/lib/usePagination';
 import { formatPrice } from '@/lib/utils';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/native-select';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function DiscountsClient() {
   const [codes,    setCodes]    = useState<DiscountCode[]>([]);
@@ -57,12 +62,12 @@ export default function DiscountsClient() {
   if (loading) return (
     <div>
       <Skeleton className="h-8 w-48 mb-4" />
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <Card className="overflow-hidden py-0">
         <div className="p-4">
           <Skeleton className="h-4 w-64 mb-2" />
           <Skeleton className="h-3 w-40" />
         </div>
-      </div>
+      </Card>
     </div>
   );
 
@@ -83,16 +88,17 @@ export default function DiscountsClient() {
         />
       )}
 
-      <AdminToolbar search={search} onSearch={(v) => { setSearch(v); setPage(1); }} placeholder="Search by code…">
-        <FilterSelect
-          value={status}
-          onChange={(v) => { setStatus(v); setPage(1); }}
-          label="Status"
-          options={[{ value: 'all', label: 'All status' }, { value: 'active', label: 'Active' }, { value: 'disabled', label: 'Disabled' }]}
-        />
-      </AdminToolbar>
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search by code…"
+        fields={[{ key: 'status', label: 'Status', type: 'select', options: [{ value: 'all', label: 'All status' }, { value: 'active', label: 'Active' }, { value: 'disabled', label: 'Disabled' }] }]}
+        values={{ status }}
+        onValuesChange={(v) => setStatus(v.status)}
+        onApplied={() => setPage(1)}
+      />
 
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <Card className="overflow-hidden py-0">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-alt text-text-muted text-xs uppercase tracking-wider">
@@ -128,7 +134,7 @@ export default function DiscountsClient() {
             )}
           </tbody>
         </table>
-      </div>
+      </Card>
 
       <Pagination page={page} totalPages={totalPages} total={total} onChange={setPage} />
     </div>
@@ -179,48 +185,48 @@ function DiscountForm({ discount, onSaved, onCancel }: { discount?: DiscountCode
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 border border-border rounded-lg bg-surface focus:outline-none focus:border-brand text-text text-sm';
-
   return (
-    <form onSubmit={save} className="mb-6 p-5 rounded-xl border border-brand-lighter bg-brand-faint space-y-4">
-      <h3 className="font-medium text-text">{isEdit ? `Edit ${discount.code}` : 'New Discount Code'}</h3>
-      <div className="grid sm:grid-cols-3 gap-4">
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Code *</label>
-          <input name="code" required disabled={isEdit} value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))} className={`${inputCls} font-mono disabled:opacity-60`} placeholder="SUMMER10" />
+    <Card className="mb-6 p-5 py-5 border-brand-lighter bg-brand-faint">
+      <form onSubmit={save} className="space-y-4">
+        <h3 className="font-medium text-text">{isEdit ? `Edit ${discount.code}` : 'New Discount Code'}</h3>
+        <div className="grid sm:grid-cols-3 gap-4">
+          <div>
+            <Label className="mb-1.5 block text-xs">Code *</Label>
+            <Input name="code" required disabled={isEdit} value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="SUMMER10"  className="font-mono disabled:opacity-60" />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs">Type *</Label>
+            <NativeSelect name="type" value={form.type} onChange={handleChange}>
+              <option value="percent">Percentage (%)</option>
+              <option value="fixed">Fixed ($)</option>
+            </NativeSelect>
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs">Value *</Label>
+            <Input name="value" required type="number" step="0.01" min="0" value={form.value} onChange={handleChange} placeholder={form.type === 'percent' ? '10' : '5.00'} />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs">Min order ($)</Label>
+            <Input name="minOrderAmount" type="number" step="0.01" min="0" value={form.minOrderAmount} onChange={handleChange} placeholder="0" />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs">Max uses</Label>
+            <Input name="maxUses" type="number" min="1" value={form.maxUses} onChange={handleChange} placeholder="Unlimited" />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs">Expires</Label>
+            <Input name="expiresAt" type="date" value={form.expiresAt} onChange={handleChange} />
+          </div>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Type *</label>
-          <select name="type" value={form.type} onChange={handleChange} className={inputCls}>
-            <option value="percent">Percentage (%)</option>
-            <option value="fixed">Fixed ($)</option>
-          </select>
+        <div className="flex items-center gap-2">
+          <Checkbox id="cb-isactive" checked={form.isActive} onCheckedChange={(v) => setForm((f) => ({ ...f, isActive: v === true }))} />
+          <Label htmlFor="cb-isactive" className="text-sm text-text cursor-pointer font-normal">Active</Label>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Value *</label>
-          <input name="value" required type="number" step="0.01" min="0" value={form.value} onChange={handleChange} className={inputCls} placeholder={form.type === 'percent' ? '10' : '5.00'} />
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" loading={loading}>{isEdit ? 'Save' : 'Create'}</Button>
+          <Button type="button" size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Min order ($)</label>
-          <input name="minOrderAmount" type="number" step="0.01" min="0" value={form.minOrderAmount} onChange={handleChange} className={inputCls} placeholder="0" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Max uses</label>
-          <input name="maxUses" type="number" min="1" value={form.maxUses} onChange={handleChange} className={inputCls} placeholder="Unlimited" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Expires</label>
-          <input name="expiresAt" type="date" value={form.expiresAt} onChange={handleChange} className={inputCls} />
-        </div>
-      </div>
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input type="checkbox" name="isActive" checked={form.isActive} onChange={handleChange} className="w-4 h-4 accent-brand" />
-        <span className="text-sm text-text">Active</span>
-      </label>
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" loading={loading}>{isEdit ? 'Save' : 'Create'}</Button>
-        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
-      </div>
-    </form>
+      </form>
+    </Card>
   );
 }

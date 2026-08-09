@@ -11,6 +11,7 @@ const LIMIT = 12;
 export type ProductQuery = {
   categoryId?: number;
   collectionId?: number;
+  campaignId?: number;
   search?: string;
   sort?: string;
   minPrice?: number;

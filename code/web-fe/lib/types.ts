@@ -46,6 +46,8 @@ export interface Category {
   description?: string;
   parentId?: number;
   isActive: boolean;
+  /** M-47: admin flagged this category for a product row on the home page. */
+  showOnHome?: boolean;
   parent?: Category;
   children?: Category[];
 }
@@ -66,6 +68,16 @@ export interface ProductVariant {
   /** M-04: present only for admin/super_admin. */
   margin?: number | null;
   marginPercent?: number | null;
+  /**
+   * M-40: pricing computed by the server (`lib/pricing.ts`). The storefront must
+   * DISPLAY these and never re-derive them — that duplication is what let the
+   * cart and checkout drift apart before.
+   */
+  basePrice?: number;
+  effectivePrice?: number;
+  discountPercent?: number;
+  onSale?: boolean;
+  source?: 'base' | 'special' | 'campaign';
   stock: number;
   images: string[];
   isActive: boolean;
@@ -89,6 +101,13 @@ export interface Product {
   rating?: ProductRating;
   salesCount?: number;
   campaignDiscountPercent?: number | null;
+  /** M-44: campaign identity, for named badges and the product-page countdown. */
+  campaignId?: number | null;
+  campaignName?: string | null;
+  campaignEndsAt?: string | null;
+  /** M-48: every admin list shows created/updated; the API has always sent these. */
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // M-07: COD cash awaiting reconciliation.
@@ -128,12 +147,15 @@ export interface Collection {
   name: string;
   slug: string;
   description: string | null;
+  /** M-46: cover image — carousel, page header and OG share card. */
+  imageUrl?: string | null;
   isActive: boolean;
   sortOrder: number;
   createdBy: number | null;
   createdAt: string;
   updatedAt: string;
   productIds?: number[];
+  /** Present when the list was requested with `withProducts`. */
   products?: Product[];
   productCount?: number;
 }
@@ -150,6 +172,75 @@ export interface Campaign {
   createdAt: string;
   updatedAt: string;
   productIds?: number[];
+}
+
+/** M-41: dry-run result — what a campaign would cost in margin, and what it collides with. */
+export interface MarginWarning {
+  variantId: number;
+  productId: number;
+  productName: string;
+  variantName: string;
+  effectivePrice: number;
+  costPrice: number;
+  margin: number;
+  marginPercent: number;
+  severity: 'below-cost' | 'thin-margin';
+}
+
+export interface CampaignImpact {
+  warnings: MarginWarning[];
+  summary: { belowCost: number; thinMargin: number; worstMarginPercent: number | null };
+  overlaps: Array<{ productId: number; campaignId: number; name: string; discountPercent: number }>;
+  variantsWithoutCost: number;
+}
+
+// ── M-42: live chat ──────────────────────────────────────────
+
+export type ChatMode = 'bot' | 'waiting' | 'live' | 'closed';
+
+export interface LiveChatMessage {
+  id: number;
+  /** 'system' rows are transcript markers, rendered as a centred note, not a bubble. */
+  role: 'user' | 'assistant' | 'staff' | 'system';
+  content: string;
+  authorName: string | null;
+  createdAt: string;
+}
+
+export interface LiveChatTranscript {
+  session: { id: number; mode: ChatMode; staffName: string | null };
+  messages: LiveChatMessage[];
+}
+
+export interface InboxItem {
+  id: number;
+  mode: ChatMode;
+  reason: string | null;
+  customerName: string | null;
+  customerEmail: string | null;
+  userId: number | null;
+  isGuest: boolean;
+  assignedAdminId: number | null;
+  assignedAdminName: string | null;
+  handoffRequestedAt: string | null;
+  lastMessageAt: string | null;
+  hasUnread: boolean;
+  waitingSeconds: number | null;
+}
+
+export interface StaffTranscript {
+  session: {
+    id: number;
+    mode: ChatMode;
+    reason: string | null;
+    customerName: string | null;
+    customerEmail: string | null;
+    userId: number | null;
+    assignedAdminId: number | null;
+    assignedAdminName: string | null;
+    handoffRequestedAt: string | null;
+  };
+  messages: LiveChatMessage[];
 }
 
 export const PRODUCT_SORTS = [

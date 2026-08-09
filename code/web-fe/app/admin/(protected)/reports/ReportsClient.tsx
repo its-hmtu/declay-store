@@ -8,6 +8,8 @@ import type { TopSkuReport, ProductViewRow } from '@/lib/types';
 import { adminReportsApi } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import { formatPrice } from '@/lib/utils';
+import FilterBar from '@/components/admin/FilterBar';
+import { Card, CardContent } from '@/components/ui/card';
 
 const PERIODS = [
   { value: '7d',  label: 'Last 7 days'  },
@@ -51,14 +53,14 @@ export default function ReportsClient() {
           <h1 className="font-serif text-3xl font-bold text-text">Reports</h1>
           <p className="text-sm text-text-muted mt-1">Which products actually sell — the core validation metric.</p>
         </div>
-        <select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          className="px-3 py-2 text-sm border border-border rounded-lg bg-surface text-text focus:outline-none focus:border-brand"
-        >
-          {PERIODS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-        </select>
       </div>
+
+      {/* The report is only re-fetched when Apply commits the period. */}
+      <FilterBar
+        fields={[{ key: 'period', label: 'Period', type: 'select', options: PERIODS }]}
+        values={{ period }}
+        onValuesChange={(v) => setPeriod(v.period)}
+      />
 
       {/* Totals */}
       <div className="grid sm:grid-cols-3 gap-4 mb-8">
@@ -69,7 +71,7 @@ export default function ReportsClient() {
 
       {/* Top SKUs */}
       <h2 className="font-medium text-text mb-3">Top selling SKUs</h2>
-      <div className="rounded-xl border border-border bg-surface overflow-hidden mb-10">
+      <Card className="overflow-hidden py-0 mb-10">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-alt text-text-muted text-xs uppercase tracking-wider">
@@ -106,11 +108,11 @@ export default function ReportsClient() {
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
 
       {/* Interest signal */}
       <h2 className="font-medium text-text mb-3">Most viewed products <span className="text-xs font-normal text-text-faint">(all time)</span></h2>
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <Card className="overflow-hidden py-0">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-alt text-text-muted text-xs uppercase tracking-wider">
@@ -132,16 +134,18 @@ export default function ReportsClient() {
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
-      <p className="flex items-center gap-2 text-xs uppercase tracking-wider text-text-muted">{icon} {label}</p>
-      <p className="mt-2 font-serif text-2xl font-bold text-text">{value}</p>
-    </div>
+    <Card className="gap-0 py-4">
+      <CardContent className="px-4">
+        <p className="flex items-center gap-2 text-xs uppercase tracking-wider text-text-muted">{icon} {label}</p>
+        <p className="mt-2 font-serif text-2xl font-bold text-text">{value}</p>
+      </CardContent>
+    </Card>
   );
 }

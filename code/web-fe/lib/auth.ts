@@ -41,4 +41,20 @@ export const adminAuth = {
     Cookies.remove(ADMIN_REFRESH_KEY);
   },
   isLoggedIn: () => !!Cookies.get(ADMIN_TOKEN_KEY),
+  /**
+   * M-42: the signed-in admin's id, read from the token's `sub`.
+   * Display-only — used to grey out the reply box on a colleague's conversation.
+   * The server enforces ownership for real; never trust this for access control.
+   */
+  getAdminId: (): number | undefined => {
+    const token = Cookies.get(ADMIN_TOKEN_KEY);
+    if (!token) return undefined;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const id = Number(payload.sub);
+      return Number.isInteger(id) && id > 0 ? id : undefined;
+    } catch {
+      return undefined;
+    }
+  },
 };

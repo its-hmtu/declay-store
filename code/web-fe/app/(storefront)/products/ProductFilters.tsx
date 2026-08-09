@@ -22,12 +22,21 @@ export default function ProductFilters({
   selected,
   selectedCollection,
   search,
+  basePath = '/products',
 }: {
   categories: Category[];
+  /** Pass [] to hide the collection filter — e.g. on a collection page, where
+   *  the collection is already fixed by the URL. */
   collections?: Collection[];
   selected?: number;
   selectedCollection?: number;
   search?: string;
+  /**
+   * M-45: where filter changes navigate to. A collection page reuses this whole
+   * sidebar, and hardcoding `/products` here would throw the customer out of the
+   * collection the moment they touched any filter.
+   */
+  basePath?: string;
 }) {
   const { t } = useT();
   const router = useRouter();
@@ -40,7 +49,7 @@ export default function ProductFilters({
       else next.set(k, v);
     }
     next.delete('page');
-    router.push(`/products?${next}`);
+    router.push(`${basePath}?${next}`);
   }
 
   const curMin = sp.get('minPrice') ?? '';

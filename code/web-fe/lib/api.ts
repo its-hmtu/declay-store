@@ -1,4 +1,5 @@
 import type { ApiResponse, ApiError } from './types';
+import { notifyAdminSessionExpired } from './session-expiry';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -75,6 +76,10 @@ async function request<T>(
         // Refresh thất bại/không có -> xoá cả hai, layout admin sẽ đá về login.
         deleteCookie('declay_admin_token');
         deleteCookie('declay_admin_refresh');
+        // M-48: only HERE is the session really over. The silent-refresh path
+        // above returns before this line, so a routine 8-hour expiry never
+        // reaches the admin as a popup.
+        notifyAdminSessionExpired();
       } else if (path.startsWith('/admin')) {
         // /admin/auth/* : không tự refresh, chỉ để lỗi nổi lên.
         deleteCookie('declay_admin_token');
@@ -139,12 +144,14 @@ export const api = {
 
 /* ── Domain helpers (server-side, pass token from cookies) ─ */
 export const productsApi = {
-  list: (params?: { page?: number; limit?: number; categoryId?: number; collectionId?: number; search?: string; sort?: string; minPrice?: number; maxPrice?: number }) => {
+  list: (params?: { page?: number; limit?: number; categoryId?: number; collectionId?: number; campaignId?: number; search?: string; sort?: string; minPrice?: number; maxPrice?: number }) => {
     const qs = new URLSearchParams();
     if (params?.page)       qs.set('page',       String(params.page));
     if (params?.limit)      qs.set('limit',      String(params.limit));
     if (params?.categoryId) qs.set('categoryId', String(params.categoryId));
     if (params?.collectionId) qs.set('collectionId', String(params.collectionId));
+    // M-44: campaign is a filter over the shop, not a page of its own.
+    if (params?.campaignId) qs.set('campaignId', String(params.campaignId));
     if (params?.minPrice != null) qs.set('minPrice', String(params.minPrice));
     if (params?.maxPrice != null) qs.set('maxPrice', String(params.maxPrice));
     if (params?.search)     qs.set('search',     params.search);
@@ -177,6 +184,12 @@ export const recommendationsApi = {
     if (params.excludeIds && params.excludeIds.length) qs.set('excludeIds', params.excludeIds.join(','));
     return api.get<import('./types').Product[]>(`/products/recently-viewed?${qs}`, { token });
   },
+};
+
+/** M-47: only the categories an admin flagged for the home page. */
+export const homeCategoriesApi = {
+  list: () =>
+    api.get<import('./types').Category[]>('/categories?homeOnly=1', { next: { revalidate: 300 } }),
 };
 
 export const categoriesApi = {
@@ -390,6 +403,12 @@ export const bannersApi = {
   list: () => api.get<import('./types').Banner[]>('/banners', { next: { revalidate: 120 } }),
 };
 
+/** M-44: active campaigns for the announcement bar. Public, no auth. */
+export const campaignsApi = {
+  listActive: () =>
+    api.get<import('./types').Campaign[]>('/campaigns', { next: { revalidate: 60 } }),
+};
+
 export const pagesApi = {
   getBySlug: (slug: string) =>
     api.get<import('./types').Page>(`/pages/${slug}`, { next: { revalidate: 300 } }),
@@ -453,6 +472,15 @@ export const adminTagsApi = {
 
 export const collectionsApi = {
   list:   () => api.get<import('./types').Collection[]>('/collections', { next: { revalidate: 0 } }),
+  /**
+   * M-46: collections with a product preview for the storefront carousels.
+   * Empty collections are dropped server-side, so the caller can render directly.
+   */
+  listWithProducts: (perCollection = 8) =>
+    api.get<import('./types').Collection[]>(
+      `/collections?withProducts=${perCollection}`,
+      { next: { revalidate: 120 } },
+    ),
   detail: (slug: string) => api.get<import('./types').Collection>(`/collections/${slug}`, { next: { revalidate: 120 } }),
 };
 
@@ -485,6 +513,57 @@ export const adminCampaignsApi = {
   create: (token: string, data: unknown) => api.post<import('./types').Campaign>('/admin/campaigns', data, { token }),
   update: (token: string, id: number, data: unknown) => api.put<import('./types').Campaign>(`/admin/campaigns/${id}`, data, { token }),
   remove: (token: string, id: number) => api.delete<void>(`/admin/campaigns/${id}`, { token }),
+  /** M-41: dry-run margin + overlap impact before saving. Read-only. */
+  previewImpact: (token: string, data: unknown) =>
+    api.post<import('./types').CampaignImpact>('/admin/campaigns/preview-impact', data, { token }),
+};
+
+/** M-42: customer side of live chat. Works signed-in or as a guest. */
+export const liveChatApi = {
+  transcript: (sessionId: number, token?: string) =>
+    api.get<import('./types').LiveChatTranscript>(`/chat/live/${sessionId}`, { token }),
+  requestHandoff: (sessionId: number, data: { reason?: string | null; name?: string | null; email?: string | null }, token?: string) =>
+    api.post<{ mode: string; acknowledgement: string; staffOnline: boolean }>(`/chat/live/${sessionId}/handoff`, data, { token }),
+  send: (sessionId: number, message: string, token?: string) =>
+    api.post<import('./types').LiveChatMessage>(`/chat/live/${sessionId}/messages`, { message }, { token }),
+};
+
+/** M-42: staff inbox. adminProtect only — no role gate. */
+export const adminInboxApi = {
+  queue: (token: string) => api.get<import('./types').InboxItem[]>('/admin/inbox/queue', { token }),
+  transcript: (token: string, sessionId: number) =>
+    api.get<import('./types').StaffTranscript>(`/admin/inbox/${sessionId}`, { token }),
+  claim: (token: string, sessionId: number) =>
+    api.post<{ mode: string }>(`/admin/inbox/${sessionId}/claim`, {}, { token }),
+  send: (token: string, sessionId: number, message: string) =>
+    api.post<import('./types').LiveChatMessage>(`/admin/inbox/${sessionId}/messages`, { message }, { token }),
+  close: (token: string, sessionId: number) =>
+    api.post<{ mode: string }>(`/admin/inbox/${sessionId}/close`, {}, { token }),
+  markRead: (token: string, sessionId: number) =>
+    api.post<null>(`/admin/inbox/${sessionId}/read`, {}, { token }),
+  heartbeat: (token: string) =>
+    api.post<Array<{ adminId: number; name: string }>>('/admin/inbox/heartbeat', {}, { token }),
+  offline: (token: string) => api.post<null>('/admin/inbox/offline', {}, { token }),
+};
+
+/** M-48: admin product + variant writes, used by the tabbed product form. */
+export const adminProductsApi = {
+  detail: (token: string, id: number) =>
+    api.get<import('./types').Product>(`/admin/products/${id}`, { token }),
+  create: (token: string, data: unknown) =>
+    api.post<import('./types').Product>('/admin/products', data, { token }),
+  update: (token: string, id: number, data: unknown) =>
+    api.put<import('./types').Product>(`/admin/products/${id}`, data, { token }),
+  remove: (token: string, id: number) => api.delete<void>(`/admin/products/${id}`, { token }),
+
+  listVariants: (token: string, productId: number) =>
+    api.get<import('./types').ProductVariant[]>(`/admin/products/${productId}/variants`, { token }),
+  createVariant: (token: string, productId: number, data: unknown) =>
+    api.post<import('./types').ProductVariant>(`/admin/products/${productId}/variants`, data, { token }),
+  updateVariant: (token: string, productId: number, variantId: number, data: unknown) =>
+    api.put<import('./types').ProductVariant>(`/admin/products/${productId}/variants/${variantId}`, data, { token }),
+  removeVariant: (token: string, productId: number, variantId: number) =>
+    api.delete<void>(`/admin/products/${productId}/variants/${variantId}`, { token }),
 };
 
 export const adminUsersApi = {

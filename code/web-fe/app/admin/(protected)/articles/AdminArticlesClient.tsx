@@ -9,10 +9,11 @@ import { api } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import AdminToolbar, { FilterSelect } from '@/components/admin/AdminToolbar';
+import FilterBar from '@/components/admin/FilterBar';
 import { Skeleton } from '@/components/ui/skeleton';
 import Pagination from '@/components/admin/Pagination';
 import { usePagination } from '@/lib/usePagination';
+import { Card } from '@/components/ui/card';
 
 export default function AdminArticlesClient() {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -55,12 +56,12 @@ export default function AdminArticlesClient() {
   if (loading) return (
     <div>
       <Skeleton className="h-8 w-48 mb-4" />
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <Card className="overflow-hidden py-0">
         <div className="p-4">
           <Skeleton className="h-4 w-64 mb-2" />
           <Skeleton className="h-3 w-40" />
         </div>
-      </div>
+      </Card>
     </div>
   );
 
@@ -73,16 +74,17 @@ export default function AdminArticlesClient() {
         </Link>
       </div>
 
-      <AdminToolbar search={search} onSearch={(v) => { setSearch(v); setPage(1); }} placeholder="Search articles…">
-        <FilterSelect
-          value={status}
-          onChange={(v) => { setStatus(v); setPage(1); }}
-          label="Status"
-          options={[{ value: 'all', label: 'All status' }, { value: 'published', label: 'Published' }, { value: 'draft', label: 'Draft' }]}
-        />
-      </AdminToolbar>
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search articles…"
+        fields={[{ key: 'status', label: 'Status', type: 'select', options: [{ value: 'all', label: 'All status' }, { value: 'published', label: 'Published' }, { value: 'draft', label: 'Draft' }] }]}
+        values={{ status }}
+        onValuesChange={(v) => setStatus(v.status)}
+        onApplied={() => setPage(1)}
+      />
 
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <Card className="overflow-hidden py-0">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-alt text-text-muted text-xs uppercase tracking-wider">
@@ -122,7 +124,7 @@ export default function AdminArticlesClient() {
             )}
           </tbody>
         </table>
-      </div>
+      </Card>
 
       <Pagination page={page} totalPages={totalPages} total={total} onChange={setPage} />
     </div>

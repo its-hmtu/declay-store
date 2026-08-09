@@ -36,9 +36,7 @@ export default function CartDrawer() {
 
   const items = cart?.items ?? [];
   const subtotal = items.reduce(
-    (sum, i) => sum + effectivePrice(
-      i.variant?.price, i.variant?.specialPrice, i.variant?.product?.campaignDiscountPercent,
-    ) * i.quantity,
+    (sum, i) => sum + effectivePrice(i.variant, i.variant?.product?.campaignDiscountPercent) * i.quantity,
     0,
   );
 
@@ -88,10 +86,7 @@ export default function CartDrawer() {
           <>
             <div className="flex-1 divide-y divide-border overflow-y-auto">
               {items.map((item) => {
-                const price = effectivePrice(
-                  item.variant?.price, item.variant?.specialPrice,
-                  item.variant?.product?.campaignDiscountPercent,
-                );
+                const price = effectivePrice(item.variant, item.variant?.product?.campaignDiscountPercent);
                 const image = item.variant?.images?.[0];
                 return (
                   <div key={item.id} className="flex gap-3 p-4">

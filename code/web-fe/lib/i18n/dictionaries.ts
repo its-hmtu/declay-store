@@ -287,6 +287,38 @@ export const en = {
   'orderDetail.tracking': 'Tracking',
   'orderDetail.cancel': 'Cancel order',
   'orderDetail.placedOn': 'Placed on',
+
+  // M-43: chatbot quick-reply chips. `*Prompt` keys are what gets SENT to the bot —
+  // phrased as a customer would actually ask, not as a menu label, so the model
+  // reads a real question.
+  'chat.chip.newArrivals': 'New arrivals',
+  'chat.chip.bestSellers': 'Best sellers',
+  'chat.chip.shipping': 'Shipping & delivery',
+  'chat.chip.shippingPrompt': 'How much is shipping and how long does delivery take?',
+  'chat.chip.payment': 'Payment & COD',
+  'chat.chip.paymentPrompt': 'What payment methods do you accept? Can I pay cash on delivery?',
+  'chat.chip.returns': 'Returns',
+  'chat.chip.returnsPrompt': 'What is your return and exchange policy?',
+  'chat.chip.myOrders': 'My orders',
+  'chat.chip.myOrdersPrompt': 'What is the status of my recent orders?',
+  'chat.chip.signIn': 'Sign in',
+  'chat.chip.readPolicy': 'Read full policy',
+  'chat.chip.talkToPerson': 'Talk to a person',
+
+  // M-44: campaign marketing surfaces. Campaigns have no page of their own, so
+  // these labels are the only way a customer learns a sale is running.
+  'campaign.saveUpTo': 'Save up to {percent}%',
+  'campaign.endsIn': 'Ends in {time}',
+  'campaign.partOf': 'Part of {name}',
+  'campaign.shopCampaign': 'Shop the sale',
+  'campaign.filterTitle': 'Sale',
+
+  // M-46: collections as browsing shortcuts.
+  'collection.viewAll': 'View all',
+  'collection.allCollections': 'All',
+  'collection.exploreTitle': 'Collections',
+  'collection.exploreSubtitle': 'Curated groups of handmade pieces.',
+  'collection.empty': 'No collections yet.',
 } as const;
 
 export type TranslationKey = keyof typeof en;
@@ -572,6 +604,36 @@ export const vi: Record<TranslationKey, string> = {
   'orderDetail.tracking': 'Mã vận đơn',
   'orderDetail.cancel': 'Huỷ đơn hàng',
   'orderDetail.placedOn': 'Đặt ngày',
+
+  // M-43: nút gợi ý sẵn cho chatbot. Các key `*Prompt` là nội dung GỬI cho bot —
+  // viết như khách hỏi thật, không viết như nhãn menu.
+  'chat.chip.newArrivals': 'Hàng mới về',
+  'chat.chip.bestSellers': 'Bán chạy nhất',
+  'chat.chip.shipping': 'Phí ship & giao hàng',
+  'chat.chip.shippingPrompt': 'Phí ship bao nhiêu và giao hàng mất mấy ngày?',
+  'chat.chip.payment': 'Thanh toán & COD',
+  'chat.chip.paymentPrompt': 'Shop nhận thanh toán bằng cách nào? Có ship COD không?',
+  'chat.chip.returns': 'Đổi trả',
+  'chat.chip.returnsPrompt': 'Chính sách đổi trả của shop thế nào?',
+  'chat.chip.myOrders': 'Đơn của tôi',
+  'chat.chip.myOrdersPrompt': 'Đơn hàng gần đây của tôi đang thế nào?',
+  'chat.chip.signIn': 'Đăng nhập',
+  'chat.chip.readPolicy': 'Đọc chính sách đầy đủ',
+  'chat.chip.talkToPerson': 'Gặp nhân viên',
+
+  // M-44: các điểm chạm marketing cho campaign.
+  'campaign.saveUpTo': 'Giảm đến {percent}%',
+  'campaign.endsIn': 'Còn {time}',
+  'campaign.partOf': 'Thuộc chương trình {name}',
+  'campaign.shopCampaign': 'Xem khuyến mãi',
+  'campaign.filterTitle': 'Khuyến mãi',
+
+  // M-46: collections như lối đi tắt để duyệt hàng.
+  'collection.viewAll': 'Xem tất cả',
+  'collection.allCollections': 'Tất cả bộ sưu tập',
+  'collection.exploreTitle': 'Mua theo bộ sưu tập',
+  'collection.exploreSubtitle': 'Những nhóm sản phẩm thủ công được tuyển chọn.',
+  'collection.empty': 'Chưa có bộ sưu tập nào.',
 };
 
 export const dictionaries: Record<Locale, Record<TranslationKey, string>> = { vi, en };

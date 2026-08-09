@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
-import ProductForm from '../ProductForm';
+import ProductFormPage from '../ProductFormPage';
 
 export const metadata: Metadata = { title: 'New Product' };
 
+/**
+ * M-48: create is its own route, not a panel above the list. The URL is
+ * shareable, the browser's back button means something, and the breadcrumb
+ * rendered by the admin layout is accurate — so no in-page back button is needed.
+ */
 export default function NewProductPage() {
-  return (
-    <div>
-      <h1 className="font-serif text-3xl font-bold text-text mb-8">New Product</h1>
-      <ProductForm />
-    </div>
-  );
+  return <ProductFormPage />;
 }

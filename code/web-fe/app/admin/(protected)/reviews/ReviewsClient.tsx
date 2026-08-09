@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Star, Trash2, BadgeCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ProductReview } from '@/lib/types';
@@ -8,10 +8,27 @@ import { adminReviewsApi } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent } from '@/components/ui/card';
+import FilterBar from '@/components/admin/FilterBar';
 
 export default function ReviewsClient() {
   const [reviews, setReviews] = useState<ProductReview[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch]   = useState('');
+  const [rating, setRating]   = useState('all');
+  const [verified, setVerified] = useState('all');
+
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return reviews.filter((r) =>
+      (rating === 'all' || r.rating === Number(rating)) &&
+      (verified === 'all' || (verified === 'yes' ? r.isVerifiedPurchase : !r.isVerifiedPurchase)) &&
+      (term === ''
+        || (r.title ?? '').toLowerCase().includes(term)
+        || (r.body ?? '').toLowerCase().includes(term)
+        || (r.product?.name ?? '').toLowerCase().includes(term)),
+    );
+  }, [reviews, search, rating, verified]);
 
   async function load() {
     const token = adminAuth.getToken();
@@ -41,10 +58,10 @@ export default function ReviewsClient() {
   if (loading) return (
     <div>
       <Skeleton className="h-8 w-48 mb-4" />
-      <div className="rounded-xl border border-border bg-surface p-8 text-center">
+      <Card className="p-8 py-8 text-center">
         <Skeleton className="h-4 w-64 mx-auto mb-2" />
         <Skeleton className="h-3 w-40 mx-auto" />
-      </div>
+      </Card>
     </div>
   );
 
@@ -52,12 +69,45 @@ export default function ReviewsClient() {
     <div>
       <h1 className="font-serif text-3xl font-bold text-text mb-6">Reviews</h1>
 
-      {reviews.length === 0 ? (
-        <div className="rounded-xl border border-border bg-surface p-8 text-center text-text-muted">No reviews yet.</div>
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search title, body or product…"
+        fields={[
+          {
+            key: 'rating',
+            label: 'Rating',
+            type: 'select',
+            options: [
+              { value: 'all', label: 'All ratings' },
+              ...[5, 4, 3, 2, 1].map((n) => ({ value: String(n), label: `${n} star${n > 1 ? 's' : ''}` })),
+            ],
+          },
+          {
+            key: 'verified',
+            label: 'Purchase',
+            type: 'select',
+            options: [
+              { value: 'all', label: 'All reviews' },
+              { value: 'yes', label: 'Verified only' },
+              { value: 'no', label: 'Unverified only' },
+            ],
+          },
+        ]}
+        values={{ rating, verified }}
+        onValuesChange={(v) => { setRating(v.rating); setVerified(v.verified); }}
+      />
+
+      {filtered.length === 0 ? (
+        <Card className="py-8">
+          <CardContent className="text-center text-text-muted">
+            {reviews.length === 0 ? 'No reviews yet.' : 'No reviews match these filters.'}
+          </CardContent>
+        </Card>
       ) : (
         <div className="space-y-3">
-          {reviews.map((r) => (
-            <div key={r.id} className="flex items-start gap-4 p-4 rounded-xl border border-border bg-surface">
+          {filtered.map((r) => (
+            <Card key={r.id} className="flex-row items-start gap-4 p-4 py-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="inline-flex">
@@ -77,7 +127,7 @@ export default function ReviewsClient() {
                 </p>
               </div>
               <Button variant="ghost" size="sm" onClick={() => remove(r.id)}><Trash2 size={14} /></Button>
-            </div>
+            </Card>
           ))}
         </div>
       )}

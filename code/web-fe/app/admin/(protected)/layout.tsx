@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import AdminSidebar from '@/components/admin/Sidebar';
 import AssistantWidget from '@/components/admin/AssistantWidget';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
+import SessionExpiredDialog from '@/components/admin/SessionExpiredDialog';
 import NotificationBell from '@/components/NotificationBell';
 import { adminAuth } from '@/lib/auth';
 import { adminAuthApi } from '@/lib/api';
@@ -40,16 +41,28 @@ export default function AdminProtectedLayout({ children }: { children: React.Rea
   if (!ready) return null;
 
   return (
-    <div className="flex flex-1 overflow-hidden bg-surface min-h-0">
+    <div className="min-h-screen bg-surface">
       <AdminSidebar />
-      <main className="flex-1 overflow-y-auto p-6 md:p-8">
-        <div className="flex items-center justify-between mb-2">
-          <Breadcrumbs />
-          <NotificationBell variant="admin" />
+
+      {/**
+       * M-48: the sidebar is `fixed`, so the content pads past it rather than
+       * sitting in a flex row. Full width — admin tables have many columns now
+       * (created, updated, campaign windows) and a centred max-width just forced
+       * horizontal scrolling on data that had room to breathe.
+       */}
+      <main className="min-h-screen w-full pl-56">
+        <div className="px-6 py-6 md:px-8">
+          <div className="mb-2 flex items-start justify-between gap-4">
+            <Breadcrumbs />
+            <NotificationBell variant="admin" />
+          </div>
+          {children}
         </div>
-        {children}
       </main>
+
       <AssistantWidget />
+      {/* Global: any admin request can be the one that discovers the session died. */}
+      <SessionExpiredDialog />
     </div>
   );
 }

@@ -70,7 +70,7 @@ export default function CartClient() {
 
   const items   = cart?.items ?? [];
   const subtotal = items.reduce((sum, item) => {
-    const price = effectivePrice(item.variant?.price, item.variant?.specialPrice, item.variant?.product?.campaignDiscountPercent);
+    const price = effectivePrice(item.variant, item.variant?.product?.campaignDiscountPercent);
     return sum + price * item.quantity;
   }, 0);
 
@@ -99,7 +99,7 @@ export default function CartClient() {
             const product = variant?.product;
             const image   = variant?.images?.[0];
             const base    = parseFloat(variant?.price ?? '0');
-            const price   = effectivePrice(variant?.price, variant?.specialPrice, product?.campaignDiscountPercent);
+            const price   = effectivePrice(variant, product?.campaignDiscountPercent);
             const onSale  = price < base;
 
             return (

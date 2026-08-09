@@ -3,7 +3,8 @@ import Header from '@/components/storefront/Header';
 import Footer from '@/components/storefront/Footer';
 import ChatWidget from '@/components/storefront/ChatWidget';
 import { Toaster } from 'sonner';
-import { categoriesApi, collectionsApi } from '@/lib/api';
+import { categoriesApi, collectionsApi, campaignsApi } from '@/lib/api';
+import AnnouncementBar from '@/components/storefront/AnnouncementBar';
 import { isEnabled } from '@/lib/features';
 import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
 import { CartProvider } from '@/lib/cart/CartProvider';
@@ -16,19 +17,24 @@ export const metadata: Metadata = {
 };
 
 export default async function StorefrontLayout({ children }: { children: React.ReactNode }) {
-  const [categoriesRes, collectionsRes] = await Promise.all([
+  const [categoriesRes, collectionsRes, campaignsRes] = await Promise.all([
     categoriesApi.list().catch(() => null),
     collectionsApi.list().catch(() => null),
+    // M-44: a failed campaign fetch must never take the storefront down — the bar
+    // is marketing, not a dependency.
+    isEnabled('campaigns') ? campaignsApi.listActive().catch(() => null) : Promise.resolve(null),
   ]);
   const { locale } = await getServerLocale();
   const categories = categoriesRes?.data ?? [];
   const collections = collectionsRes?.data ?? [];
+  const campaigns = campaignsRes?.data ?? [];
 
   return (
     <LocaleProvider initialLocale={locale}>
       {/* M-20: một nguồn sự thật cho giỏ hàng — badge, ngăn kéo và trang giỏ
           hàng cùng đọc từ đây nên không bao giờ lệch nhau. */}
       <CartProvider>
+        {campaigns.length > 0 && <AnnouncementBar campaigns={campaigns} />}
         <Header categories={categories} collections={collections} />
         <main className="flex-1">{children}</main>
         <Footer />

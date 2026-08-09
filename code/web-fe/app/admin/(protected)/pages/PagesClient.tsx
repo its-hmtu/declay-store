@@ -9,6 +9,11 @@ import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function PagesClient() {
   const [pages, setPages]       = useState<Page[]>([]);
@@ -44,12 +49,12 @@ export default function PagesClient() {
   if (loading) return (
     <div>
       <Skeleton className="h-8 w-48 mb-4" />
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <Card className="overflow-hidden py-0">
         <div className="p-4">
           <Skeleton className="h-4 w-64 mb-2" />
           <Skeleton className="h-3 w-40" />
         </div>
-      </div>
+      </Card>
     </div>
   );
 
@@ -74,7 +79,7 @@ export default function PagesClient() {
         />
       )}
 
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <Card className="overflow-hidden py-0">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-alt text-text-muted text-xs uppercase tracking-wider">
@@ -107,7 +112,7 @@ export default function PagesClient() {
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -172,59 +177,60 @@ function PageForm({ page, onSaved, onCancel }: { page?: Page; onSaved: () => voi
     } catch { toast.error('Failed to load history.'); }
   }
 
-  const inputCls = 'w-full px-3 py-2 border border-border rounded-lg bg-surface focus:outline-none focus:border-brand text-text text-sm';
 
   return (
-    <form onSubmit={save} className="mb-6 p-5 rounded-xl border border-brand-lighter bg-brand-faint space-y-4">
-      <h3 className="font-medium text-text">{isEdit ? `Edit Page — /${form.slug}` : 'New Page'}</h3>
-      <div className="grid sm:grid-cols-2 gap-4">
+    <Card className="mb-6 p-5 py-5 border-brand-lighter bg-brand-faint">
+      <form onSubmit={save} className="space-y-4">
+        <h3 className="font-medium text-text">{isEdit ? `Edit Page — /${form.slug}` : 'New Page'}</h3>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <Label className="mb-1.5 block text-xs">Slug {isEdit && <span className="text-text-faint">(fixed)</span>}</Label>
+            <Input
+              value={form.slug} disabled={isEdit}
+              onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))} placeholder="terms"
+             className={`${isEdit ? 'opacity-60 cursor-not-allowed' : ''}`} />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs">Title</Label>
+            <Input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="Terms & Conditions" />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs">Effective date</Label>
+            <Input type="date" value={form.effectiveDate ?? ''} onChange={(e) => setForm((f) => ({ ...f, effectiveDate: e.target.value }))} />
+          </div>
+          <div className="flex items-center gap-2 self-end pb-2">
+          <Checkbox id="cb-ispublished" checked={form.isPublished} onCheckedChange={(v) => setForm((f) => ({ ...f, isPublished: v === true }))} />
+          <Label htmlFor="cb-ispublished" className="text-sm text-text cursor-pointer font-normal">Published</Label>
+        </div>
+        </div>
         <div>
-          <label className="block text-xs font-medium text-text mb-1">Slug {isEdit && <span className="text-text-faint">(fixed)</span>}</label>
-          <input
-            value={form.slug} disabled={isEdit}
-            onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
-            className={`${inputCls} ${isEdit ? 'opacity-60 cursor-not-allowed' : ''}`} placeholder="terms"
+          <Label className="mb-1.5 block text-xs">Body (HTML supported)</Label>
+          <Textarea
+            value={form.body} onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
+            rows={14} className="font-mono"
+            placeholder="<h2>Section title</h2> <p>Paragraph…</p>"
           />
         </div>
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Title</label>
-          <input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} className={inputCls} placeholder="Terms & Conditions" />
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" loading={loading}>{isEdit ? 'Save' : 'Create'}</Button>
+          <Button type="button" size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
+          {isEdit && <Button type="button" size="sm" variant="ghost" onClick={loadVersions}>Version history</Button>}
         </div>
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Effective date</label>
-          <input type="date" value={form.effectiveDate ?? ''} onChange={(e) => setForm((f) => ({ ...f, effectiveDate: e.target.value }))} className={inputCls} />
-        </div>
-        <label className="flex items-center gap-2 cursor-pointer self-end pb-2">
-          <input type="checkbox" checked={form.isPublished} onChange={(e) => setForm((f) => ({ ...f, isPublished: e.target.checked }))} className="w-4 h-4 accent-brand" />
-          <span className="text-sm text-text">Published</span>
-        </label>
-      </div>
-      <div>
-        <label className="block text-xs font-medium text-text mb-1">Body (HTML supported)</label>
-        <textarea
-          value={form.body} onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
-          rows={14} className={`${inputCls} font-mono`} placeholder="<h2>Section title</h2> <p>Paragraph…</p>"
-        />
-      </div>
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" loading={loading}>{isEdit ? 'Save' : 'Create'}</Button>
-        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
-        {isEdit && <Button type="button" size="sm" variant="ghost" onClick={loadVersions}>Version history</Button>}
-      </div>
-      {versions && (
-        <div className="mt-2 rounded-lg border border-border bg-surface p-3 text-xs">
-          <p className="font-medium text-text mb-2">History ({versions.length})</p>
-          <ul className="space-y-1">
-            {versions.map((v) => (
-              <li key={v.id} className="flex items-center gap-2 text-text-muted">
-                <span className="font-mono">v{v.version}</span>
-                <span>{new Date(v.createdAt).toLocaleString()}</span>
-                <Badge variant={v.isPublished ? 'success' : 'default'}>{v.isPublished ? 'Published' : 'Draft'}</Badge>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </form>
+        {versions && (
+          <div className="mt-2 rounded-lg border border-border bg-surface p-3 text-xs">
+            <p className="font-medium text-text mb-2">History ({versions.length})</p>
+            <ul className="space-y-1">
+              {versions.map((v) => (
+                <li key={v.id} className="flex items-center gap-2 text-text-muted">
+                  <span className="font-mono">v{v.version}</span>
+                  <span>{new Date(v.createdAt).toLocaleString()}</span>
+                  <Badge variant={v.isPublished ? 'success' : 'default'}>{v.isPublished ? 'Published' : 'Draft'}</Badge>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </form>
+    </Card>
   );
 }

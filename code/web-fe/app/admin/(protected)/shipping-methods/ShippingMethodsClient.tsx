@@ -10,6 +10,11 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatPrice } from '@/lib/utils';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/native-select';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function ShippingMethodsClient() {
   const [methods, setMethods]   = useState<ShippingMethod[]>([]);
@@ -38,12 +43,12 @@ export default function ShippingMethodsClient() {
   if (loading) return (
     <div>
       <Skeleton className="h-8 w-48 mb-4" />
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <Card className="overflow-hidden py-0">
         <div className="p-4">
           <Skeleton className="h-4 w-64 mb-2" />
           <Skeleton className="h-3 w-40" />
         </div>
-      </div>
+      </Card>
     </div>
   );
 
@@ -64,7 +69,7 @@ export default function ShippingMethodsClient() {
         />
       )}
 
-      <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <Card className="overflow-hidden py-0">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-alt text-text-muted text-xs uppercase tracking-wider">
@@ -96,7 +101,7 @@ export default function ShippingMethodsClient() {
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -143,53 +148,54 @@ function MethodForm({ method, onSaved, onCancel }: { method?: ShippingMethod; on
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 border border-border rounded-lg bg-surface focus:outline-none focus:border-brand text-text text-sm';
 
   return (
-    <form onSubmit={save} className="mb-6 p-5 rounded-xl border border-brand-lighter bg-brand-faint space-y-4">
-      <h3 className="font-medium text-text">{isEdit ? 'Edit Method' : 'New Method'}</h3>
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Name</label>
-          <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className={inputCls} placeholder="Standard Shipping" />
+    <Card className="mb-6 p-5 py-5 border-brand-lighter bg-brand-faint">
+      <form onSubmit={save} className="space-y-4">
+        <h3 className="font-medium text-text">{isEdit ? 'Edit Method' : 'New Method'}</h3>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <Label className="mb-1.5 block text-xs">Name</Label>
+            <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Standard Shipping" />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs">Zone</Label>
+            <NativeSelect value={form.zone} onChange={(e) => setForm((f) => ({ ...f, zone: e.target.value as ShippingMethod['zone'] }))}>
+              <option value="all">All</option>
+              <option value="domestic">Domestic (Vietnam)</option>
+              <option value="international">International</option>
+            </NativeSelect>
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs">Fee (USD)</Label>
+            <Input type="number" min="0" step="0.01" value={form.fee} onChange={(e) => setForm((f) => ({ ...f, fee: e.target.value }))} />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs">Free over (optional)</Label>
+            <Input type="number" min="0" step="0.01" value={form.freeOver} onChange={(e) => setForm((f) => ({ ...f, freeOver: e.target.value }))} placeholder="e.g. 75" />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs">Estimated days</Label>
+            <Input value={form.estimatedDays} onChange={(e) => setForm((f) => ({ ...f, estimatedDays: e.target.value }))} placeholder="3–5 business days" />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs">Sort order</Label>
+            <Input type="number" min="0" value={form.sortOrder} onChange={(e) => setForm((f) => ({ ...f, sortOrder: e.target.value }))} />
+          </div>
+          <div className="sm:col-span-2">
+            <Label className="mb-1.5 block text-xs">Description</Label>
+            <Input value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Tracked delivery" />
+          </div>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Zone</label>
-          <select value={form.zone} onChange={(e) => setForm((f) => ({ ...f, zone: e.target.value as ShippingMethod['zone'] }))} className={inputCls}>
-            <option value="all">All</option>
-            <option value="domestic">Domestic (Vietnam)</option>
-            <option value="international">International</option>
-          </select>
+        <div className="flex items-center gap-2">
+          <Checkbox id="cb-isactive" checked={form.isActive} onCheckedChange={(v) => setForm((f) => ({ ...f, isActive: v === true }))} />
+          <Label htmlFor="cb-isactive" className="text-sm text-text cursor-pointer font-normal">Active</Label>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Fee (USD)</label>
-          <input type="number" min="0" step="0.01" value={form.fee} onChange={(e) => setForm((f) => ({ ...f, fee: e.target.value }))} className={inputCls} />
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" loading={loading}>{isEdit ? 'Save' : 'Create'}</Button>
+          <Button type="button" size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Free over (optional)</label>
-          <input type="number" min="0" step="0.01" value={form.freeOver} onChange={(e) => setForm((f) => ({ ...f, freeOver: e.target.value }))} className={inputCls} placeholder="e.g. 75" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Estimated days</label>
-          <input value={form.estimatedDays} onChange={(e) => setForm((f) => ({ ...f, estimatedDays: e.target.value }))} className={inputCls} placeholder="3–5 business days" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">Sort order</label>
-          <input type="number" min="0" value={form.sortOrder} onChange={(e) => setForm((f) => ({ ...f, sortOrder: e.target.value }))} className={inputCls} />
-        </div>
-        <div className="sm:col-span-2">
-          <label className="block text-xs font-medium text-text mb-1">Description</label>
-          <input value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className={inputCls} placeholder="Tracked delivery" />
-        </div>
-      </div>
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input type="checkbox" checked={form.isActive} onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))} className="w-4 h-4 accent-brand" />
-        <span className="text-sm text-text">Active</span>
-      </label>
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" loading={loading}>{isEdit ? 'Save' : 'Create'}</Button>
-        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
-      </div>
-    </form>
+      </form>
+    </Card>
   );
 }

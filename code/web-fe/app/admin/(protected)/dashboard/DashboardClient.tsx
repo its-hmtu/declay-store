@@ -6,6 +6,14 @@ import type { Order, Product, Job } from '@/lib/types';
 import { api } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Badge from '@/components/ui/Badge';
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { formatPrice } from '@/lib/utils';
 import { orderLabel } from '@/lib/utils';
 
@@ -75,20 +83,29 @@ export default function DashboardClient() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {cards.map(({ label, value, sub }) => (
-          <div key={label} className="p-5 rounded-xl border border-border bg-surface">
-            <p className="text-xs font-semibold uppercase tracking-widest text-text-muted mb-1">{label}</p>
-            <p className="font-serif text-3xl font-bold text-text">{value}</p>
-            <p className="text-xs text-text-faint mt-0.5">{sub}</p>
-          </div>
+          <Card key={label} className="gap-0 py-5">
+            <CardHeader className="px-5">
+              <CardDescription className="text-xs font-semibold uppercase tracking-widest text-text-muted">
+                {label}
+              </CardDescription>
+              <CardTitle className="font-serif text-3xl font-bold text-text">{value}</CardTitle>
+            </CardHeader>
+            <CardContent className="px-5">
+              <p className="text-xs text-text-faint mt-0.5">{sub}</p>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        <div className="p-6 rounded-xl border border-border bg-surface">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-serif text-lg font-semibold text-text">Recent Orders</h2>
-            <Link href="/admin/orders" className="text-xs text-brand hover:underline">View all</Link>
-          </div>
+        <Card className="gap-4">
+          <CardHeader>
+            <CardTitle className="font-serif text-lg font-semibold text-text">Recent Orders</CardTitle>
+            <CardAction>
+              <Link href="/admin/orders" className="text-xs text-brand hover:underline">View all</Link>
+            </CardAction>
+          </CardHeader>
+          <CardContent>
           {loading ? (
             <p className="text-sm text-text-muted">Loading…</p>
           ) : stats && stats.recent.length > 0 ? (
@@ -104,11 +121,14 @@ export default function DashboardClient() {
           ) : (
             <p className="text-sm text-text-muted">No orders yet.</p>
           )}
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="p-6 rounded-xl border border-border bg-surface">
-          <h2 className="font-serif text-lg font-semibold text-text mb-4">Quick Actions</h2>
-          <div className="space-y-2">
+        <Card className="gap-4">
+          <CardHeader>
+            <CardTitle className="font-serif text-lg font-semibold text-text">Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
             {[
               { href: '/admin/products/new', label: 'Add new product'     },
               { href: '/admin/articles/new', label: 'Write new article'   },
@@ -119,8 +139,8 @@ export default function DashboardClient() {
                 → {label}
               </Link>
             ))}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

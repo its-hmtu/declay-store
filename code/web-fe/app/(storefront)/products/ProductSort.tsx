@@ -10,7 +10,14 @@ const SORT_KEYS: Record<string, 'sort.newest' | 'sort.bestSellers' | 'sort.topRa
   trending: 'sort.trending', 'price-asc': 'sort.priceAsc', 'price-desc': 'sort.priceDesc',
 };
 
-export default function ProductSort({ value }: { value?: string }) {
+export default function ProductSort({
+  value,
+  basePath = '/products',
+}: {
+  value?: string;
+  /** M-45: keeps sorting inside a collection page instead of bouncing to /products. */
+  basePath?: string;
+}) {
   const { t } = useT();
   const router = useRouter();
   const params = useSearchParams();
@@ -20,7 +27,7 @@ export default function ProductSort({ value }: { value?: string }) {
     if (sort && sort !== 'newest') next.set('sort', sort);
     else next.delete('sort');
     next.delete('page'); // a new ordering resets pagination
-    router.push(`/products?${next}`);
+    router.push(`${basePath}?${next}`);
   }
 
   return (

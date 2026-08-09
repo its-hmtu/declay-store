@@ -15,7 +15,8 @@ import Badge from '@/components/ui/Badge';
 import {Separator} from '@/components/ui/separator';
 import RelatedProducts from '@/components/storefront/RelatedProducts';
 import RecentlyViewed from '@/components/storefront/RecentlyViewed';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, pricingOf } from '@/lib/utils';
+import CampaignRibbon from '@/components/storefront/CampaignRibbon';
 import { useCart } from '@/lib/cart/CartProvider';
 import { useT } from '@/lib/i18n/LocaleProvider';
 
@@ -109,32 +110,33 @@ export default function ProductDetail({ product }: { product: Product }) {
 
           {selected && (
             (() => {
-              const base = parseFloat(selected.price);
-              const special = selected.specialPrice ? parseFloat(selected.specialPrice) : null;
-              const campaign = product.campaignDiscountPercent ?? null;
-              // Best price for the customer: lowest of special price and active campaign %.
-              const cands = [base];
-              if (special !== null && special >= 0) cands.push(special);
-              if (campaign != null && campaign > 0 && campaign <= 100) cands.push(base * (1 - campaign / 100));
-              const best = Math.min(...cands);
-              const onSale = best < base;
+              // M-40: server-computed pricing — no rule duplicated here.
+              const { basePrice, effectivePrice: best, discountPercent, onSale } =
+                pricingOf(selected, product.campaignDiscountPercent);
               return onSale ? (
                 <div className="mt-4">
                   <p className="flex items-baseline gap-2">
                     <span className="text-2xl font-semibold text-text">{formatPrice(best)}</span>
-                    <span className="text-lg price-original">{formatPrice(base)}</span>
-                    <span className="text-sm price-discount font-semibold">-{Math.round((1 - best / base) * 100)}%</span>
+                    <span className="text-lg price-original">{formatPrice(basePrice)}</span>
+                    <span className="text-sm price-discount font-semibold">-{discountPercent}%</span>
                   </p>
                   <StockInfo selected={selected} />
                 </div>
               ) : (
                 <div className="mt-4">
-                  <p className="text-2xl font-semibold text-text">{formatPrice(base)}</p>
+                  <p className="text-2xl font-semibold text-text">{formatPrice(basePrice)}</p>
                   <StockInfo selected={selected} />
                 </div>
               );
             })()
           )}
+
+          {/* M-44: urgency where it converts — the customer is already deciding. */}
+          <CampaignRibbon
+            campaignId={product.campaignId}
+            campaignName={product.campaignName}
+            campaignEndsAt={product.campaignEndsAt}
+          />
 
           {/* Description moved to tabbed section below (see Tabs after grid) */}
 
