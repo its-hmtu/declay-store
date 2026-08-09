@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import Banner from './banner.entity';
+import { Campaign } from '@/modules/campaign/campaign.entity';
 import { httpError } from '@/utils/http-error';
 import { invalidateCache } from '@/middlewares/cache.middleware';
 import { cacheKey } from '@/config/redis';
@@ -27,7 +28,49 @@ export default class BannerService implements IBannerService {
         ['createdAt', 'DESC'],
       ],
     });
-    return banners.map((b) => b.toJSON() as IBanner);
+
+    return this.withCampaignState(banners.map((b) => b.toJSON() as IBanner));
+  }
+
+  /**
+   * M-44: a campaign-linked banner is only honest while its campaign is running.
+   * Drop the rest — advertising a discount that checkout will not apply is worse
+   * than showing no banner at all.
+   *
+   * Also fills in the destination so admins never hand-type `/products?campaignId=`,
+   * and surfaces the campaign name/end time for countdown UI.
+   */
+  private async withCampaignState(banners: IBanner[]): Promise<IBanner[]> {
+    const campaignIds = [...new Set(banners.map((b) => b.campaignId).filter((id): id is number => !!id))];
+    if (!campaignIds.length) return banners;
+
+    const now = new Date();
+    const active = await Campaign.findAll({
+      where: {
+        id: { [Op.in]: campaignIds },
+        isActive: true,
+        [Op.and]: [
+          { [Op.or]: [{ startsAt: null }, { startsAt: { [Op.lte]: now } }] },
+          { [Op.or]: [{ endsAt: null }, { endsAt: { [Op.gte]: now } }] },
+        ],
+      },
+      attributes: ['id', 'name', 'discountPercent', 'endsAt'],
+    });
+    const byId = new Map(active.map((c) => [c.id, c]));
+
+    return banners
+      .filter((b) => !b.campaignId || byId.has(b.campaignId))
+      .map((b) => {
+        if (!b.campaignId) return b;
+        const campaign = byId.get(b.campaignId)!;
+        return {
+          ...b,
+          linkUrl: b.linkUrl || `/products?campaignId=${campaign.id}`,
+          campaignName: campaign.name,
+          campaignDiscountPercent: Number(campaign.discountPercent),
+          campaignEndsAt: campaign.endsAt,
+        };
+      });
   }
 
   async listAll(): Promise<IBanner[]> {

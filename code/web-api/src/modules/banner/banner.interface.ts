@@ -6,6 +6,8 @@ export interface IBanner {
   subtitle: string | null;
   imageUrl: string;
   linkUrl: string | null;
+  /** M-44: campaign this banner promotes; the banner hides when it stops running. */
+  campaignId?: number | null;
   position: number;
   isActive: boolean;
   startsAt: Date | null;
@@ -13,6 +15,10 @@ export interface IBanner {
   createdBy: number | null;
   createdAt: Date;
   updatedAt: Date;
+  /** Derived on the public list only, for countdown/label UI. */
+  campaignName?: string;
+  campaignDiscountPercent?: number;
+  campaignEndsAt?: Date | null;
 }
 
 export interface ICreateBannerData {
@@ -20,6 +26,7 @@ export interface ICreateBannerData {
   subtitle?: string | null;
   imageUrl: string;
   linkUrl?: string | null;
+  campaignId?: number | null;
   position?: number;
   isActive?: boolean;
   startsAt?: Date | null;
@@ -31,6 +38,7 @@ export interface IUpdateBannerData {
   subtitle?: string | null;
   imageUrl?: string;
   linkUrl?: string | null;
+  campaignId?: number | null;
   position?: number;
   isActive?: boolean;
   startsAt?: Date | null;

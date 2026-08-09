@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { validate } from '@/middlewares/validate';
 import { adminProtect } from '@/middlewares/admin.middleware';
-import { cache } from '@/middlewares/cache.middleware';
+import { cache, keyWithQuery } from '@/middlewares/cache.middleware';
 import { redisConfigKeys, cacheKey } from '@/config/redis';
 import CategoryService from './category.service';
 import CategoryController from './category.controller';
@@ -14,7 +14,11 @@ export function createCategoryRouter(): Router {
   // Public
   router.get(
     '/',
-    cache({ ttl: redisConfigKeys.CACHE_1_HOUR, keyGenerator: () => cacheKey.CATEGORY_LIST }),
+    // `?homeOnly=1` is a different result set — must not share the full list's entry.
+    cache({
+      ttl: redisConfigKeys.CACHE_1_HOUR,
+      keyGenerator: keyWithQuery(cacheKey.CATEGORY_LIST, ['homeOnly']),
+    }),
     controller.list,
   );
 

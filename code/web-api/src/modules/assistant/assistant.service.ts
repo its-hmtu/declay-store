@@ -73,7 +73,14 @@ export default class AssistantService implements IAssistantService {
       order: [['createdAt', 'ASC']],
       limit: MAX_HISTORY,
     });
-    return rows.map((m) => ({ role: m.role, content: m.content }));
+    // M-42: `role` now also allows 'staff'/'system' (live chat). Admin sessions
+    // never carry those, but the type does — normalise so this cannot 400 the API.
+    return rows
+      .filter((m) => m.role !== 'system' && m.content.trim().length > 0)
+      .map((m) => ({
+        role: m.role === 'user' ? ('user' as const) : ('assistant' as const),
+        content: m.content,
+      }));
   }
 
   private async persistAssistant(sessionId: number, text: string, toolCalls: unknown[]): Promise<void> {

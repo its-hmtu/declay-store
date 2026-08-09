@@ -34,7 +34,7 @@ export default class ProductVariantService implements IProductVariantService {
     if (!product) throw httpError(404, 'Product not found');
 
     const variant = await ProductVariant.create(data);
-    await invalidateCache(`${cacheKey.PRODUCT_DETAIL}:${data.productId}`);
+    await this.invalidateProduct(data.productId);
     return variant.toJSON() as IProductVariant;
   }
 
@@ -50,7 +50,7 @@ export default class ProductVariantService implements IProductVariantService {
       const newImages = Array.isArray(data.images) ? data.images : [];
       for (const url of oldImages.filter((u) => !newImages.includes(u))) await deleteFile(url);
     }
-    await invalidateCache(`${cacheKey.PRODUCT_DETAIL}:${variant.productId}`);
+    await this.invalidateProduct(variant.productId);
     return variant.toJSON() as IProductVariant;
   }
 
@@ -61,6 +61,19 @@ export default class ProductVariantService implements IProductVariantService {
     const images = Array.isArray(variant.images) ? [...variant.images] : [];
     await variant.destroy();
     for (const url of images) await deleteFile(url);
+    await this.invalidateProduct(productId);
+  }
+
+  /**
+   * M-47: variant edits change PRICE and STOCK, both of which the shop grid
+   * renders. The list route is cached now, so invalidating only the detail page
+   * would leave the grid quoting an old price while the product page shows the
+   * new one — the display/checkout divergence the pricing rewrite removed.
+   */
+  private async invalidateProduct(productId: number): Promise<void> {
     await invalidateCache(`${cacheKey.PRODUCT_DETAIL}:${productId}`);
+    await invalidateCache(`${cacheKey.PRODUCT_LIST}*`);
+    await invalidateCache(`${cacheKey.COLLECTION_LIST}*`);
+    await invalidateCache(`${cacheKey.COLLECTION_DETAIL}*`);
   }
 }

@@ -20,6 +20,13 @@ export interface IProduct {
   salesCount?: number;
   /** Deepest active campaign discount % applied to this product, if any. */
   campaignDiscountPercent?: number | null;
+  /**
+   * M-44: identity of that campaign, so the storefront can say "Tet Sale −30%"
+   * instead of a bare "−30%". A named reason to buy converts; a number does not.
+   */
+  campaignId?: number | null;
+  campaignName?: string | null;
+  campaignEndsAt?: Date | string | null;
 }
 
 export const PRODUCT_SORTS = [
@@ -66,6 +73,12 @@ export interface IUpdateProductData {
 export interface IProductListQuery {
   categoryId?: number;
   collectionId?: number;
+  /**
+   * M-44: restrict to products in an active campaign. Campaigns deliberately have
+   * no page of their own — they are a filter over the shop, exactly like a
+   * collection, so every banner and badge can link to `/products?campaignId=N`.
+   */
+  campaignId?: number;
   minPrice?: number;
   maxPrice?: number;
   page?: number;

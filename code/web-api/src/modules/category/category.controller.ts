@@ -8,7 +8,9 @@ export default class CategoryController implements ICategoryController {
   constructor(private categoryService: ICategoryService) {}
 
   list = asyncHandler(async (req: Request, res: Response) => {
-    const categories = await this.categoryService.list();
+    // M-47: `?homeOnly=1` returns just the categories flagged for the home page.
+    const homeOnly = req.query.homeOnly === '1' || req.query.homeOnly === 'true';
+    const categories = await this.categoryService.list(homeOnly);
     sendSuccess(res, categories, 'Categories retrieved successfully');
   });
 

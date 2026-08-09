@@ -47,6 +47,8 @@ export const productListQuerySchema = z.object({
   page: z.string().regex(/^\d+$/).transform(Number).default(1).optional(),
   limit: z.string().regex(/^\d+$/).transform(Number).default(20).optional(),
   collectionId: z.string().regex(/^\d+$/).transform(Number).optional(),
+  // M-44: campaign acts as a filter over the shop — there is no campaign page.
+  campaignId: z.string().regex(/^\d+$/).transform(Number).optional(),
   minPrice: z.string().regex(/^\d+(\.\d+)?$/).transform(Number).optional(),
   maxPrice: z.string().regex(/^\d+(\.\d+)?$/).transform(Number).optional(),
   search: z.string().max(100).optional(),

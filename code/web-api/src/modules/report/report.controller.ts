@@ -17,6 +17,11 @@ export default class ReportController {
     sendSuccess(res, await this.service.productViews(limit), 'Product views retrieved successfully');
   });
 
+  campaignPerformance = asyncHandler(async (req: Request, res: Response) => {
+    const period = typeof req.query.period === 'string' ? req.query.period : '30d';
+    sendSuccess(res, await this.service.campaignPerformance(period), 'Campaign performance retrieved successfully');
+  });
+
   recommendationCtr = asyncHandler(async (req: Request, res: Response) => {
     const period = typeof req.query.period === 'string' ? req.query.period : '30d';
     sendSuccess(res, await this.service.recommendationCtr(period), 'Recommendation CTR retrieved successfully');

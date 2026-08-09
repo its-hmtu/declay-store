@@ -9,6 +9,8 @@ export class Collection extends Model<InferAttributes<Collection>, InferCreation
   declare name: string;
   declare slug: string;
   declare description: CreationOptional<string | null>;
+  /** M-46: cover image — carousel, page header and the OG share card. */
+  declare imageUrl: CreationOptional<string | null>;
   declare isActive: CreationOptional<boolean>;
   declare sortOrder: CreationOptional<number>;
   declare createdBy: CreationOptional<number | null>;
@@ -22,6 +24,7 @@ Collection.init(
     name: { type: DataTypes.STRING(150), allowNull: false },
     slug: { type: DataTypes.STRING(170), allowNull: false, unique: true },
     description: { type: DataTypes.STRING(500), allowNull: true },
+    imageUrl: { type: DataTypes.TEXT, allowNull: true, field: 'image_url' },
     isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true, field: 'is_active' },
     sortOrder: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0, field: 'sort_order' },
     createdBy: { type: DataTypes.INTEGER, allowNull: true, field: 'created_by' },

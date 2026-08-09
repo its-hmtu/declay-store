@@ -36,3 +36,12 @@ export const updateCampaignSchema = z
 export const campaignIdSchema = z.object({
   id: z.string().regex(/^\d+$/, 'ID must be a number').transform(Number).refine((v) => v > 0),
 });
+
+/** M-41: dry-run payload — same shape as create, minus the fields that only matter on save. */
+export const previewImpactSchema = z.object({
+  productIds: z.array(z.number().int().positive()).default([]),
+  discountPercent: base.discountPercent,
+  startsAt: base.startsAt,
+  endsAt: base.endsAt,
+  excludeCampaignId: z.number().int().positive().optional(),
+});

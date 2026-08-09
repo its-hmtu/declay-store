@@ -3,7 +3,10 @@ import { sequelize } from '@/config/sequelize';
 import { Order, OrderItem } from '@/modules/order/order.entity';
 import ProductVariant from '@/modules/product-variant/product-variant.entity';
 import Product from '@/modules/product/product.entity';
-import { rankSkus, summariseSales, periodStart, type SkuSalesRow, type RankedSku } from './report.metrics';
+import {
+  rankSkus, summariseSales, summariseCampaigns, periodStart,
+  type SkuSalesRow, type RankedSku, type CampaignPerformanceRow,
+} from './report.metrics';
 
 // Orders in these states count as a completed sale (same rule as product metrics).
 const PURCHASED_STATUSES = ['paid', 'processing', 'shipped', 'delivered'];
@@ -34,6 +37,9 @@ export default class ReportService {
         [fn('COUNT', fn('DISTINCT', col('OrderItem.order_id'))), 'orders'],
         [fn('MAX', col('OrderItem.product_name_at_purchase')), 'productName'],
         [fn('MAX', col('OrderItem.variant_name_at_purchase')), 'variantName'],
+        // M-41: split campaign-priced volume out of the headline number.
+        [literal('COALESCE(SUM("OrderItem"."quantity") FILTER (WHERE "OrderItem"."campaign_id" IS NOT NULL), 0)'), 'campaignUnits'],
+        [literal('COALESCE(SUM("OrderItem"."campaign_discount_amount"), 0)'), 'campaignDiscount'],
       ],
       include: [{ model: Order, as: 'order', attributes: [], required: true, where: orderWhere }],
       group: [col('OrderItem.variant_id')],
@@ -41,6 +47,7 @@ export default class ReportService {
     })) as unknown as Array<{
       variantId: number; units: string; revenue: string; orders: string;
       productName: string; variantName: string;
+      campaignUnits: string; campaignDiscount: string;
     }>;
 
     // Map variants back to their product so the report can link to the product page.
@@ -62,6 +69,8 @@ export default class ReportService {
       unitsSold: Number(r.units) || 0,
       revenue: Number(r.revenue) || 0,
       orderCount: Number(r.orders) || 0,
+      campaignUnits: Number(r.campaignUnits) || 0,
+      campaignDiscount: Number(r.campaignDiscount) || 0,
     }));
 
     return {
@@ -69,6 +78,71 @@ export default class ReportService {
       from: from ? from.toISOString() : null,
       rows: rankSkus(rows, limit),
       totals: summariseSales(rows),
+    };
+  }
+
+  /**
+   * M-41: revenue attributed to each campaign in the period.
+   *
+   * Only lines the campaign actually priced are counted (see `attributionOf` in
+   * order.service) — a campaign that lost to a cheaper special price is not
+   * credited with sales it did not cause.
+   */
+  async campaignPerformance(period = '30d'): Promise<{
+    period: string;
+    from: string | null;
+    rows: CampaignPerformanceRow[];
+    totals: { unitsSold: number; revenue: number; discountGiven: number; discountRate: number };
+  }> {
+    const from = periodStart(period);
+
+    const raw = (await sequelize.query(
+      `SELECT oi.campaign_id                                   AS "campaignId",
+              MAX(oi.campaign_name_at_purchase)                AS "campaignName",
+              SUM(oi.quantity)                                 AS "unitsSold",
+              COUNT(DISTINCT oi.order_id)                      AS "orderCount",
+              SUM(oi.quantity * oi.price_at_purchase)          AS "revenue",
+              SUM(oi.quantity * COALESCE(oi.base_price_at_purchase, oi.price_at_purchase)) AS "grossRevenue",
+              SUM(oi.campaign_discount_amount)                 AS "discountGiven"
+         FROM order_items oi
+         JOIN orders o ON o.id = oi.order_id
+        WHERE oi.campaign_id IS NOT NULL
+          AND o.status = ANY($statuses)
+          AND ($from::timestamptz IS NULL OR o.created_at >= $from)
+        GROUP BY oi.campaign_id`,
+      {
+        bind: { statuses: PURCHASED_STATUSES, from: from ? from.toISOString() : null },
+        type: QueryTypes.SELECT,
+      },
+    )) as unknown as Array<Record<string, string | number | null>>;
+
+    const rows = summariseCampaigns(
+      raw.map((r) => ({
+        campaignId: r.campaignId == null ? null : Number(r.campaignId),
+        campaignName: String(r.campaignName ?? 'Deleted campaign'),
+        unitsSold: Number(r.unitsSold) || 0,
+        orderCount: Number(r.orderCount) || 0,
+        revenue: Number(r.revenue) || 0,
+        grossRevenue: Number(r.grossRevenue) || 0,
+        discountGiven: Number(r.discountGiven) || 0,
+        discountRate: 0, // computed in summariseCampaigns
+      })),
+    );
+
+    const revenue = rows.reduce((s, r) => s + r.revenue, 0);
+    const grossRevenue = rows.reduce((s, r) => s + r.grossRevenue, 0);
+    const discountGiven = rows.reduce((s, r) => s + r.discountGiven, 0);
+
+    return {
+      period,
+      from: from ? from.toISOString() : null,
+      rows,
+      totals: {
+        unitsSold: rows.reduce((s, r) => s + r.unitsSold, 0),
+        revenue: Math.round(revenue * 100) / 100,
+        discountGiven: Math.round(discountGiven * 100) / 100,
+        discountRate: grossRevenue > 0 ? Math.round((discountGiven / grossRevenue) * 1000) / 10 : 0,
+      },
     };
   }
 

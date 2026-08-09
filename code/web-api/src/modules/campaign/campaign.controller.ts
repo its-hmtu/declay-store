@@ -36,4 +36,20 @@ export default class CampaignController implements ICampaignController {
     await this.service.remove(Number(req.params.id));
     sendSuccess(res, null, 'Campaign deleted successfully');
   });
+
+  /**
+   * M-41: dry-run a campaign before saving it — margin damage + overlap with
+   * campaigns already running. Read-only, never mutates.
+   */
+  adminPreviewImpact = asyncHandler(async (req: Request, res: Response) => {
+    const { productIds, discountPercent, startsAt, endsAt, excludeCampaignId } = req.body;
+    const impact = await this.service.previewImpact({
+      productIds: productIds ?? [],
+      discountPercent,
+      startsAt: startsAt ? new Date(startsAt) : null,
+      endsAt: endsAt ? new Date(endsAt) : null,
+      excludeCampaignId: excludeCampaignId ? Number(excludeCampaignId) : undefined,
+    });
+    sendSuccess(res, impact, 'Campaign impact computed successfully');
+  });
 }

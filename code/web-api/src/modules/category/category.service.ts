@@ -5,9 +5,11 @@ import { cacheKey } from '@/config/redis';
 import type { ICategory, ICategoryService, ICreateCategoryData, IUpdateCategoryData } from './category.interface';
 
 export default class CategoryService implements ICategoryService {
-  async list(): Promise<ICategory[]> {
+  async list(homeOnly = false): Promise<ICategory[]> {
     const categories = await Category.findAll({
-      where: { isActive: true },
+      // M-47: the home page asks for the flagged subset; everything else gets
+      // the full active list.
+      where: homeOnly ? { isActive: true, showOnHome: true } : { isActive: true },
       order: [['name', 'ASC']],
     });
     return categories.map((c) => c.toJSON() as ICategory);

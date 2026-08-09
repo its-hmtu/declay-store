@@ -36,6 +36,11 @@ export const cacheKey = {
   JOB_DETAIL: 'job_detail',
   BANNER_LIST: 'banner_list',
   SITE_SETTINGS: 'site_settings',
+  // M-41: merchandising reads are stable between admin edits — same treatment as
+  // articles/jobs/banners, which were already cached while these two were not.
+  COLLECTION_LIST: 'collection_list',
+  COLLECTION_DETAIL: 'collection_detail',
+  CAMPAIGN_LIST: 'campaign_list',
 }
 
 export default redisConfig;

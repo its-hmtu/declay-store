@@ -12,8 +12,12 @@ export default class CollectionController implements ICollectionController {
     return req.admin.adminId;
   }
 
-  list = asyncHandler(async (_req: Request, res: Response) => {
-    sendSuccess(res, await this.service.listActive(), 'Collections retrieved successfully');
+  list = asyncHandler(async (req: Request, res: Response) => {
+    // M-46: `?withProducts=8` returns a product preview per collection for the
+    // storefront carousels. Capped so a crafted query cannot pull the catalogue.
+    const raw = typeof req.query.withProducts === 'string' ? Number(req.query.withProducts) : 0;
+    const withProducts = Number.isFinite(raw) && raw > 0 ? Math.min(raw, 12) : undefined;
+    sendSuccess(res, await this.service.listActive(withProducts), 'Collections retrieved successfully');
   });
 
   detailBySlug = asyncHandler(async (req: Request, res: Response) => {

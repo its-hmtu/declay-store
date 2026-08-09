@@ -1,4 +1,5 @@
 import type { RequestHandler } from 'express';
+import type { MarginWarning } from './campaign.margin';
 
 export interface ICampaign {
   id: number;
@@ -35,6 +36,47 @@ export interface ICampaignService {
   remove(id: number): Promise<void>;
   /** Best (deepest) active campaign % per product, for the given product ids. */
   getActiveDiscountPercents(productIds: number[]): Promise<Map<number, number>>;
+  /** M-44: member product ids, empty unless the campaign is currently running. */
+  getActiveProductIds(campaignId: number): Promise<number[]>;
+  /** M-41: same lookup, keeping which campaign won so order lines can be attributed. */
+  getWinningCampaigns(productIds: number[]): Promise<Map<number, WinningCampaign>>;
+  /** M-41: active campaigns already covering these products in an overlapping window. */
+  findOverlapping(
+    productIds: number[],
+    startsAt: Date | null,
+    endsAt: Date | null,
+    excludeCampaignId?: number,
+  ): Promise<CampaignOverlap[]>;
+  /** M-41: dry-run margin + overlap impact before saving. */
+  previewImpact(input: IPreviewImpactInput): Promise<ICampaignImpact>;
+}
+
+export interface WinningCampaign {
+  campaignId: number;
+  name: string;
+  discountPercent: number;
+}
+
+export interface CampaignOverlap {
+  productId: number;
+  campaignId: number;
+  name: string;
+  discountPercent: number;
+}
+
+export interface IPreviewImpactInput {
+  productIds: number[];
+  discountPercent: number;
+  startsAt?: Date | null;
+  endsAt?: Date | null;
+  excludeCampaignId?: number;
+}
+
+export interface ICampaignImpact {
+  warnings: MarginWarning[];
+  summary: { belowCost: number; thinMargin: number; worstMarginPercent: number | null };
+  overlaps: CampaignOverlap[];
+  variantsWithoutCost: number;
 }
 
 export interface ICampaignController {
@@ -44,4 +86,5 @@ export interface ICampaignController {
   adminCreate: RequestHandler;
   adminUpdate: RequestHandler;
   adminRemove: RequestHandler;
+  adminPreviewImpact: RequestHandler;
 }

@@ -16,7 +16,8 @@ import ShippingMethod from '@/modules/shipping-method/shipping-method.entity';
 import Address from '@/modules/address/address.entity';
 import NotificationService from '@/modules/notification/notification.service';
 import { resolveShippingZone, methodAppliesToZone, computeShippingFee, computeOrderTotal, statusTransitionError } from './order.pricing';
-import { effectiveUnitPrice } from '@/lib/pricing';
+import { effectiveUnitPrice, round2 } from '@/lib/pricing';
+import { logger } from '@/lib/logger';
 import { initialOrderStatusFor } from './order.payment';
 import { normalizeGuestContact, generateGuestToken } from './order.guest';
 import { returnRejectionReason } from './order.returns';
@@ -101,8 +102,31 @@ export default class OrderService implements IOrderService {
 
     // Pricing (increments 1 & 2): effective unit price = best of base / special / active campaign.
     const productIds = items.map((i: any) => i.variant.product?.id).filter((id: any): id is number => !!id);
-    const campaignPct = await this.campaignService.getActiveDiscountPercents(productIds);
+    // M-41: keep the winning campaign, not just its percent — order lines are attributed below.
+    const winners = await this.campaignService.getWinningCampaigns(productIds);
+    const campaignPct = new Map([...winners].map(([pid, w]) => [pid, w.discountPercent]));
     const unitPriceOf = (item: any) => effectiveUnitPrice(item.variant.price, item.variant.specialPrice, campaignPct.get(item.variant.product?.id) ?? null);
+
+    /**
+     * M-41: attribute a line to the campaign only when the campaign actually set the
+     * price. A campaign that loses to a cheaper specialPrice must not be credited with
+     * revenue it did not cause — otherwise the campaign report flatters itself.
+     */
+    const attributionOf = (item: any) => {
+      const basePrice = round2(Number(item.variant.price));
+      const unitPrice = unitPriceOf(item);
+      const winner = winners.get(item.variant.product?.id);
+      const specialPrice = item.variant.specialPrice == null ? null : round2(Number(item.variant.specialPrice));
+      const campaignSetThePrice = !!winner && unitPrice < basePrice && (specialPrice == null || specialPrice > unitPrice);
+
+      return {
+        basePriceAtPurchase: basePrice,
+        campaignId: campaignSetThePrice ? winner.campaignId : null,
+        campaignNameAtPurchase: campaignSetThePrice ? winner.name : null,
+        campaignDiscountPercent: campaignSetThePrice ? winner.discountPercent : null,
+        campaignDiscountAmount: campaignSetThePrice ? round2((basePrice - unitPrice) * item.quantity) : 0,
+      };
+    };
 
     const subtotal = items.reduce(
       (sum: number, item: any) => sum + unitPriceOf(item) * item.quantity,
@@ -262,6 +286,25 @@ export default class OrderService implements IOrderService {
         { transaction: t },
       );
 
+      // M-41: we do NOT block the customer for a pricing mistake made by an admin,
+      // but a sale below cost must not pass silently. Log it so it shows up in ops.
+      for (const item of items as any[]) {
+        const cost = item.variant.costPrice == null ? null : Number(item.variant.costPrice);
+        const unitPrice = unitPriceOf(item);
+        if (cost != null && Number.isFinite(cost) && cost > 0 && unitPrice < cost) {
+          logger.warn('Order line sold below cost price', {
+            variantId: item.variantId,
+            productName: item.variant.product?.name ?? '',
+            unitPrice,
+            costPrice: cost,
+            lossPerUnit: round2(cost - unitPrice),
+            quantity: item.quantity,
+            campaignId: attributionOf(item).campaignId,
+            discountCode: discountCode ?? null,
+          });
+        }
+      }
+
       await OrderItem.bulkCreate(
         items.map((item: any) => ({
           orderId: newOrder.id,
@@ -270,6 +313,7 @@ export default class OrderService implements IOrderService {
           priceAtPurchase: unitPriceOf(item),
           variantNameAtPurchase: item.variant.name,
           productNameAtPurchase: item.variant.product?.name ?? '',
+          ...attributionOf(item),
         })),
         { transaction: t },
       );

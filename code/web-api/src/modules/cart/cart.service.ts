@@ -2,6 +2,7 @@ import { Cart, CartItem } from './cart.entity';
 import ProductVariant from '@/modules/product-variant/product-variant.entity';
 import Product from '@/modules/product/product.entity';
 import CampaignService from '@/modules/campaign/campaign.service';
+import { decorateVariantsPricing } from '@/lib/pricing';
 import { httpError } from '@/utils/http-error';
 import { PUBLIC_VARIANT_ATTRIBUTES } from '@/modules/product-variant/variant.fields';
 import type { ICart, ICartService } from './cart.interface';
@@ -39,7 +40,12 @@ export default class CartService implements ICartService {
 
     // Attach the active campaign % to each item's product so the storefront cart
     // and checkout estimate match the price the order will actually be charged.
-    const items = (json as unknown as { items?: Array<{ variant?: { product?: { id: number; campaignDiscountPercent?: number | null } } }> }).items ?? [];
+    type CartItemShape = {
+      variant?: Record<string, unknown> & {
+        product?: { id: number; campaignDiscountPercent?: number | null };
+      };
+    };
+    const items = (json as unknown as { items?: CartItemShape[] }).items ?? [];
     const productIds = items
       .map((i) => i.variant?.product?.id)
       .filter((id): id is number => typeof id === 'number');
@@ -48,6 +54,14 @@ export default class CartService implements ICartService {
       for (const item of items) {
         const product = item.variant?.product;
         if (product) product.campaignDiscountPercent = campaignPct.get(product.id) ?? null;
+      }
+    }
+
+    // M-40: decorate every cart variant with the server-computed price so the cart,
+    // drawer and checkout summary all read one number instead of recomputing it.
+    for (const item of items) {
+      if (item.variant) {
+        decorateVariantsPricing([item.variant], item.variant.product?.campaignDiscountPercent ?? null);
       }
     }
 

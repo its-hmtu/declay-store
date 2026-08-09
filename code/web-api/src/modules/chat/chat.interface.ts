@@ -11,6 +11,12 @@ export interface IChatService {
     res: import('express').Response,
     input: IChatMessageInput,
     userId: number | null,
+    /**
+     * M-42: recorded on the session so a guest can later escalate to a human.
+     * Without it the handoff ownership check has nothing to match against and a
+     * guest could never reach staff — which would contradict guest checkout.
+     */
+    guestSessionId?: string | null,
   ): Promise<void>;
 }
 

@@ -8,7 +8,7 @@ import { invalidateCache } from '@/middlewares/cache.middleware';
 import { PUBLIC_VARIANT_ATTRIBUTES } from '@/modules/product-variant/variant.fields';
 import { canSeeCost } from '@/modules/product-variant/variant.visibility';
 import { computeMargin } from '@/modules/product-variant/variant.margin';
-import { effectiveUnitPrice } from '@/lib/pricing';
+import { effectiveUnitPrice, decorateVariantsPricing } from '@/lib/pricing';
 import CampaignService from '@/modules/campaign/campaign.service';
 import { cacheKey } from '@/config/redis';
 import type {
@@ -43,7 +43,7 @@ export default class ProductService implements IProductService {
   private campaignService = new CampaignService();
 
   async list(query: IProductListQuery): Promise<{ rows: IProduct[]; count: number }> {
-    const { categoryId, collectionId, minPrice, maxPrice, page = 1, limit = 20, search, sort = 'newest', includeInactive = false } = query;
+    const { categoryId, collectionId, campaignId, minPrice, maxPrice, page = 1, limit = 20, search, sort = 'newest', includeInactive = false } = query;
     const offset = (page - 1) * limit;
 
     // Storefront sees active products only; admin opts into the full catalogue.
@@ -52,11 +52,29 @@ export default class ProductService implements IProductService {
     if (categoryId) where.categoryId = categoryId;
     if (search) where.name = { [Op.iLike]: `%${search}%` };
 
-    // Restrict to products that belong to the requested collection.
+    /**
+     * Membership filters. Collection and campaign can both be present (e.g. "the
+     * Tet sale, within the Dragon series"), so they intersect rather than
+     * overwrite each other — an earlier version assigned `where.id` twice and the
+     * second silently won.
+     */
+    const memberships: number[][] = [];
+
     if (collectionId) {
       const links = await CollectionProduct.findAll({ where: { collectionId }, attributes: ['productId'] });
-      const memberIds = links.map((l) => l.productId);
-      where.id = { [Op.in]: memberIds.length ? memberIds : [-1] };
+      memberships.push(links.map((l) => l.productId));
+    }
+
+    if (campaignId) {
+      // M-44: only products in a campaign that is genuinely running. A link to a
+      // finished campaign must show an empty shop, not a stale discount list.
+      memberships.push(await this.campaignService.getActiveProductIds(campaignId));
+    }
+
+    if (memberships.length) {
+      const intersection = memberships.reduce((acc, ids) => acc.filter((id) => ids.includes(id)));
+      // `[-1]` is the established "match nothing" sentinel in this query builder.
+      where.id = { [Op.in]: intersection.length ? intersection : [-1] };
     }
 
     // Pull the full candidate set (ids + the columns the sort needs), then rank
@@ -195,9 +213,20 @@ export default class ProductService implements IProductService {
     const result = product.toJSON() as IProductWithVariants;
     result.rating = ratings.get(product.id) ?? { average: 0, count: 0 };
     result.salesCount = salesCount;
-    const detailPct = await this.campaignService.getActiveDiscountPercents([product.id]);
-    result.campaignDiscountPercent = detailPct.get(product.id) ?? null;
+    // M-44: keep the campaign's identity, not just its percent — the product page
+    // shows "Part of Tet Sale, ends in 2 days", which needs both.
+    const winner = (await this.campaignService.getWinningCampaigns([product.id])).get(product.id);
+    result.campaignDiscountPercent = winner?.discountPercent ?? null;
+    result.campaignId = winner?.campaignId ?? null;
+    result.campaignName = winner?.name ?? null;
+    result.campaignEndsAt = winner?.endsAt ?? null;
     if (countView) result.views = (result.views ?? 0) + 1; // reflect the increment we just issued
+
+    // M-40: server is the only place that decides the effective price.
+    decorateVariantsPricing(
+      result.variants as unknown as Array<Record<string, unknown>>,
+      result.campaignDiscountPercent ?? null,
+    );
 
     // Attach per-variant margin for admins only.
     if (withCost) {
@@ -233,7 +262,7 @@ export default class ProductService implements IProductService {
     });
 
     const byId = new Map(rows.map((p) => [p.id, p]));
-    const campaignPct = await this.campaignService.getActiveDiscountPercents(orderedIds);
+    const winners = await this.campaignService.getWinningCampaigns(orderedIds);
 
     // Preserve the ranked order the IN-query doesn't guarantee.
     return orderedIds.flatMap((id) => {
@@ -242,7 +271,16 @@ export default class ProductService implements IProductService {
       const product = row.toJSON() as IProduct;
       product.rating = metrics.ratings.get(id) ?? { average: 0, count: 0 };
       product.salesCount = metrics.salesAll.get(id) ?? 0;
-      product.campaignDiscountPercent = campaignPct.get(id) ?? null;
+      const winner = winners.get(id);
+      product.campaignDiscountPercent = winner?.discountPercent ?? null;
+      product.campaignId = winner?.campaignId ?? null;
+      product.campaignName = winner?.name ?? null;
+      product.campaignEndsAt = winner?.endsAt ?? null;
+      // M-40: same pricing decoration as the detail route, so cards and detail agree.
+      decorateVariantsPricing(
+        (product as unknown as { variants?: Array<Record<string, unknown>> }).variants,
+        product.campaignDiscountPercent,
+      );
       return [product];
     });
   }

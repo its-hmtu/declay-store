@@ -1,0 +1,358 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90mC:/Users/orihe/workspace/declay-store/code/web-api[39m
+
+ [32m✓[39m tests/unit/vnpay-fx.test.ts[2m > [22mnormalizeVnd (M-15: cửa hàng niêm yết thẳng VND)[2m > [22mgiữ nguyên số tiền đã chẵn[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-fx.test.ts[2m > [22mnormalizeVnd (M-15: cửa hàng niêm yết thẳng VND)[2m > [22mlàm tròn về đồng chẵn 1.000[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-fx.test.ts[2m > [22mnormalizeVnd (M-15: cửa hàng niêm yết thẳng VND)[2m > [22mnhận chuỗi thập phân từ cơ sở dữ liệu[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-fx.test.ts[2m > [22mnormalizeVnd (M-15: cửa hàng niêm yết thẳng VND)[2m > [22mtừ chối số tiền âm[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-fx.test.ts[2m > [22mtoVnpAmount[2m > [22mnhân 100 theo yêu cầu VNPay[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-fx.test.ts[2m > [22mtoVnpAmount[2m > [22mkhông bao giờ sinh số thập phân[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-fx.test.ts[2m > [22massertPayableVnd[2m > [22mchặn giao dịch dưới mức tối thiểu của VNPay[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-fx.test.ts[2m > [22massertPayableVnd[2m > [22mcho qua đơn bình thường[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-fx.test.ts[2m > [22mformatVnd[2m > [22mđịnh dạng cho khách Việt Nam[32m 31[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-signature.test.ts[2m > [22mbuildSignData (M-12)[2m > [22msorts keys alphabetically[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-signature.test.ts[2m > [22mbuildSignData (M-12)[2m > [22mexcludes the hash fields and empty values[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-signature.test.ts[2m > [22mbuildSignData (M-12)[2m > [22mencodes spaces as + (VNPay querystring behaviour)[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-signature.test.ts[2m > [22mbuildSignData (M-12)[2m > [22mpercent-encodes URLs[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-signature.test.ts[2m > [22msignParams / verifySignature[2m > [22mproduces a stable lowercase hex HMAC-SHA512[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-signature.test.ts[2m > [22msignParams / verifySignature[2m > [22maccepts its own signature[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-signature.test.ts[2m > [22msignParams / verifySignature[2m > [22maccepts an upper-case hash (VNPay sometimes returns upper case)[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-signature.test.ts[2m > [22msignParams / verifySignature[2m > [22mrejects a tampered amount — the critical fraud check[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-signature.test.ts[2m > [22msignParams / verifySignature[2m > [22mrejects a wrong secret and a missing hash[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-signature.test.ts[2m > [22msignParams / verifySignature[2m > [22mignores the hash fields when verifying a returned payload[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-signature.test.ts[2m > [22mvnpDate[2m > [22mformats as yyyyMMddHHmmss in Vietnam time[32m 32[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-signature.test.ts[2m > [22msanitizeOrderInfo[2m > [22mstrips Vietnamese accents and special characters[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-email.test.ts[2m > [22mbuildShipmentNotificationHtml (M-18)[2m > [22mmã vận đơn là thông tin nổi bật nhất[32m 36[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-email.test.ts[2m > [22mbuildShipmentNotificationHtml (M-18)[2m > [22mcó link theo dõi của hãng vận chuyển[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-email.test.ts[2m > [22mbuildShipmentNotificationHtml (M-18)[2m > [22mkhông có link thì vẫn hiện mã, không để nút hỏng[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-email.test.ts[2m > [22mbuildShipmentNotificationHtml (M-18)[2m > [22mĐƠN COD: nói rõ số tiền mặt cần chuẩn bị[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-email.test.ts[2m > [22mbuildShipmentNotificationHtml (M-18)[2m > [22mĐƠN TRẢ TRƯỚC: khẳng định không phải trả thêm[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-email.test.ts[2m > [22mbuildShipmentNotificationHtml (M-18)[2m > [22mliệt kê sản phẩm để khách đối chiếu khi mở kiện[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-email.test.ts[2m > [22mbuildShipmentNotificationHtml (M-18)[2m > [22mcó ngày dự kiến giao khi GHN trả về[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-email.test.ts[2m > [22mbuildShipmentNotificationHtml (M-18)[2m > [22mthiếu ngày dự kiến thì bỏ hẳn dòng đó, không hiện Invalid Date[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-email.test.ts[2m > [22mbuildShipmentNotificationHtml (M-18)[2m > [22mchặn HTML injection từ tên sản phẩm và tên khách[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-email.test.ts[2m > [22mbuildShipmentNotificationHtml (M-18)[2m > [22mcó link tra cứu cho khách vãng lai[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-email.test.ts[2m > [22mshipmentEmailSubject[2m > [22mcó cả mã đơn và mã vận đơn — khách tìm bằng cái nào cũng ra[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-email.test.ts[2m > [22mformatDeliveryDate[2m > [22mđịnh dạng theo giờ Việt Nam[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-email.test.ts[2m > [22mformatDeliveryDate[2m > [22mtrả null với giá trị không hợp lệ thay vì ném lỗi[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-email.test.ts[2m > [22mbuildOrderConfirmationHtml (M-17)[2m > [22mliệt kê ĐẦY ĐỦ sản phẩm — đây là hoá đơn duy nhất của khách vãng lai[32m 32[2mms[22m[39m
+ [32m✓[39m tests/unit/order-email.test.ts[2m > [22mbuildOrderConfirmationHtml (M-17)[2m > [22mhiện thành tiền từng dòng, không chỉ đơn giá[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-email.test.ts[2m > [22mbuildOrderConfirmationHtml (M-17)[2m > [22mcó đủ tạm tính, phí ship và tổng cộng[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-email.test.ts[2m > [22mbuildOrderConfirmationHtml (M-17)[2m > [22mphí ship bằng 0 hiện "Miễn phí" thay vì "0 ₫"[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-email.test.ts[2m > [22mbuildOrderConfirmationHtml (M-17)[2m > [22mchỉ hiện dòng giảm giá khi thực sự có giảm[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-email.test.ts[2m > [22mbuildOrderConfirmationHtml (M-17)[2m > [22mcó mã vận đơn thì hiện nổi bật[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-email.test.ts[2m > [22mbuildOrderConfirmationHtml (M-17)[2m > [22mchưa có mã vận đơn thì GIẢI THÍCH, không để trống[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-email.test.ts[2m > [22mbuildOrderConfirmationHtml (M-17)[2m > [22mcó link tra cứu cho khách vãng lai[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-email.test.ts[2m > [22mbuildOrderConfirmationHtml (M-17)[2m > [22mhiện địa chỉ giao và phương thức thanh toán[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-email.test.ts[2m > [22mbuildOrderConfirmationHtml (M-17)[2m > [22mchặn HTML injection từ tên sản phẩm[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-email.test.ts[2m > [22mbuildOrderConfirmationHtml (M-17)[2m > [22mchặn injection từ tên khách hàng[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-email.test.ts[2m > [22morderEmailSubject[2m > [22mcó mã đơn để khách tìm lại trong hộp thư[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-email.test.ts[2m > [22mescapeHtml / formatVndEmail[2m > [22mescape đủ các ký tự nguy hiểm[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-email.test.ts[2m > [22mescapeHtml / formatVndEmail[2m > [22mđịnh dạng tiền kiểu Việt Nam[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-code.test.ts[2m > [22mgenerateOrderCode (M-16)[2m > [22mđúng định dạng DC-YYMMDD-XXXX[32m 35[2mms[22m[39m
+ [32m✓[39m tests/unit/order-code.test.ts[2m > [22mgenerateOrderCode (M-16)[2m > [22mphần ngày theo giờ Việt Nam, không theo UTC[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-code.test.ts[2m > [22mgenerateOrderCode (M-16)[2m > [22mkhông chứa ký tự dễ đọc nhầm (I, L, O, U, 0, 1)[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-code.test.ts[2m > [22mgenerateOrderCode (M-16)[2m > [22mtất định khi truyền hàm random cố định[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-code.test.ts[2m > [22mgenerateOrderCode (M-16)[2m > [22msinh mã khác nhau qua nhiều lần gọi[32m 48[2mms[22m[39m
+ [32m✓[39m tests/unit/order-code.test.ts[2m > [22misValidOrderCode[2m > [22mtừ chối mã sai định dạng[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-code.test.ts[2m > [22mnormalizeOrderCode[2m > [22mkhách gõ liền không dấu gạch vẫn tra được[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-code.test.ts[2m > [22mnormalizeOrderCode[2m > [22mbỏ khoảng trắng thừa[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-code.test.ts[2m > [22mnormalizeOrderCode[2m > [22mgiữ nguyên mã đã đúng định dạng[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-code.test.ts[2m > [22mnormalizeOrderCode[2m > [22mchuỗi rác trả về dạng đã làm sạch, không ném lỗi[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-code.test.ts[2m > [22morderDatePart[2m > [22mluôn 6 chữ số[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/sequelize-associations.test.ts[2m > [22mQuan hệ Sequelize (M-19 hồi quy)[2m > [22mmọi alias dùng trong include đều đã được khai báo[32m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/sequelize-associations.test.ts[2m > [22mQuan hệ Sequelize (M-19 hồi quy)[2m > [22mcác quan hệ then chốt của Order tồn tại[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/admin-jwt-refresh.test.ts[2m > [22mAdmin refresh token (M-25)[2m > [22msign/verify refresh khứ hồi giữ đúng adminId + role[32m 255[2mms[22m[39m
+ [32m✓[39m tests/unit/admin-jwt-refresh.test.ts[2m > [22mAdmin refresh token (M-25)[2m > [22maccess token KHÔNG dùng được làm refresh (khác secret + tokenType)[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/admin-jwt-refresh.test.ts[2m > [22mAdmin refresh token (M-25)[2m > [22mrefresh token KHÔNG dùng được làm access[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/admin-jwt-refresh.test.ts[2m > [22mAdmin refresh token (M-25)[2m > [22mtoken rác bị từ chối[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/chat-handoff.test.ts[2m > [22mchat mode transitions[2m > [22mallows the normal escalation path[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/chat-handoff.test.ts[2m > [22mchat mode transitions[2m > [22mlets a customer cancel a request and fall back to the bot[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/chat-handoff.test.ts[2m > [22mchat mode transitions[2m > [22mrefuses to hand a live conversation back to the bot[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/chat-handoff.test.ts[2m > [22mchat mode transitions[2m > [22mtreats closed as terminal[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/chat-handoff.test.ts[2m > [22mchat mode transitions[2m > [22mis idempotent for a no-op transition[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/chat-handoff.test.ts[2m > [22mchat mode transitions[2m > [22mrejects an unknown mode[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/chat-handoff.test.ts[2m > [22mwho may speak[2m > [22monly lets the bot answer while nobody human owns the thread[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/chat-handoff.test.ts[2m > [22mwho may speak[2m > [22mlets a queued customer keep typing[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/chat-handoff.test.ts[2m > [22mwho may speak[2m > [22mrequires staff to claim before replying[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/chat-handoff.test.ts[2m > [22mwho may speak[2m > [22mlets the assignee reply[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/chat-handoff.test.ts[2m > [22mwho may speak[2m > [22mblocks a colleague from talking over the assignee[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/chat-handoff.test.ts[2m > [22mwho may speak[2m > [22mlets a super admin step in — someone must be able to rescue a thread[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/chat-handoff.test.ts[2m > [22mwho may speak[2m > [22mblocks everyone once closed[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/chat-handoff.test.ts[2m > [22minbox queue order[2m > [22mputs unclaimed conversations above claimed ones[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/chat-handoff.test.ts[2m > [22minbox queue order[2m > [22mserves the longest wait first within the same state[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/chat-handoff.test.ts[2m > [22minbox queue order[2m > [22msorts rows with no request time last instead of crashing[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/chat-handoff.test.ts[2m > [22minbox queue order[2m > [22mtolerates an unparseable date[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/chat-handoff.test.ts[2m > [22minbox queue order[2m > [22mdoes not mutate the input array[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/chat-handoff.test.ts[2m > [22mhandoff acknowledgement copy[2m > [22mpromises a person when someone is online[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/chat-handoff.test.ts[2m > [22mhandoff acknowledgement copy[2m > [22mpromises an email reply when we have an address[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/chat-handoff.test.ts[2m > [22mhandoff acknowledgement copy[2m > [22masks for an address when we have none — never a dead end[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mode.test.ts[2m > [22mresolveGhnMode (M-13)[2m > [22mthiếu token hoặc shopId => mock[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mode.test.ts[2m > [22mresolveGhnMode (M-13)[2m > [22mcó đủ thông tin nhưng chưa bật ghi => readonly (mặc định an toàn)[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mode.test.ts[2m > [22mresolveGhnMode (M-13)[2m > [22mchỉ vào live khi bật rõ ràng[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mode.test.ts[2m > [22mGHN_MODE — ghi đè cho môi trường test (M-21)[2m > [22mpreview: kiểm chứng với GHN thật nhưng không tạo đơn[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mode.test.ts[2m > [22mGHN_MODE — ghi đè cho môi trường test (M-21)[2m > [22mép được mock kể cả khi đã có token — chạy hoàn toàn offline[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mode.test.ts[2m > [22mGHN_MODE — ghi đè cho môi trường test (M-21)[2m > [22moverride "live" VẪN phải kèm GHN_ALLOW_WRITE — hai lớp xác nhận[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mode.test.ts[2m > [22mGHN_MODE — ghi đè cho môi trường test (M-21)[2m > [22mkhông có token thì mọi override đều ra mock — không có gì để gọi[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mode.test.ts[2m > [22mGHN_MODE — ghi đè cho môi trường test (M-21)[2m > [22mgiá trị rác bị bỏ qua, quay về suy diễn mặc định[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mode.test.ts[2m > [22massertOperationAllowed — chế độ preview[2m > [22mpreview vẫn tính phí và tra địa giới bình thường[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mode.test.ts[2m > [22massertOperationAllowed — chế độ preview[2m > [22mpreview KHÔNG được chạm endpoint tạo đơn — lẽ ra provider đã đổi sang /preview[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mode.test.ts[2m > [22massertOperationAllowed — chế độ preview[2m > [22mendpoint preview không bị coi là thao tác ghi[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mode.test.ts[2m > [22misWriteOperation[2m > [22mtính phí và tra cứu địa giới KHÔNG phải thao tác ghi[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mode.test.ts[2m > [22misWriteOperation[2m > [22mtạo, huỷ, trả hàng, đổi COD đều là thao tác ghi[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mode.test.ts[2m > [22massertOperationAllowed[2m > [22mreadonly: tính phí được phép[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mode.test.ts[2m > [22massertOperationAllowed[2m > [22mreadonly: tạo vận đơn bị chặn — đây là điều quan trọng nhất[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mode.test.ts[2m > [22massertOperationAllowed[2m > [22mmock: không gọi gì ra ngoài[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mode.test.ts[2m > [22massertOperationAllowed[2m > [22mlive: cho phép tất cả[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mode.test.ts[2m > [22massertOperationAllowed[2m > [22mthông báo lỗi nói rõ hậu quả bằng tiền, không chỉ nói "bị cấm"[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mode.test.ts[2m > [22mdescribeMode[2m > [22mmỗi chế độ có mô tả riêng để in ra log khởi động[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/campaign-margin.test.ts[2m > [22mcheckCampaignMargins[2m > [22mflags a discount that sells below cost[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/campaign-margin.test.ts[2m > [22mcheckCampaignMargins[2m > [22mflags a surviving but thin margin[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/campaign-margin.test.ts[2m > [22mcheckCampaignMargins[2m > [22mstays silent on a healthy margin[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/campaign-margin.test.ts[2m > [22mcheckCampaignMargins[2m > [22maccounts for a special price that beats the campaign[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/campaign-margin.test.ts[2m > [22mcheckCampaignMargins[2m > [22mskips variants with no recorded cost — we warn on evidence, not guesses[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/campaign-margin.test.ts[2m > [22mcheckCampaignMargins[2m > [22mignores a zero or nonsense cost[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/campaign-margin.test.ts[2m > [22mcheckCampaignMargins[2m > [22msorts worst margin first so losses surface without scrolling[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/campaign-margin.test.ts[2m > [22msummariseMarginWarnings[2m > [22mcounts each severity and reports the worst margin[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/campaign-margin.test.ts[2m > [22msummariseMarginWarnings[2m > [22mhandles an empty warning list[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/variant-pricing.test.ts[2m > [22mcomputeVariantPricing[2m > [22mreports no discount on a plain base price[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/variant-pricing.test.ts[2m > [22mcomputeVariantPricing[2m > [22mlabels a special price as the source[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/variant-pricing.test.ts[2m > [22mcomputeVariantPricing[2m > [22mlabels a campaign as the source when it wins[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/variant-pricing.test.ts[2m > [22mcomputeVariantPricing[2m > [22mcredits the special price when it beats the campaign[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/variant-pricing.test.ts[2m > [22mcomputeVariantPricing[2m > [22mignores an out-of-range campaign percent[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/variant-pricing.test.ts[2m > [22mcomputeVariantPricing[2m > [22maccepts string prices from the database layer[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/variant-pricing.test.ts[2m > [22mcomputeVariantPricing[2m > [22mrounds to two decimals like the order total does[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/variant-pricing.test.ts[2m > [22mcomputeVariantPricing[2m > [22mhandles a 100% campaign without going negative[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/variant-pricing.test.ts[2m > [22mdecorateVariantsPricing[2m > [22mstamps pricing onto every variant in place[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/variant-pricing.test.ts[2m > [22mdecorateVariantsPricing[2m > [22mis a no-op on empty or missing input[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/variant-pricing.test.ts[2m > [22mdecorateVariantsPricing[2m > [22mskips entries without a price instead of writing NaN[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/campaign-report.test.ts[2m > [22mrankSkus — campaign split[2m > [22mseparates campaign-driven units from organic ones[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/campaign-report.test.ts[2m > [22mrankSkus — campaign split[2m > [22mtreats a SKU with no campaign units as fully organic[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/campaign-report.test.ts[2m > [22mrankSkus — campaign split[2m > [22mdoes not report negative organic units if data is inconsistent[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/campaign-report.test.ts[2m > [22mrankSkus — campaign split[2m > [22mkeeps ranking on total units — the split is context, not the ranking key[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/campaign-report.test.ts[2m > [22mrankSkus — campaign split[2m > [22mhandles a zero-unit row without dividing by zero[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/campaign-report.test.ts[2m > [22msummariseCampaigns[2m > [22mcomputes the discount rate against list price[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/campaign-report.test.ts[2m > [22msummariseCampaigns[2m > [22msorts by collected revenue, biggest first[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/campaign-report.test.ts[2m > [22msummariseCampaigns[2m > [22mavoids dividing by zero when nothing sold[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/campaign-report.test.ts[2m > [22msummariseCampaigns[2m > [22mkeeps the snapshot name for a deleted campaign[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-create-order.test.ts[2m > [22mLUẬT TIỀN: cod_amount (M-13d)[2m > [22mđơn COD thu đúng tổng tiền đơn hàng[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-create-order.test.ts[2m > [22mLUẬT TIỀN: cod_amount (M-13d)[2m > [22mđơn ĐÃ TRẢ TRƯỚC phải thu hộ 0 — nếu không là thu tiền khách hai lần[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-create-order.test.ts[2m > [22mLUẬT TIỀN: cod_amount (M-13d)[2m > [22mchặn đơn vượt hạn mức thu hộ của GHN[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-create-order.test.ts[2m > [22mLUẬT TIỀN: ai trả cước[2m > [22mcửa hàng trả cước cho GHN vì khách đã trả phí ship khi đặt[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-create-order.test.ts[2m > [22mChống tạo vận đơn trùng[2m > [22mclient_order_code chính là mã đơn hàng — GHN trả lại vận đơn cũ khi gọi lại[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-create-order.test.ts[2m > [22mChống tạo vận đơn trùng[2m > [22mthiếu mã đơn thì từ chối, vì mất khoá chống trùng[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-create-order.test.ts[2m > [22mBảo hiểm hàng hoá[2m > [22mkhai giá theo giá trị hàng[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-create-order.test.ts[2m > [22mBảo hiểm hàng hoá[2m > [22mcắt trần theo quy định GHN thay vì để GHN từ chối đơn[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-create-order.test.ts[2m > [22mGiới hạn kiện hàng[2m > [22mchặn kiện vượt 50kg[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-create-order.test.ts[2m > [22mGiới hạn kiện hàng[2m > [22mchặn kích thước vượt 200cm, báo rõ chiều nào[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-create-order.test.ts[2m > [22mGiới hạn kiện hàng[2m > [22mlàm tròn lên số nguyên vì GHN chỉ nhận Int[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-create-order.test.ts[2m > [22mĐịa chỉ và sản phẩm[2m > [22mthiếu mã phường/quận thì từ chối, không đoán[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-create-order.test.ts[2m > [22mĐịa chỉ và sản phẩm[2m > [22mđơn rỗng bị từ chối[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-create-order.test.ts[2m > [22mĐịa chỉ và sản phẩm[2m > [22mward_code luôn là chuỗi[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-create-order.test.ts[2m > [22mĐịa chỉ và sản phẩm[2m > [22mcontent tóm tắt tên và số lượng sản phẩm[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-create-order.test.ts[2m > [22mDịch vụ và ghi chú[2m > [22mcó service_id thì không gửi service_type_id[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-create-order.test.ts[2m > [22mDịch vụ và ghi chú[2m > [22mkhông có service_id thì dùng service_type_id[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-create-order.test.ts[2m > [22mDịch vụ và ghi chú[2m > [22mmặc định cho khách xem hàng nhưng không cho thử[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mock-provider.test.ts[2m > [22mGhnMockProvider — dữ liệu địa giới[2m > [22mtrả về tỉnh/thành[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mock-provider.test.ts[2m > [22mGhnMockProvider — dữ liệu địa giới[2m > [22mlọc quận theo tỉnh[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mock-provider.test.ts[2m > [22mGhnMockProvider — dữ liệu địa giới[2m > [22mcó sẵn một quận KHÔNG giao được để test nhánh từ chối[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mock-provider.test.ts[2m > [22mGhnMockProvider — dữ liệu địa giới[2m > [22mlọc phường theo quận[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mock-provider.test.ts[2m > [22mGhnMockProvider — biểu phí[2m > [22mnội tỉnh rẻ hơn liên miền[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mock-provider.test.ts[2m > [22mGhnMockProvider — biểu phí[2m > [22mcộng phụ phí theo mỗi 500g vượt mức[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mock-provider.test.ts[2m > [22mGhnMockProvider — biểu phí[2m > [22mtừ chối kiện vượt 30kg[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mock-provider.test.ts[2m > [22mLuồng đầu-cuối: giỏ hàng -> kiện -> cước -> phí khách trả[2m > [22mđơn nhỏ: khách trả cước GHN[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-mock-provider.test.ts[2m > [22mLuồng đầu-cuối: giỏ hàng -> kiện -> cước -> phí khách trả[2m > [22mđơn lớn: miễn phí ship, cửa hàng gánh cước[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/order-pricing.test.ts[2m > [22mresolveShippingZone (W-15)[2m > [22mtreats Vietnam / empty as domestic[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/order-pricing.test.ts[2m > [22mresolveShippingZone (W-15)[2m > [22mtreats other countries as international[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-pricing.test.ts[2m > [22mmethodAppliesToZone (W-15)[2m > [22m"all" applies to every zone[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-pricing.test.ts[2m > [22mmethodAppliesToZone (W-15)[2m > [22ma zoned method only applies to its zone[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-pricing.test.ts[2m > [22mcomputeShippingFee (W-15)[2m > [22mcharges the fee below the free-over threshold[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-pricing.test.ts[2m > [22mcomputeShippingFee (W-15)[2m > [22mis free at or above the free-over threshold[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-pricing.test.ts[2m > [22mcomputeShippingFee (W-15)[2m > [22malways charges when there is no free-over[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-pricing.test.ts[2m > [22mcomputeShippingFee (W-15)[2m > [22mcoerces string decimals from Sequelize[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-pricing.test.ts[2m > [22mcomputeOrderTotal (W-14)[2m > [22mcomputes subtotal - discount + shipping, rounded to cents[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-pricing.test.ts[2m > [22mstatusTransitionError (W-21)[2m > [22mallows forward transitions[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-pricing.test.ts[2m > [22mstatusTransitionError (W-21)[2m > [22mblocks backward transitions[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-pricing.test.ts[2m > [22mstatusTransitionError (W-21)[2m > [22mblocks a no-op (same status)[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-pricing.test.ts[2m > [22mstatusTransitionError (W-21)[2m > [22mlocks terminal states[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-pricing.test.ts[2m > [22mstatusTransitionError (W-21)[2m > [22mallows cancelling from a non-terminal state[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-pricing.test.ts[2m > [22mstatusTransitionError (W-21)[2m > [22misTerminalStatus flags delivered/cancelled[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee.test.ts[2m > [22mapplyFeePolicy (M-13b)[2m > [22mkhách trả đúng cước GHN khi không có chính sách nào[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee.test.ts[2m > [22mapplyFeePolicy (M-13b)[2m > [22mmiễn phí ship khi đạt ngưỡng — cửa hàng gánh toàn bộ cước[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee.test.ts[2m > [22mapplyFeePolicy (M-13b)[2m > [22mchưa đạt ngưỡng thì vẫn thu phí[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee.test.ts[2m > [22mapplyFeePolicy (M-13b)[2m > [22mtrợ giá trừ vào phần khách trả, không âm[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee.test.ts[2m > [22mapplyFeePolicy (M-13b)[2m > [22mlàm tròn xuống đồng chẵn, phần lẻ cửa hàng chịu[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee.test.ts[2m > [22mapplyFeePolicy (M-13b)[2m > [22mngưỡng miễn phí bằng 0 hoặc null thì không kích hoạt[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee.test.ts[2m > [22mquoteBlockedReason[2m > [22mcho phép báo giá khi đủ điều kiện[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee.test.ts[2m > [22mquoteBlockedReason[2m > [22mchặn khi khách chưa chọn đủ quận/phường[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee.test.ts[2m > [22mquoteBlockedReason[2m > [22mchặn khi GHN không giao tới quận đó[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee.test.ts[2m > [22mquoteBlockedReason[2m > [22mchặn khi kiện quá nặng[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee.test.ts[2m > [22mdistrictSupportsDelivery[2m > [22mchỉ SupportType 2 và 3 mới giao được[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/report-metrics.test.ts[2m > [22mrankSkus (M-05)[2m > [22mranks by units sold, descending[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/report-metrics.test.ts[2m > [22mrankSkus (M-05)[2m > [22mbreaks ties on revenue[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/report-metrics.test.ts[2m > [22mrankSkus (M-05)[2m > [22mcomputes each SKU share of total units[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/report-metrics.test.ts[2m > [22mrankSkus (M-05)[2m > [22mrespects the limit[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/report-metrics.test.ts[2m > [22mrankSkus (M-05)[2m > [22mhandles an empty period without dividing by zero[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/report-metrics.test.ts[2m > [22msummariseSales[2m > [22mtotals units, revenue and SKU count[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/report-metrics.test.ts[2m > [22mperiodStart[2m > [22mresolves day shortcuts[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/report-metrics.test.ts[2m > [22mperiodStart[2m > [22mreturns null for all-time[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/payment-methods.test.ts[2m > [22mmethodsForRegion[2m > [22mdomestic offers vnpay, bank_transfer, cod (not stripe)[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/payment-methods.test.ts[2m > [22mmethodsForRegion[2m > [22minternational offers vnpay and stripe only (no cod/bank_transfer)[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/payment-methods.test.ts[2m > [22mavailablePaymentMethods[2m > [22mfilters by enabled config within the region[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/payment-methods.test.ts[2m > [22mavailablePaymentMethods[2m > [22mdrops enabled methods not valid for the region[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/payment-methods.test.ts[2m > [22mpaymentReference[2m > [22mencodes the order id for bank memo matching[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee-request.test.ts[2m > [22mbuildFeeRequestBody (M-13, lỗi thứ tự spread)[2m > [22mđiền service_type_id mặc định khi request không nói gì[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee-request.test.ts[2m > [22mbuildFeeRequestBody (M-13, lỗi thứ tự spread)[2m > [22mservice_type_id: undefined trong request KHÔNG được ghi đè mặc định[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee-request.test.ts[2m > [22mbuildFeeRequestBody (M-13, lỗi thứ tự spread)[2m > [22mcó service_id thì bỏ service_type_id — GHN không nhận cả hai[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee-request.test.ts[2m > [22mbuildFeeRequestBody (M-13, lỗi thứ tự spread)[2m > [22mkhông có service_id thì trường service_id bị loại khỏi payload[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee-request.test.ts[2m > [22mbuildFeeRequestBody (M-13, lỗi thứ tự spread)[2m > [22mđiền điểm lấy hàng mặc định[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee-request.test.ts[2m > [22mbuildFeeRequestBody (M-13, lỗi thứ tự spread)[2m > [22mđiểm lấy hàng trong request được ưu tiên[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee-request.test.ts[2m > [22mbuildFeeRequestBody (M-13, lỗi thứ tự spread)[2m > [22mkhông cấu hình kho thì bỏ trống để GHN tự dùng kho của ShopId[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee-request.test.ts[2m > [22mbuildFeeRequestBody (M-13, lỗi thứ tự spread)[2m > [22mgiữ nguyên thông số kiện hàng[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee-request.test.ts[2m > [22mwarnIfSuspiciousBaseUrl[2m > [22mnhắc dev URL là STAGING, cần token staging — không khẳng định sống/chết[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee-request.test.ts[2m > [22mwarnIfSuspiciousBaseUrl[2m > [22mURL production là bình thường, không cảnh báo[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-fee-request.test.ts[2m > [22mwarnIfSuspiciousBaseUrl[2m > [22mcảnh báo khi URL không thuộc tên miền ghn.vn[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-summary.test.ts[2m > [22mmaskEmail (M-19)[2m > [22mche phần giữa, giữ đủ để khách nhận ra email của mình[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/order-summary.test.ts[2m > [22mmaskEmail (M-19)[2m > [22mgiữ nguyên tên miền để khách biết đúng nhà cung cấp[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-summary.test.ts[2m > [22mmaskEmail (M-19)[2m > [22memail ngắn vẫn che được, không lộ toàn bộ[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-summary.test.ts[2m > [22mmaskEmail (M-19)[2m > [22mkhông bao giờ trả về email đầy đủ[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/order-summary.test.ts[2m > [22mmaskEmail (M-19)[2m > [22mgiá trị rỗng hoặc sai định dạng trả null thay vì ném lỗi[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-summary.test.ts[2m > [22mformatAddressLine[2m > [22mghép đủ các cấp địa giới[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-summary.test.ts[2m > [22mformatAddressLine[2m > [22mbỏ qua phần trống, không để lại dấu phẩy thừa[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-summary.test.ts[2m > [22mformatAddressLine[2m > [22mcắt khoảng trắng thừa[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-summary.test.ts[2m > [22mformatAddressLine[2m > [22mkhông có gì thì trả chuỗi rỗng[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-summary.test.ts[2m > [22mcountItems[2m > [22mđếm theo SỐ LƯỢNG, không phải số dòng[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-summary.test.ts[2m > [22mcountItems[2m > [22mgiỏ rỗng trả 0[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-settlement.test.ts[2m > [22mdecideSettlement (M-12)[2m > [22msettles a valid successful payment[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-settlement.test.ts[2m > [22mdecideSettlement (M-12)[2m > [22mrejects a forged result (bad signature) without touching the order[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-settlement.test.ts[2m > [22mdecideSettlement (M-12)[2m > [22mrejects an unknown order[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-settlement.test.ts[2m > [22mdecideSettlement (M-12)[2m > [22mrefuses to guess when the amount snapshot is missing[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-settlement.test.ts[2m > [22mdecideSettlement (M-12)[2m > [22mrejects a tampered amount — the fraud case[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-settlement.test.ts[2m > [22mdecideSettlement (M-12)[2m > [22mis idempotent: an already-paid order is acknowledged with no side effect[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-settlement.test.ts[2m > [22mdecideSettlement (M-12)[2m > [22mdoes not settle when the bank declined[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-settlement.test.ts[2m > [22mdecideSettlement (M-12)[2m > [22mdoes not settle when only one of the two codes is 00[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-settlement.test.ts[2m > [22mdecideSettlement (M-12)[2m > [22mchecks the signature before anything else[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-settlement.test.ts[2m > [22mnormalizeTransactionStatus[2m > [22mfalls back to the response code when the return URL omits it[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/vnpay-settlement.test.ts[2m > [22mnormalizeTransactionStatus[2m > [22mkeeps an explicit transaction status[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/cart-clearing.test.ts[2m > [22mChọn giỏ hàng để dọn sau thanh toán (M-20)[2m > [22mđơn khách VÃNG LAI vẫn dọn được nhờ cartId đã chốt[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/cart-clearing.test.ts[2m > [22mChọn giỏ hàng để dọn sau thanh toán (M-20)[2m > [22mđơn thành viên ưu tiên cartId — chính xác hơn tra theo userId[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/cart-clearing.test.ts[2m > [22mChọn giỏ hàng để dọn sau thanh toán (M-20)[2m > [22mđơn CŨ (trước migration 025) vẫn dọn được theo userId[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/cart-clearing.test.ts[2m > [22mChọn giỏ hàng để dọn sau thanh toán (M-20)[2m > [22mđơn cũ của khách vãng lai: không có gì để tra — đây chính là lỗ hổng cũ[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-guest.test.ts[2m > [22mnormalizeGuestContact (M-01)[2m > [22mtrims and lowercases a valid contact[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/order-guest.test.ts[2m > [22mnormalizeGuestContact (M-01)[2m > [22mrejects a missing or too-short name[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-guest.test.ts[2m > [22mnormalizeGuestContact (M-01)[2m > [22mrejects an invalid email[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-guest.test.ts[2m > [22mnormalizeGuestContact (M-01)[2m > [22mrejects an invalid phone[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-guest.test.ts[2m > [22mnormalizeGuestContact (M-01)[2m > [22mrejects null input[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-guest.test.ts[2m > [22mgenerateGuestToken[2m > [22mreturns a long, unique hex token[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-returns.test.ts[2m > [22mreturn window (M-06 / BR-06)[2m > [22mallows a return inside the 7-day window[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/order-returns.test.ts[2m > [22mreturn window (M-06 / BR-06)[2m > [22mallows a return exactly on the deadline[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-returns.test.ts[2m > [22mreturn window (M-06 / BR-06)[2m > [22mrejects a return after the window closes[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/order-returns.test.ts[2m > [22mreturn window (M-06 / BR-06)[2m > [22mrejects orders that are not delivered yet[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-returns.test.ts[2m > [22mreturn window (M-06 / BR-06)[2m > [22mrejects a second return[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-returns.test.ts[2m > [22mreturn window (M-06 / BR-06)[2m > [22mrejects when no delivery date was recorded[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-returns.test.ts[2m > [22mreturn window (M-06 / BR-06)[2m > [22muses a 7-day window by default[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-status.test.ts[2m > [22mmapProviderStatus[2m > [22mmaps delivered variants[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-status.test.ts[2m > [22mmapProviderStatus[2m > [22mdistinguishes out-for-delivery from delivered[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-status.test.ts[2m > [22mmapProviderStatus[2m > [22mmaps transit / pickup[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-status.test.ts[2m > [22mmapProviderStatus[2m > [22mmaps label / info received[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-status.test.ts[2m > [22mmapProviderStatus[2m > [22mmaps return / exception / cancel[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-status.test.ts[2m > [22mmapProviderStatus[2m > [22mdefaults unknown to in_transit and handles empty[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-status.test.ts[2m > [22morderStatusForShipment[2m > [22madvances to shipped for transit states[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-status.test.ts[2m > [22morderStatusForShipment[2m > [22madvances to delivered only when delivered[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-status.test.ts[2m > [22morderStatusForShipment[2m > [22mdoes not advance the order for label/exception/returned/created[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/shipment-status.test.ts[2m > [22misShipmentTerminal[2m > [22mflags terminal states[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/require-role.test.ts[2m > [22mrequireRole (W-05/W-06)[2m > [22m401 when no admin on request[32m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/require-role.test.ts[2m > [22mrequireRole (W-05/W-06)[2m > [22m403 when role is not allowed (editor hitting admin-only)[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/require-role.test.ts[2m > [22mrequireRole (W-05/W-06)[2m > [22mpasses through when role is allowed[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/require-role.test.ts[2m > [22mrequireRole (W-05/W-06)[2m > [22msuper_admin-only rejects a plain admin[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/variant-visibility.test.ts[2m > [22mcanSeeCost (M-04 / BR-09)[2m > [22mallows admin and super_admin[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/variant-visibility.test.ts[2m > [22mcanSeeCost (M-04 / BR-09)[2m > [22mdenies staff/editor, unknown roles and missing role[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/variant-visibility.test.ts[2m > [22mstripCostFields[2m > [22mkeeps everything for admin[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/variant-visibility.test.ts[2m > [22mstripCostFields[2m > [22mremoves cost and margin for staff[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/variant-visibility.test.ts[2m > [22mstripCostFields[2m > [22mremoves cost and margin when the role is missing[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-status.test.ts[2m > [22mmapGhnShipmentStatus (M-24)[2m > [22m"delivering" (đang giao) KHÔNG bị nhầm thành delivered[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-status.test.ts[2m > [22mmapGhnShipmentStatus (M-24)[2m > [22mcác mốc vận chuyển[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-status.test.ts[2m > [22mmapGhnShipmentStatus (M-24)[2m > [22mhoàn hàng và huỷ[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-status.test.ts[2m > [22mmapGhnShipmentStatus (M-24)[2m > [22mkhông phân biệt hoa thường, trạng thái lạ về in_transit[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-status.test.ts[2m > [22morderStatusFromGhn[2m > [22mđang giao/vận chuyển -> shipped[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-status.test.ts[2m > [22morderStatusFromGhn[2m > [22mdelivered -> delivered[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-status.test.ts[2m > [22morderStatusFromGhn[2m > [22mreturned -> returned, cancel -> cancelled[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-status.test.ts[2m > [22morderStatusFromGhn[2m > [22mtrạng thái trung gian cần người xử lý -> null[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-status.test.ts[2m > [22misStatusChangeType[2m > [22mchỉ xử lý create / switch_status[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/cod-reconcile.test.ts[2m > [22mreconcileCod (M-07 / BR-11)[2m > [22mmatches when the collected cash equals the total[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/cod-reconcile.test.ts[2m > [22mreconcileCod (M-07 / BR-11)[2m > [22mtolerates a one-cent rounding difference[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/cod-reconcile.test.ts[2m > [22mreconcileCod (M-07 / BR-11)[2m > [22mflags a shortfall with a negative difference[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/cod-reconcile.test.ts[2m > [22mreconcileCod (M-07 / BR-11)[2m > [22mflags an overpayment[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/cod-reconcile.test.ts[2m > [22mcanReconcile[2m > [22mallows delivered and returned orders[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/cod-reconcile.test.ts[2m > [22mcanReconcile[2m > [22mblocks orders that have not been delivered[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/cod-reconcile.test.ts[2m > [22mcanReconcile[2m > [22mblocks a second reconciliation[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-quote-options.test.ts[2m > [22mquoteOptions end-to-end (M-22)[2m > [22mtrả nhiều phương thức, mỗi cái có tên + phí + số ngày[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-quote-options.test.ts[2m > [22mquoteOptions end-to-end (M-22)[2m > [22msắp xếp nhanh trước, tiết kiệm sau[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-quote-options.test.ts[2m > [22mquoteOptions end-to-end (M-22)[2m > [22mdịch vụ nhanh giao sớm hơn tiết kiệm[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-services-meta.test.ts[2m > [22mserviceMeta (M-22)[2m > [22mgán tên tiếng Việt theo service_type_id[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-services-meta.test.ts[2m > [22mserviceMeta (M-22)[2m > [22mloại lạ thì dùng short_name của GHN, không hiện undefined[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-services-meta.test.ts[2m > [22mserviceMeta (M-22)[2m > [22mloại lạ và không có short_name vẫn có tên mặc định[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-services-meta.test.ts[2m > [22mserviceSortWeight[2m > [22mnhanh xếp trước chuẩn[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-services-meta.test.ts[2m > [22mserviceSortWeight[2m > [22mloại không rõ xếp cuối[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-services-meta.test.ts[2m > [22mleadtimeDays[2m > [22mquy ra số ngày, làm tròn lên[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-services-meta.test.ts[2m > [22mleadtimeDays[2m > [22mleadtime không hợp lệ hoặc <= order_date trả null[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-parcel.test.ts[2m > [22mvolumetricWeightGram (M-13b)[2m > [22mquy đổi thể tích theo hệ số 5000 của GHN[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-parcel.test.ts[2m > [22mbuildParcel[2m > [22mcộng dồn cân nặng theo số lượng[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-parcel.test.ts[2m > [22mbuildParcel[2m > [22mlấy trọng lượng quy đổi khi hàng nhẹ mà cồng kềnh[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-parcel.test.ts[2m > [22mbuildParcel[2m > [22mdùng cân mặc định khi biến thể chưa khai báo, và báo lại là đã dùng mặc định[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-parcel.test.ts[2m > [22mbuildParcel[2m > [22mcoi cân nặng 0 hoặc âm là chưa khai báo[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-parcel.test.ts[2m > [22mbuildParcel[2m > [22mxếp chồng chiều cao, giữ đáy lớn nhất[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-parcel.test.ts[2m > [22mbuildParcel[2m > [22mđánh dấu kiện vượt giới hạn 30kg của GHN[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-parcel.test.ts[2m > [22mbuildParcel[2m > [22mgiỏ rỗng vẫn trả kiện hợp lệ thay vì ném lỗi[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/address-ghn.test.ts[2m > [22mghnDestinationFromAddress (M-13 xung đột sổ địa chỉ)[2m > [22mđịa chỉ có đủ mã GHN → giao được[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/address-ghn.test.ts[2m > [22mghnDestinationFromAddress (M-13 xung đột sổ địa chỉ)[2m > [22mđịa chỉ CŨ thiếu mã GHN → null (đây chính là lỗi đã gặp)[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/address-ghn.test.ts[2m > [22mghnDestinationFromAddress (M-13 xung đột sổ địa chỉ)[2m > [22mthiếu một trong hai mã cũng coi là chưa đủ[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/address-ghn.test.ts[2m > [22mghnDestinationFromAddress (M-13 xung đột sổ địa chỉ)[2m > [22mward_code luôn ép về chuỗi (GHN trả có thể là số)[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/address-ghn.test.ts[2m > [22mghnDestinationFromAddress (M-13 xung đột sổ địa chỉ)[2m > [22mnull/undefined không ném lỗi[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/address-ghn.test.ts[2m > [22maddressIsShippable[2m > [22mquyết định bật/tắt nút thanh toán[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/effective-price.test.ts[2m > [22meffectiveUnitPrice — special price (pricing increment 1)[2m > [22muses the special price when set and cheaper[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/effective-price.test.ts[2m > [22meffectiveUnitPrice — special price (pricing increment 1)[2m > [22mignores the special price when >= base[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/effective-price.test.ts[2m > [22meffectiveUnitPrice — special price (pricing increment 1)[2m > [22mfalls back to base when special is null/undefined[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/effective-price.test.ts[2m > [22meffectiveUnitPrice — special price (pricing increment 1)[2m > [22mignores invalid/negative special values[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/effective-price.test.ts[2m > [22meffectiveUnitPrice — special price (pricing increment 1)[2m > [22mapplies a campaign percent on the base price[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/effective-price.test.ts[2m > [22meffectiveUnitPrice — special price (pricing increment 1)[2m > [22mpicks the best of special vs campaign (lowest wins)[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/effective-price.test.ts[2m > [22meffectiveUnitPrice — special price (pricing increment 1)[2m > [22mignores an out-of-range campaign percent[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/effective-price.test.ts[2m > [22meffectiveUnitPrice — special price (pricing increment 1)[2m > [22mrounds to cents[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/cart-owner.test.ts[2m > [22mresolveCartOwner (M-01)[2m > [22mprefers the logged-in user over a guest session[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/cart-owner.test.ts[2m > [22mresolveCartOwner (M-01)[2m > [22mfalls back to the guest session when there is no user[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/cart-owner.test.ts[2m > [22mresolveCartOwner (M-01)[2m > [22mrejects missing or too-short session ids[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/cart-owner.test.ts[2m > [22mownerWhere / isUserOwner[2m > [22mbuilds the right where clause[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/cart-owner.test.ts[2m > [22mownerWhere / isUserOwner[2m > [22mnarrows the owner type[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/variant-margin.test.ts[2m > [22mcomputeMargin (M-03)[2m > [22mcomputes profit and percentage from the effective price[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/variant-margin.test.ts[2m > [22mcomputeMargin (M-03)[2m > [22maccepts string decimals and rounds to cents / one decimal[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/variant-margin.test.ts[2m > [22mcomputeMargin (M-03)[2m > [22mhandles a loss (negative margin)[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/variant-margin.test.ts[2m > [22mcomputeMargin (M-03)[2m > [22mreturns null when there is no cost price[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/variant-margin.test.ts[2m > [22mcomputeMargin (M-03)[2m > [22mreturns null for invalid input[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/review-eligibility.test.ts[2m > [22mreview eligibility (M-10 / BR-07)[2m > [22mallows a signed-in buyer who has not reviewed yet[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/review-eligibility.test.ts[2m > [22mreview eligibility (M-10 / BR-07)[2m > [22masks guests to sign in first[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/review-eligibility.test.ts[2m > [22mreview eligibility (M-10 / BR-07)[2m > [22mblocks a second review of the same product[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/review-eligibility.test.ts[2m > [22mreview eligibility (M-10 / BR-07)[2m > [22mblocks customers who never bought the product[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/review-eligibility.test.ts[2m > [22mreview eligibility (M-10 / BR-07)[2m > [22mprioritises the sign-in prompt over other reasons[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-route-consistency.test.ts[2m > [22mTính nhất quán tuyến đường (M-13, hồi quy "route not found service")[2m > [22mgửi service_id thì payload phải kèm from_district_id[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-route-consistency.test.ts[2m > [22mTính nhất quán tuyến đường (M-13, hồi quy "route not found service")[2m > [22mđiểm đi mặc định được điền khi request không nói — hai lời gọi cùng tuyến[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-route-consistency.test.ts[2m > [22mTính nhất quán tuyến đường (M-13, hồi quy "route not found service")[2m > [22mKHÔNG có điểm đi ở cả request lẫn cấu hình => payload thiếu from_district_id[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/ghn-route-consistency.test.ts[2m > [22mTính nhất quán tuyến đường (M-13, hồi quy "route not found service")[2m > [22mđiểm đi trong request luôn thắng cấu hình[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/entity-tojson.test.ts[2m > [22mEntity toJSON không bỏ sót thuộc tính (hồi quy M-13)[2m > [22mmodules/address/address.entity.ts: toJSON trả đủ mọi thuộc tính đã khai[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/order-status-transition.test.ts[2m > [22mstatusTransitionError (M-23)[2m > [22mpaid -> processing hợp lệ[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/order-status-transition.test.ts[2m > [22mstatusTransitionError (M-23)[2m > [22mprocessing -> shipped hợp lệ (thực hiện qua tạo vận đơn)[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/order-status-transition.test.ts[2m > [22mstatusTransitionError (M-23)[2m > [22mkhông nhảy lùi từ shipped về processing[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/order-status-transition.test.ts[2m > [22mstatusTransitionError (M-23)[2m > [22mdelivered là trạng thái cuối, không đổi tiếp (trừ returned)[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/rate-limit.test.ts[2m > [22mrate limiters (W-10)[2m > [22mall three are express middleware functions[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/order-payment.test.ts[2m > [22morder payment method rules (M-02)[2m > [22mCOD is not prepaid and starts at processing[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/order-payment.test.ts[2m > [22morder payment method rules (M-02)[2m > [22mStripe is prepaid and starts at pending_payment[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/tag-slugify.test.ts[2m > [22mslugify (W-23)[2m > [22mlowercases and hyphenates words[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/tag-slugify.test.ts[2m > [22mslugify (W-23)[2m > [22mstrips Vietnamese diacritics (incl. đ)[32m 1[2mms[22m[39m
+ [32m✓[39m tests/unit/tag-slugify.test.ts[2m > [22mslugify (W-23)[2m > [22mtrims and collapses non-alphanumeric runs[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/audit-sanitize.test.ts[2m > [22msanitizeAuditBody (W-09)[2m > [22mredacts sensitive keys, keeps the rest[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/audit-sanitize.test.ts[2m > [22msanitizeAuditBody (W-09)[2m > [22mpasses non-object values through unchanged[32m 0[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m44 passed[39m[22m[90m (44)[39m
+[2m      Tests [22m [1m[32m349 passed[39m[22m[90m (349)[39m
+[2m   Start at [22m 20:37:02
+[2m   Duration [22m 6.92s[2m (transform 2.03s, setup 0ms, import 7.36s, tests 964ms, environment 10ms)[22m
+

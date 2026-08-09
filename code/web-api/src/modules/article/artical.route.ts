@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { validate } from '@/middlewares/validate';
 import { adminProtect } from '@/middlewares/admin.middleware';
-import { cache } from '@/middlewares/cache.middleware';
+import { cache, keyWithQuery } from '@/middlewares/cache.middleware';
 import { redisConfigKeys, cacheKey } from '@/config/redis';
 import ArticleService from './article.service';
 import ArticleController from './article.controller';
@@ -15,7 +15,13 @@ export function createArticleRouter(): Router {
   // Public — published articles only
   router.get(
     '/',
-    cache({ ttl: redisConfigKeys.CACHE_10_MINUTES, keyGenerator: () => cacheKey.ARTICLE_LIST }),
+    // Same collision as collections had: the home page asks for `?limit=3` and the
+    // blog index for `?limit=20`, so a constant key meant whichever request landed
+    // first decided what BOTH pages showed for the next 10 minutes.
+    cache({
+      ttl: redisConfigKeys.CACHE_10_MINUTES,
+      keyGenerator: keyWithQuery(cacheKey.ARTICLE_LIST, ['limit', 'offset']),
+    }),
     controller.listArticles,
   );
 

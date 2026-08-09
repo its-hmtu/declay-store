@@ -14,6 +14,12 @@ export interface IProductVariant {
   heightCm?: number | null;
   margin?: number | null;
   marginPercent?: number | null;
+  /** M-40: server-computed pricing. The storefront displays these, never recomputes them. */
+  basePrice?: number;
+  effectivePrice?: number;
+  discountPercent?: number;
+  onSale?: boolean;
+  source?: 'base' | 'special' | 'campaign';
   stock: number;
   images: string[];
   isActive: boolean;

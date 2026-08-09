@@ -22,6 +22,7 @@ import { createWebhookRouter } from '@/modules/shipment/shipment.route';
 import { createGhnRouter, createAdminGhnRouter } from '@/modules/shipping-provider/ghn/ghn.route';
 import { createSettingRouter } from '@/modules/site-setting/site-setting.route';
 import { createChatRouter } from '@/modules/chat/chat.route';
+import { createLiveChatRouter, createAdminLiveChatRouter } from '@/modules/chat/live-chat.route';
 import { createOrderRouter } from '@/modules/order/order.route';
 import { createShipmentRouter } from '@/modules/order-shipment/order-shipment.route';
 import { createJobRouter } from '@/modules/job/job.route';
@@ -79,6 +80,8 @@ export function createRoutes(): Router {
   router.use('/careers/cv', createCvUploadRouter());
   router.use('/settings', createSettingRouter());
   router.use('/chat', createChatRouter());
+  // M-42: live chat sits alongside the bot and reuses the same session ids.
+  router.use('/chat/live', createLiveChatRouter());
   router.use('/orders', createOrderRouter());
   router.use('/returns', createReturnUploadRouter());   // M-29e: khách tải ảnh trả hàng
   // Nested: GET /api/orders/:orderId/shipment
@@ -108,6 +111,9 @@ export function createRoutes(): Router {
   router.use('/admin/cod', createAdminCodRouter());
   router.use('/admin/settings', createAdminSettingRouter());
   router.use('/admin/assistant', createAssistantRouter());
+  // M-42: staff inbox — adminProtect only, no role gate: answering customers is
+  // core staff work, unlike pricing.
+  router.use('/admin/inbox', createAdminLiveChatRouter());
   router.use('/admin/orders', createAdminOrderRouter());
   // Nested: /api/admin/orders/:orderId/shipment
   router.use('/admin/orders/:orderId/shipment', createAdminShipmentRouter());

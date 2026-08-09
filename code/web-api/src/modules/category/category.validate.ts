@@ -10,6 +10,7 @@ export const createCategorySchema = z.object({
   description: z.string().max(1000).nullable().optional(),
   parentId: z.number().int().positive().nullable().optional(),
   isActive: z.boolean().optional(),
+  showOnHome: z.boolean().optional(),
 });
 
 export const updateCategorySchema = z
@@ -24,6 +25,7 @@ export const updateCategorySchema = z
     description: z.string().max(1000).nullable().optional(),
     parentId: z.number().int().positive().nullable().optional(),
     isActive: z.boolean().optional(),
+    showOnHome: z.boolean().optional(),
   })
   .refine((data) => Object.keys(data).length > 0, { message: 'At least one field must be provided' });
 

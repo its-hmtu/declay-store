@@ -155,6 +155,12 @@ export class OrderItem extends Model<InferAttributes<OrderItem>, InferCreationAt
   declare priceAtPurchase: number;
   declare variantNameAtPurchase: string;
   declare productNameAtPurchase: string;
+  /** M-41: campaign attribution, all snapshots — editing the campaign later must not rewrite history. */
+  declare campaignId: CreationOptional<number | null>;
+  declare campaignNameAtPurchase: CreationOptional<string | null>;
+  declare campaignDiscountPercent: CreationOptional<number | null>;
+  declare campaignDiscountAmount: CreationOptional<number>;
+  declare basePriceAtPurchase: CreationOptional<number | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 }
@@ -191,6 +197,34 @@ OrderItem.init(
       type: DataTypes.STRING(255),
       allowNull: false,
       field: 'product_name_at_purchase',
+    },
+    campaignId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'campaign_id',
+      references: { model: 'campaigns', key: 'id' },
+      onDelete: 'SET NULL',
+    },
+    campaignNameAtPurchase: {
+      type: DataTypes.STRING(150),
+      allowNull: true,
+      field: 'campaign_name_at_purchase',
+    },
+    campaignDiscountPercent: {
+      type: DataTypes.DECIMAL(5, 2),
+      allowNull: true,
+      field: 'campaign_discount_percent',
+    },
+    campaignDiscountAmount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 0,
+      field: 'campaign_discount_amount',
+    },
+    basePriceAtPurchase: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      field: 'base_price_at_purchase',
     },
     createdAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'created_at' },
     updatedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'updated_at' },

@@ -19,6 +19,7 @@ export default class ProductController implements IProductController {
   private async respondWithList(req: Request, res: Response, includeInactive: boolean) {
     const categoryId = typeof req.query.categoryId === 'string' ? req.query.categoryId : undefined;
     const collectionId = typeof req.query.collectionId === 'string' ? req.query.collectionId : undefined;
+    const campaignId = typeof req.query.campaignId === 'string' ? req.query.campaignId : undefined;
     const minPrice = typeof req.query.minPrice === 'string' ? req.query.minPrice : undefined;
     const maxPrice = typeof req.query.maxPrice === 'string' ? req.query.maxPrice : undefined;
     const page = typeof req.query.page === 'string' ? req.query.page : undefined;
@@ -33,6 +34,7 @@ export default class ProductController implements IProductController {
     const result = await this.productService.list({
       categoryId: categoryId ? Number(categoryId) : undefined,
       collectionId: collectionId ? Number(collectionId) : undefined,
+      campaignId: campaignId ? Number(campaignId) : undefined,
       minPrice: minPrice !== undefined ? Number(minPrice) : undefined,
       maxPrice: maxPrice !== undefined ? Number(maxPrice) : undefined,
       page: resolvedPage,

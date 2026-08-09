@@ -3,7 +3,7 @@ import { validate } from '@/middlewares/validate';
 import { adminProtect, requireRole } from '@/middlewares/admin.middleware';
 import CampaignService from './campaign.service';
 import CampaignController from './campaign.controller';
-import { createCampaignSchema, updateCampaignSchema, campaignIdSchema } from './campaign.validate';
+import { createCampaignSchema, updateCampaignSchema, campaignIdSchema, previewImpactSchema } from './campaign.validate';
 
 // Public: GET /api/campaigns (active only)
 export function createCampaignRouter(): Router {
@@ -19,6 +19,9 @@ export function createAdminCampaignRouter(): Router {
   const controller = new CampaignController(new CampaignService());
   router.use(adminProtect, requireRole('admin', 'super_admin'));
   router.get('/', controller.adminList);
+  // M-41: dry-run before saving — must be declared before '/:id' so it is not
+  // swallowed by the id route.
+  router.post('/preview-impact', validate(previewImpactSchema), controller.adminPreviewImpact);
   router.get('/:id', validate(campaignIdSchema, 'params'), controller.adminFindById);
   router.post('/', validate(createCampaignSchema), controller.adminCreate);
   router.put('/:id', validate(campaignIdSchema, 'params'), validate(updateCampaignSchema), controller.adminUpdate);
