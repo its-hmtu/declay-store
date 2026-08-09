@@ -55,6 +55,11 @@ services:
         generateValue: true
       - key: JWT_REFRESH_SECRET
         generateValue: true
+      # M-25: admin có refresh token riêng để không bị đăng xuất khi access hết hạn.
+      - key: JWT_ADMIN_SECRET
+        generateValue: true
+      - key: JWT_ADMIN_REFRESH_SECRET
+        generateValue: true
 
       # MVP chỉ bật COD
       - key: PAYMENTS_DOMESTIC
@@ -63,12 +68,75 @@ services:
       # Điền trong Dashboard (sync:false = Render không ghi đè)
       - key: APP_PUBLIC_URL      # https://declay-api.onrender.com
         sync: false
+      - key: FRONTEND_URL        # https://declay-web.onrender.com — OAuth quay về đây sau khi đăng nhập
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALLBACK_URL # https://declay-api.onrender.com/api/auth/google/callback
+        sync: false
       - key: CLOUDINARY_URL      # cloudinary://key:secret@cloud_name
         sync: false
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
+      # ── VNPay (M-12) — lấy trong email đăng ký sandbox ──
+      - key: VNPAY_TMN_CODE
+        sync: false
+      - key: VNPAY_HASH_SECRET
+        sync: false
+      - key: VNPAY_PAY_URL       # sandbox: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+        sync: false
+      - key: VNPAY_RETURN_URL    # https://declay-web.onrender.com/checkout/vnpay-return
+        sync: false
+      # M-29b: API hoàn tiền VNPay bị KHOÁ ở sandbox — phải liên hệ VNPAY để bật.
+      # Để "false" thì hoàn tiền VNPay được ghi nhận 'pending' cho admin xử lý tay.
+      - key: VNPAY_REFUND_ENABLED
+        value: "false"
+      - key: VNPAY_REFUND_API_URL
+        value: "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction"
+      # ── GHN (M-13) — để trống thì chạy provider giả lập ──
+      - key: GHN_TOKEN
+        sync: false
+      - key: GHN_SHOP_ID
+        sync: false
+      - key: GHN_BASE_URL
+        value: "https://online-gateway.ghn.vn"
+      # Chế độ chạy: mock | preview | readonly | live. Xem docs/DEPLOYMENT.md.
+      # 'preview' kiểm chứng vận đơn với GHN thật mà không tạo đơn, không mất cước.
+      - key: GHN_MODE
+        value: "preview"
+      # ⚠️ true = ĐƯỢC PHÉP tạo vận đơn thật và phát sinh cước. Để false khi test.
+      - key: GHN_ALLOW_WRITE
+        value: "false"
+      - key: GHN_FROM_DISTRICT_ID
+        sync: false
+      - key: GHN_FROM_WARD_CODE
+        sync: false
+      # M-27: job tự động kéo trạng thái vận đơn từ GHN (lưới an toàn khi webhook
+      # không tới). Bỏ trống = BẬT khi có GHN_TOKEN. Đặt "false" để tắt hẳn.
+      - key: GHN_SYNC_ENABLED
+        sync: false
+      # Nhịp quét (ms). Mặc định 900000 = 15 phút.
+      - key: GHN_SYNC_INTERVAL_MS
+        value: "900000"
+      # Số vận đơn xử lý mỗi lượt quét.
+      - key: GHN_SYNC_BATCH_SIZE
+        value: "50"
+      # M-29e: địa chỉ kho NHẬN hàng trả (vận đơn chiều về). Thiếu -> admin nhập mã tay.
+      - key: GHN_SHOP_NAME
+        sync: false
+      - key: GHN_SHOP_PHONE
+        sync: false
+      - key: GHN_SHOP_ADDRESS
+        sync: false
+      # M-29e: cửa sổ tự đóng yêu cầu trả treo (ngày) — mặc định 14.
+      - key: RETURN_EXPIRY_DAYS
+        value: "14"
+      - key: SHIPPING_FREE_OVER_VND
+        value: "500000"
       - key: ANTHROPIC_API_KEY
         sync: false
 
