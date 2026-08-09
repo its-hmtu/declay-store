@@ -81,16 +81,29 @@ Mỗi test case có: **ID**, **Kịch bản**, **Điều kiện trước**, **B�
 | TC-ORD-06 | Huỷ đơn đã shipped | Đơn `shipped` | Huỷ | Bị chặn (400) | N | TB |
 | TC-ORD-07 | Xem vận đơn (shipment) | Đơn đã shipped | Mở "my shipment" | Hiển thị carrier + tracking thật | P | TB |
 
-## 6. Review, Blog, Tuyển dụng (CONTENT)
+## 6. Review, Journals (Blog), Tuyển dụng — Careers (CONTENT)
 
 | ID | Kịch bản | Điều kiện | Bước chính | Kết quả mong đợi | Loại | Ưu tiên |
 |---|---|---|---|---|---|---|
 | TC-REV-01 | Viết review khi đã mua | Đã mua sản phẩm | Gửi review | Tạo review, đánh dấu verified purchase | P | TB |
 | TC-REV-02 | Review khi chưa mua | Chưa mua | Gửi review | *Kỳ vọng W-20:* chặn hoặc không đánh verified | N | TB |
-| TC-BLOG-01 | Xem bài viết published | Có bài published | Mở blog | Hiển thị nội dung, tăng views | P | Thấp |
-| TC-BLOG-02 | Bài chưa published | Bài draft | Truy cập trực tiếp | Không hiển thị công khai | N | TB |
-| TC-JOB-01 | Xem tin tuyển dụng | Có job mở | Mở careers | Hiển thị danh sách job đang mở | P | Thấp |
-| TC-JOB-02 | Nộp hồ sơ (CV theo URL) | Job đang mở | Nộp với cv_url | Tạo application; *ghi nhận:* chưa upload file (W-19) | P/E | TB |
+> **Cập nhật 2026-08-05:** Journals (blog/articles) và Careers đã được nâng lên **MVP-MUST** → ưu tiên các case dưới đây nâng từ *Thấp* lên **TB/Cao**, và bổ sung case cho upload CV, unpublish, pipeline ứng viên, phân quyền.
+
+| TC-BLOG-01 | Xem bài viết published | Có bài published | Mở blog | Hiển thị nội dung, tăng views | P | **Cao** |
+| TC-BLOG-02 | Bài chưa published | Bài draft | Truy cập trực tiếp `/blog/{slug}` | Không hiển thị công khai | N | **Cao** |
+| TC-BLOG-03 | Slug trùng | Đã có bài slug `abc` | Admin tạo bài mới slug `abc` | Bị chặn, báo lỗi trùng slug | N | TB |
+| TC-BLOG-04 | Gỡ publish | Bài đang publish | Admin tắt publish | Biến mất khỏi `/blog` **ngay** (service tự invalidate cache list + detail) | P | TB |
+| TC-BLOG-05 | Phân quyền admin articles | Token không phải admin | Gọi `/api/admin/articles` | Bị từ chối 401/403 | N | **Cao** |
+| TC-JOB-01 | Xem tin tuyển dụng | Có job mở + job đã đóng | Mở careers | **Chỉ** hiển thị job đang mở | P | **TB** |
+| TC-JOB-02 | Nộp hồ sơ có upload CV | Job đang mở | Chọn file PDF/DOCX ≤10MB rồi gửi | Upload thành công không cần đăng nhập, `cvUrl` tự điền, application tạo với status `received` | P | **Cao** |
+| TC-JOB-03 | Upload CV sai định dạng/quá lớn | Job đang mở | Chọn file `.png` hoặc >10MB | Bị chặn 400 với thông báo rõ ràng | N | TB |
+| TC-JOB-04 | Nộp vào job đã đóng | Job `is_open = false` | Gửi application | Bị chặn | N | TB |
+| TC-JOB-05 | Validate form ứng tuyển | Job đang mở | Tên <2 ký tự / email sai / cover letter >3000 ký tự | Báo lỗi validate tương ứng | N | TB |
+| TC-JOB-06 | Pipeline trạng thái ứng viên | Có application `received` | Admin chuyển `reviewing → interview → hired` | Trạng thái cập nhật đúng | P | TB |
+| TC-JOB-06b | Lùi/nhảy trạng thái ứng viên | Application `hired` | Đổi ngược về `received` | *Kỳ vọng W-39:* chặn. **Hiện code cho phép** (chỉ validate enum) — ghi nhận là gap | N | Thấp |
+| TC-JOB-07 | Phân quyền Careers | Token role `editor`/`staff` | Gọi `/api/admin/jobs` | Bị từ chối (`requireRole('admin','super_admin')`) | N | **Cao** |
+| TC-JOB-08 | Xoá job kéo theo application | Job có ≥2 application | Admin xoá job | Application bị xoá kèm (CASCADE); UI có bước xác nhận | N | TB |
+| TC-JOB-09 | Rate limit upload CV | — | Gọi `POST /api/careers/cv` liên tục quá ngưỡng | Bị chặn bởi `uploadLimiter` | N | TB |
 
 ## 7. Mã giảm giá tại checkout (DISC)
 
@@ -162,6 +175,49 @@ Mỗi test case có: **ID**, **Kịch bản**, **Điều kiện trước**, **B�
 | TC-AI-07 | Giới hạn vòng lặp tool | — | Yêu cầu chuỗi dài | Dừng ở `MAX_TOOL_ROUNDS`, không loop vô hạn | E | TB |
 | TC-AI-08 | **Rate limit assistant (W-10)** | admin | Gửi > `RATE_LIMIT_ASSISTANT_MAX`/phút | 429 | N | Cao |
 | TC-AI-09 | Xác nhận sai pendingId | admin | Confirm với id không hợp lệ/hết hạn | Bị từ chối an toàn | N | TB |
+
+| TC-AI-10 | **Phân quyền assistant** | token `editor`/`staff` | Gọi `/api/admin/assistant` | Bị từ chối (`requireRole('admin','super_admin')`) | N | Cao |
+
+## 12b. Chatbot khách (BOT) — M-42
+
+| ID | Kịch bản | Điều kiện | Bước chính | Kết quả mong đợi | Loại | Ưu tiên |
+|---|---|---|---|---|---|---|
+| TC-BOT-01 | Hỏi sản phẩm | Có SP trong catalog | "Có tượng rồng không?" | Gọi `search_products`, trả giá **hiệu lực hiện tại**, không bịa | P | Cao |
+| TC-BOT-02 | **Chính sách đúng** | — | Hỏi thanh toán & đổi trả | Trả lời **COD/VNPay** và **7 ngày**. Không nhắc Stripe, không nói 14 ngày | P | **Cao** |
+| TC-BOT-03 | Khách vãng lai hỏi đơn | Chưa đăng nhập | "Đơn của tôi đâu?" | Mời đăng nhập hoặc đề nghị gặp nhân viên; **không lộ đơn nào** | N | Cao |
+| TC-BOT-04 | Tra đơn không cần số | Đã đăng nhập, có 2 đơn | "Đơn của tôi thế nào?" | Gọi `list_my_orders`, liệt kê **đơn của chính họ** | P | Cao |
+| TC-BOT-05 | Không tra được đơn người khác | Đã đăng nhập | Hỏi đơn id của người khác | Bị chặn ở tầng service (scoped `userId`) | N | Cao |
+| TC-BOT-06 | Chỉ đọc | — | Yêu cầu huỷ đơn | Từ chối + đề nghị nối máy nhân viên | N | Cao |
+| TC-BOT-07 | Rate limit chat | — | Gửi vượt ngưỡng | 429 | N | TB |
+| TC-BOT-08 | **Chính sách lấy từ CMS** | Admin sửa nội dung `/policies` | Hỏi bot về đổi trả | Bot trả lời theo **nội dung mới**, không theo text hardcode | P | **Cao** |
+| TC-BOT-09 | Thiếu page trong CMS | Chưa có page `policies` published | Hỏi chính sách | Bot rơi về text dự phòng, **không lỗi** (W-57) | E | TB |
+| TC-CHIP-01 | Nút khởi đầu | Mở widget lần đầu | — | Hiện đúng 5 nút; chưa có nút "Gặp nhân viên" | P | TB |
+| TC-CHIP-02 | **Nút duyệt hàng là điều hướng** | — | Bấm "Hàng mới về" | Chuyển tới `/products?sort=newest`, **không** hỏi bot | P | Cao |
+| TC-CHIP-03 | Nút chính sách hỏi bot | — | Bấm "Đổi trả" | Gửi **câu hỏi đầy đủ** cho bot (không phải nhãn nút) | P | TB |
+| TC-CHIP-04 | Nút theo trạng thái đăng nhập | Đã / chưa đăng nhập | Sau 1 câu trả lời | Hiện "Đơn của tôi" / "Đăng nhập" tương ứng | P | TB |
+| TC-CHIP-05 | Ưu tiên khi bot bí | Bot trả lời "xin lỗi, không chắc" | — | "Gặp nhân viên" lên **đầu** danh sách nút | P | TB |
+| TC-CHIP-06 | Ẩn nút khi có người phụ trách | Session `waiting`/`live`/`closed` | — | **Không hiện nút nào** | N | TB |
+| TC-CHIP-07 | Ẩn nút khi bot đang trả lời | Đang stream | — | Không hiện nút | N | Thấp |
+| TC-CHIP-08 | Song ngữ | Đổi locale EN/VI | — | Nhãn **và** câu hỏi gửi đi đều đổi ngôn ngữ | P | TB |
+
+## 12c. Chat real-time khách ↔ nhân viên (LIVE) — M-42
+
+| ID | Kịch bản | Điều kiện | Bước chính | Kết quả mong đợi | Loại | Ưu tiên |
+|---|---|---|---|---|---|---|
+| TC-LIVE-01 | **Giữ ngữ cảnh khi chuyển người** | Đã chat 3 tin với bot | Bấm "Talk to a person" | Nhân viên mở inbox **thấy đủ 3 tin**; khách không phải kể lại | P | **Cao** |
+| TC-LIVE-02 | Bot im lặng khi đã chuyển | Session `waiting` | Khách gõ tiếp | Bot **không** trả lời; tin vẫn lưu & hiện trong inbox | N | Cao |
+| TC-LIVE-03 | Nhân viên nhận việc | Có hội thoại `waiting` | Bấm Claim | Chuyển `live`, khách thấy "X joined" | P | Cao |
+| TC-LIVE-04 | Nhắn hai chiều | `live` | Nhân viên gửi tin | Khách thấy **ngay**, không cần F5; và ngược lại | P | **Cao** |
+| TC-LIVE-05 | Chống giành việc | A đang phụ trách | B thử trả lời | 409 + thông báo rõ; inbox tự refresh | N | Cao |
+| TC-LIVE-06 | super_admin cứu hội thoại | A đã offline | super_admin trả lời | Được phép | P | TB |
+| TC-LIVE-07 | Đóng hội thoại | `live` | Nhân viên đóng | Khách thấy thông báo, ô nhập khoá, **không mở lại được** | P | Cao |
+| TC-LIVE-08 | **Guest chat được** | Chưa đăng nhập | Xin gặp nhân viên + nhắn tin | Hoạt động bình thường qua `X-Guest-Session` | P | **Cao** |
+| TC-LIVE-09 | **Riêng tư transcript** | Biết `sessionId` người khác | Gọi API đọc transcript | **403** | N | **Cao** |
+| TC-LIVE-10 | Ngoài giờ | Không ai online | Xin gặp nhân viên | Vào hàng đợi + **email cho staff** kèm transcript; mời khách để email | P | Cao |
+| TC-LIVE-11 | Presence hết hạn | Nhân viên đóng tab | Chờ >60s | Coi là offline; khách mới đi luồng ngoài giờ | E | TB |
+| TC-LIVE-12 | Thứ tự hàng đợi | Nhiều hội thoại | Mở inbox | `waiting` trước `live`; trong cùng nhóm, **chờ lâu nhất lên đầu** | P | TB |
+| TC-LIVE-13 | Rò rỉ kết nối SSE | — | Mở/đóng 20 tab chat | Không tăng dần Redis connection (unsubscribe khi đóng) | E | Cao |
+| TC-LIVE-14 | **Mất kết nối do server ngủ** | Render free plan idle | Để chat mở >15 phút | *Kỳ vọng W-52:* tự kết nối lại. **Hiện chưa có** — khách thấy "Connection lost" | N | **Cao** |
 
 ## 13. Audit Log (AUDIT) — W-09
 
