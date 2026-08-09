@@ -1,0 +1,101 @@
+@startuml
+skinparam dpi 160
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam ArrowColor #7A5C43
+skinparam ArrowFontSize 12
+skinparam actorStyle awesome
+skinparam actor {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam usecase {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  FontSize 13
+}
+skinparam rectangle {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam component {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam database {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam queue {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam cloud {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam participant {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam sequence {
+  LifeLineBorderColor #A98867
+  LifeLineBackgroundColor #F3E7D8
+  ArrowColor #7A5C43
+  DividerBackgroundColor #EFE2D0
+  BoxBackgroundColor #FAF5EE
+  BoxBorderColor #C9B197
+  GroupBackgroundColor #EFE2D0
+  GroupBorderColor #A98867
+}
+skinparam note {
+  BorderColor #C9A227
+  BackgroundColor #FFF9E8
+}
+skinparam class {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  HeaderBackgroundColor #E8D7C3
+}
+title Mô hình Client – Server của hệ thống Declay Store
+
+actor "Khách hàng" as KH
+actor "Quản trị viên" as QT
+
+rectangle "CLIENT — Trình duyệt" as CLIENT {
+  component "Storefront\n(Next.js 16 / React 19)" as FE1
+  component "Admin Dashboard\n(Next.js 16)" as FE2
+}
+
+rectangle "SERVER — Web API (Node.js + Express + TypeScript)" as SERVER {
+  component "Middleware\n(xác thực, phân quyền,\nkiểm tra dữ liệu, cache)" as MW
+  component "Controller" as CTRL
+  component "Service\n(logic nghiệp vụ)" as SVC
+  component "Entity / ORM\n(Sequelize)" as ORM
+}
+
+database "PostgreSQL 15" as PG
+database "Redis 7" as RD
+queue "BullMQ\n(công việc nền)" as MQ
+cloud "Dịch vụ bên ngoài\nStripe · VNPay · GHN\nGoogle OAuth · SMTP · Claude API" as EXT
+
+KH --> FE1
+QT --> FE2
+FE1 --> MW : HTTP request / SSE\n(JSON)
+FE2 --> MW : HTTP request\n(JSON)
+MW --> CTRL
+CTRL --> SVC
+SVC --> ORM
+ORM --> PG : SQL
+SVC --> RD : cache / denylist
+SVC --> MQ : đẩy công việc nền
+SVC --> EXT : gọi API / nhận webhook
+MW --> FE1 : HTTP response (JSON)
+
+note bottom of SERVER
+  Client không truy cập trực tiếp cơ sở dữ liệu.
+  Mọi thao tác dữ liệu đều đi qua Server.
+end note
+@enduml

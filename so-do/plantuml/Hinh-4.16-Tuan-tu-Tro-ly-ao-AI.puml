@@ -1,0 +1,97 @@
+@startuml
+skinparam dpi 160
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam ArrowColor #7A5C43
+skinparam ArrowFontSize 12
+skinparam actorStyle awesome
+skinparam actor {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam usecase {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  FontSize 13
+}
+skinparam rectangle {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam component {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam database {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam queue {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam cloud {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam participant {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam sequence {
+  LifeLineBorderColor #A98867
+  LifeLineBackgroundColor #F3E7D8
+  ArrowColor #7A5C43
+  DividerBackgroundColor #EFE2D0
+  BoxBackgroundColor #FAF5EE
+  BoxBorderColor #C9B197
+  GroupBackgroundColor #EFE2D0
+  GroupBorderColor #A98867
+}
+skinparam note {
+  BorderColor #C9A227
+  BackgroundColor #FFF9E8
+}
+skinparam class {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  HeaderBackgroundColor #E8D7C3
+}
+autonumber
+
+title Biểu đồ tuần tự chức năng Trợ lý ảo tích hợp AI
+
+actor "Khách hàng" as U
+participant "ChatWidget" as FE
+participant "chatLimiter" as RL
+participant "ChatService" as S
+database "PostgreSQL" as DB
+participant "Claude API" as AI
+
+U -> FE : Gửi câu hỏi trong khung trò chuyện
+FE -> RL : POST /api/chat (mở kênh SSE)
+RL -> RL : Kiểm tra tần suất (20 lần / phút / IP)
+alt Vượt ngưỡng
+  RL --> FE : 429 Too Many Requests
+else Trong ngưỡng
+  RL -> S : message(sessionId, content)
+  S -> DB : Tạo / lấy chat_sessions
+  S -> DB : SELECT chat_messages (lịch sử)
+  S -> AI : system prompt (cache) + lịch sử + câu hỏi
+
+  loop Cho tới khi stop_reason != tool_use
+    AI --> S : tool_use (search_products / get_order_status)
+    S -> FE : SSE event "tool"
+    S -> DB : Thực thi công cụ CHỈ ĐỌC
+    DB --> S : Dữ liệu thật
+    S -> AI : tool_result
+  end
+
+  AI --> S : Nội dung trả lời (stream)
+  S -> FE : SSE event "text" (từng phần)
+  FE --> U : Hiển thị câu trả lời dần theo thời gian thực
+  S -> DB : INSERT chat_messages (câu hỏi + trả lời + toolCalls)
+end
+@enduml

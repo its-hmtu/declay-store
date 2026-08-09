@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentScriptType="application/ecmascript" contentStyleType="text/css" height="906.6667px" preserveAspectRatio="none" style="width:1905px;height:906px;" version="1.1" viewBox="0 0 1905 906" width="1905px" zoomAndPan="magnify"><defs/><g><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="493.3333" x="725" y="20.1115">Biểu đồ phân rã use case Hủy đơn và trả hàng</text><!--cluster Hủy đơn hàng--><rect fill="#FFFDF9" height="350" rx="6.6667" ry="6.6667" style="stroke: #A98867; stroke-width: 2.5;" width="1707.5" x="179.1667" y="65.2214"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="171.6667" x="947.0833" y="88.6662">Hủy đơn hàng</text><!--cluster Trả hàng và hoàn tiền--><rect fill="#FFFDF9" height="433.3333" rx="6.6667" ry="6.6667" style="stroke: #A98867; stroke-width: 2.5;" width="1256.6667" x="176.6667" y="455.2214"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="268.3333" x="670.8333" y="478.6662">Trả hàng và hoàn tiền</text><ellipse cx="318.685" cy="261.7917" fill="#FBF3E7" rx="112.8517" ry="26.5703" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="175" x="231.185" y="268.569">Yêu cầu hủy đơn</text><ellipse cx="797.1584" cy="262.0511" fill="#FBF3E7" rx="162.1584" ry="38.4965" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="236.6667" x="678.825" y="259.3961">Kiểm tra điều kiện hủy</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="166.6667" x="713.825" y="284.6175">(trạng thái đơn)</text><ellipse cx="1290.4814" cy="350.3068" fill="#FBF3E7" rx="128.8147" ry="37.5855" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="100" x="1240.4814" y="339.8845">Hủy ngay</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="191.6667" x="1194.648" y="365.1059">(chưa có vận đơn)</text><ellipse cx="1290.7825" cy="214.855" fill="#FBF3E7" rx="118.2825" ry="37.967" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="173.3333" x="1204.1158" y="213.0132">Tạo yêu cầu hủy</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="105" x="1238.2825" y="238.2346">chờ duyệt</text><ellipse cx="1740.6874" cy="150.5255" fill="#FBF3E7" rx="119.0207" ry="27.8041" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="190" x="1645.6874" y="157.3028">Hủy vận đơn GHN</text><ellipse cx="1740.723" cy="297.1993" fill="#FBF3E7" rx="114.8896" ry="26.9779" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="180" x="1650.723" y="303.9766">Hoàn trả tồn kho</text><ellipse cx="318.223" cy="548.8659" fill="#FBF3E7" rx="114.8896" ry="26.9779" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="180" x="228.223" y="555.6433">Yêu cầu trả hàng</text><ellipse cx="797.5514" cy="688.1687" fill="#FBF3E7" rx="121.7181" ry="37.1141" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="183.3333" x="705.8848" y="687.6772">Kiểm tra thời hạn</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="71.6667" x="761.7181" y="712.8986">7 ngày</text><ellipse cx="797.6945" cy="551.6737" fill="#FBF3E7" rx="102.6945" ry="39.7857" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="141.6667" x="726.8611" y="547.1049">Chọn món và</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="126.6667" x="734.3611" y="572.3263">số lượng trả</text><ellipse cx="1290.9536" cy="551.5591" fill="#FBF3E7" rx="86.787" ry="38.0044" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="76.6667" x="1252.6203" y="541.7924">Tải ảnh</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="125" x="1228.4536" y="567.0137">chứng minh</text><ellipse cx="318.2683" cy="702.2641" fill="#FBF3E7" rx="104.935" ry="37.876" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="153.3333" x="241.6017" y="700.5638">Duyệt yêu cầu</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="90" x="273.2683" y="725.7851">trả hàng</text><ellipse cx="797.1286" cy="823.4447" fill="#FBF3E7" rx="103.7953" ry="38.2233" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="98.3333" x="747.9619" y="814.0158">Xác nhận</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="150" x="722.1286" y="839.2371">nhận hàng trả</text><ellipse cx="1290.5732" cy="739.836" fill="#FBF3E7" rx="115.5732" ry="27.1146" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="181.6667" x="1199.7398" y="746.6133">Tính số tiền hoàn</text><!--entity M--><ellipse cx="54.1667" cy="248.5547" fill="#F3E7D8" rx="13.3333" ry="13.3333" style="stroke: #7A5C43; stroke-width: 3.3333333333333335;"/><path d="M54.1667,261.888 L54.1667,306.888 M32.5,275.2214 L75.8333,275.2214 M54.1667,306.888 L32.5,331.888 M54.1667,306.888 L75.8333,331.888 " fill="none" style="stroke: #7A5C43; stroke-width: 3.3333333333333335;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="88.3333" x="10" y="356.9995">Member</text><!--entity A--><ellipse cx="54.1667" cy="653.5547" fill="#F3E7D8" rx="13.3333" ry="13.3333" style="stroke: #7A5C43; stroke-width: 3.3333333333333335;"/><path d="M54.1667,666.888 L54.1667,711.888 M32.5,680.2214 L75.8333,680.2214 M54.1667,711.888 L32.5,736.888 M54.1667,711.888 L75.8333,736.888 " fill="none" style="stroke: #7A5C43; stroke-width: 3.3333333333333335;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="68.3333" x="20" y="761.9995">Admin</text><ellipse cx="1741.0461" cy="555.6312" fill="#FBF3E7" rx="73.5461" ry="39.5765" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="86.6667" x="1697.7128" y="548.2285">Khởi tạo</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="100" x="1691.0461" y="573.4499">hoàn tiền</text><!--link M to C1--><path d="M98.9,291.1047 C129.5667,286.988 172.15,281.2714 211.55,275.988 " fill="none" id="M-C1" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="219.9,274.8714,204.154,270.2337,211.6389,275.9665,205.9062,283.4514,219.9,274.8714" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><!--link M to R1--><path d="M98.5167,346.4547 C117.7667,368.1047 141.1167,393.488 163.3333,415.2214 C200.6,451.688 245.95,490.5047 277.6333,516.788 " fill="none" id="M-R1" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="284.5667,522.5214,277.2467,507.8291,278.1415,517.2146,268.7559,518.1094,284.5667,522.5214" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><!--link A to C4--><path d="M71.3333,636.8714 C86.5,587.6714 114.6167,522.438 163.3333,485.2214 C450.1167,266.2047 611.55,422.3214 960,328.5547 C1044.9667,305.688 1139.75,272.1714 1205.7,247.5214 " fill="none" id="A-C4" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="1213.6,244.5714,1197.2142,243.596,1205.7973,247.4974,1201.8959,256.0804,1213.6,244.5714" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><!--link A to R5--><path d="M88.3333,701.888 C117.6667,701.888 162.5333,701.888 204.7667,701.888 " fill="none" id="A-R5" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="213.1667,701.888,198.1667,695.2214,204.8333,701.888,198.1667,708.5547,213.1667,701.888" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><!--link A to R6--><path d="M88.6333,727.888 C108.95,742.5047 136.25,759.5547 163.3333,768.5547 C339.3667,827.0714 557.3333,832.4214 685.9833,829.2214 " fill="none" id="A-R6" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="694.3333,828.988,679.1669,822.7091,686.0028,829.2022,679.5097,836.0381,694.3333,828.988" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><!--link C1 to C2--><path d="M430.9667,261.888 C488.9167,261.888 561.0833,261.888 625.9,261.888 " fill="none" id="C1-C2" style="stroke: #7A5C43; stroke-width: 1.6666666666666667; stroke-dasharray: 7.0,7.0;"/><polygon fill="#7A5C43" points="634.5833,261.888,619.5833,255.2214,626.25,261.888,619.5833,268.5547,634.5833,261.888" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="98.3333" x="485" y="257.1191">«include»</text><!--link C2 to C3--><path d="M960.55,290.9714 C1032.55,303.9547 1115.5167,318.9214 1180.0667,330.5547 " fill="none" id="C2-C3" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="none" points="958,302.3714,927.2667,284.988,962.15,279.4214,958,302.3714" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><!--link C2 to C4--><path d="M982.35,244.438 C1047.7,238.2214 1119.35,231.388 1176.95,225.9047 " fill="none" id="C2-C4" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="none" points="983.1333,256.088,948.85,247.638,980.9167,232.8547,983.1333,256.088" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><!--link C4 to C5--><path d="M1399.4833,199.6547 C1469.4333,189.4714 1560.4833,176.2214 1630.7167,166.0047 " fill="none" id="C4-C5" style="stroke: #7A5C43; stroke-width: 1.6666666666666667; stroke-dasharray: 7.0,7.0;"/><polygon fill="#7A5C43" points="1639.1667,164.7714,1623.3549,160.3633,1630.9224,165.9865,1625.2992,173.5541,1639.1667,164.7714" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="98.3333" x="1471.6667" y="170.4525">«include»</text><!--link C3 to C6--><path d="M1420.1,347.9547 C1467.8333,345.9047 1522.4,342.138 1571.6667,335.2214 C1599.3833,331.338 1629.2667,325.1547 1656.0167,318.8714 " fill="none" id="C3-C6" style="stroke: #7A5C43; stroke-width: 1.6666666666666667; stroke-dasharray: 7.0,7.0;"/><polygon fill="#7A5C43" points="1664.2167,316.9214,1648.08,313.9124,1656.1102,318.8526,1651.17,326.8828,1664.2167,316.9214" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="98.3333" x="1471.6667" y="330.4525">«include»</text><!--link C4 to C6--><path d="M1394.4167,233.8547 C1468.55,247.4047 1568.3167,265.6547 1641.45,279.0214 " fill="none" id="C4-C6" style="stroke: #7A5C43; stroke-width: 1.6666666666666667; stroke-dasharray: 7.0,7.0;"/><polygon fill="#7A5C43" points="1649.7833,280.538,1636.2249,271.2852,1641.5856,279.041,1633.8298,284.4017,1649.7833,280.538" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="98.3333" x="1471.6667" y="245.4525">«include»</text><!--link C3 to RF--><path d="M1361.3167,381.8047 C1447.3667,421.3047 1593.4667,488.3547 1676.5167,526.4714 " fill="none" id="C3-RF" style="stroke: #7A5C43; stroke-width: 1.6666666666666667; stroke-dasharray: 7.0,7.0;"/><polygon fill="#7A5C43" points="1684.3667,530.0714,1673.5164,517.7541,1676.7934,526.5943,1667.9531,529.8713,1684.3667,530.0714" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="95" x="1473.3333" y="430.4525">«extend»</text><!--link R1 to R2--><path d="M390.7167,569.3547 C472.9,593.538 608.8833,633.5547 700.3833,660.4714 " fill="none" id="R1-R2" style="stroke: #7A5C43; stroke-width: 1.6666666666666667; stroke-dasharray: 7.0,7.0;"/><polygon fill="#7A5C43" points="708.55,662.8714,696.0458,652.237,700.5564,660.5161,692.2774,665.0268,708.55,662.8714" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="98.3333" x="485" y="593.7858">«include»</text><!--link R1 to R3--><path d="M433.3667,549.3547 C509.8667,549.888 610.2833,550.588 686.0167,551.1214 " fill="none" id="R1-R3" style="stroke: #7A5C43; stroke-width: 1.6666666666666667; stroke-dasharray: 7.0,7.0;"/><polygon fill="#7A5C43" points="694.6667,551.1714,679.7244,544.3764,686.3336,551.0999,679.6101,557.7092,694.6667,551.1714" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="98.3333" x="485" y="545.4525">«include»</text><!--link R3 to R4--><path d="M900.1,551.888 C986.7667,551.888 1110.75,551.888 1195.3167,551.888 " fill="none" id="R3-R4" style="stroke: #7A5C43; stroke-width: 1.6666666666666667; stroke-dasharray: 7.0,7.0;"/><polygon fill="#7A5C43" points="1203.8833,551.888,1188.8833,545.2214,1195.55,551.888,1188.8833,558.5547,1203.8833,551.888" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="98.3333" x="1011.6667" y="547.1191">«include»</text><!--link R5 to R6--><path d="M404.5167,723.5047 C488.35,744.938 616.45,777.688 703.05,799.838 " fill="none" id="R5-R6" style="stroke: #7A5C43; stroke-width: 1.6666666666666667; stroke-dasharray: 7.0,7.0;"/><polygon fill="#7A5C43" points="711.3,801.938,698.428,791.7519,703.2282,799.8665,695.1136,804.6667,711.3,801.938" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="98.3333" x="485" y="740.4525">«include»</text><!--link R6 to R7--><path d="M892.4833,807.688 C976.6833,793.3714 1100.2833,772.338 1187.0833,757.588 " fill="none" id="R6-R7" style="stroke: #7A5C43; stroke-width: 1.6666666666666667; stroke-dasharray: 7.0,7.0;"/><polygon fill="#7A5C43" points="1195.3667,756.1714,1179.4575,752.1286,1187.1526,757.5761,1181.7051,765.2711,1195.3667,756.1714" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="98.3333" x="1011.6667" y="768.7858">«include»</text><!--link R7 to RF--><path d="M1349.9833,716.4214 C1433.2333,681.938 1586.9333,618.2714 1674.2,582.138 " fill="none" id="R7-RF" style="stroke: #7A5C43; stroke-width: 1.6666666666666667; stroke-dasharray: 7.0,7.0;"/><polygon fill="#7A5C43" points="1681.9,578.938,1665.4915,578.4847,1674.1943,582.1109,1670.5682,590.8138,1681.9,578.938" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="98.3333" x="1471.6667" y="622.1191">«include»</text><!--
+@startuml
+skinparam dpi 160
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam ArrowColor #7A5C43
+skinparam ArrowFontSize 12
+skinparam actorStyle awesome
+skinparam actor {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam usecase {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  FontSize 13
+}
+skinparam rectangle {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam component {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam database {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam queue {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam cloud {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam participant {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam sequence {
+  LifeLineBorderColor #A98867
+  LifeLineBackgroundColor #F3E7D8
+  ArrowColor #7A5C43
+  DividerBackgroundColor #EFE2D0
+  BoxBackgroundColor #FAF5EE
+  BoxBorderColor #C9B197
+  GroupBackgroundColor #EFE2D0
+  GroupBorderColor #A98867
+}
+skinparam note {
+  BorderColor #C9A227
+  BackgroundColor #FFF9E8
+}
+skinparam class {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  HeaderBackgroundColor #E8D7C3
+}
+title Biểu đồ phân rã use case Hủy đơn và trả hàng
+left to right direction
+actor "Member" as M
+actor Admin as A
+
+rectangle "Hủy đơn hàng" {
+  usecase "Yêu cầu hủy đơn" as C1
+  usecase "Kiểm tra điều kiện hủy\n(trạng thái đơn)" as C2
+  usecase "Hủy ngay\n(chưa có vận đơn)" as C3
+  usecase "Tạo yêu cầu hủy\nchờ duyệt" as C4
+  usecase "Hủy vận đơn GHN" as C5
+  usecase "Hoàn trả tồn kho" as C6
+}
+
+rectangle "Trả hàng và hoàn tiền" {
+  usecase "Yêu cầu trả hàng" as R1
+  usecase "Kiểm tra thời hạn\n7 ngày" as R2
+  usecase "Chọn món và\nsố lượng trả" as R3
+  usecase "Tải ảnh\nchứng minh" as R4
+  usecase "Duyệt yêu cầu\ntrả hàng" as R5
+  usecase "Xác nhận\nnhận hàng trả" as R6
+  usecase "Tính số tiền hoàn" as R7
+}
+
+usecase "Khởi tạo\nhoàn tiền" as RF
+
+M - -> C1
+M - -> R1
+A - -> C4
+A - -> R5
+A - -> R6
+
+C1 ..> C2 : <<include>>
+C2 <|- - C3
+C2 <|- - C4
+C4 ..> C5 : <<include>>
+C3 ..> C6 : <<include>>
+C4 ..> C6 : <<include>>
+C3 ..> RF : <<extend>>
+
+R1 ..> R2 : <<include>>
+R1 ..> R3 : <<include>>
+R3 ..> R4 : <<include>>
+R5 ..> R6 : <<include>>
+R6 ..> R7 : <<include>>
+R7 ..> RF : <<include>>
+@enduml
+
+PlantUML version 1.2019.06(Sat May 25 00:10:25 ICT 2019)
+(GPL source distribution)
+Java Runtime: OpenJDK Runtime Environment
+JVM: OpenJDK 64-Bit Server VM
+Java Version: 11.0.31+11-post-1ubuntu1-22.04.2-Ubuntu
+Operating System: Linux
+OS Version: 6.8.0-124-generic
+Default Encoding: UTF-8
+Language: en
+Country: null
+--></g></svg>

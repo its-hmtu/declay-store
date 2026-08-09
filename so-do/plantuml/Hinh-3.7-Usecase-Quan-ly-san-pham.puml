@@ -1,0 +1,96 @@
+@startuml
+skinparam dpi 160
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam ArrowColor #7A5C43
+skinparam ArrowFontSize 12
+skinparam actorStyle awesome
+skinparam actor {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam usecase {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  FontSize 13
+}
+skinparam rectangle {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam component {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam database {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam queue {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam cloud {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam participant {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam sequence {
+  LifeLineBorderColor #A98867
+  LifeLineBackgroundColor #F3E7D8
+  ArrowColor #7A5C43
+  DividerBackgroundColor #EFE2D0
+  BoxBackgroundColor #FAF5EE
+  BoxBorderColor #C9B197
+  GroupBackgroundColor #EFE2D0
+  GroupBorderColor #A98867
+}
+skinparam note {
+  BorderColor #C9A227
+  BackgroundColor #FFF9E8
+}
+skinparam class {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  HeaderBackgroundColor #E8D7C3
+}
+title Biểu đồ phân rã use case Quản lý sản phẩm
+left to right direction
+actor Admin as A
+actor "Super Admin" as SA
+
+rectangle "Quản lý sản phẩm" {
+  usecase "Xem danh sách\nsản phẩm" as U1
+  usecase "Thêm sản phẩm mới" as U2
+  usecase "Chỉnh sửa sản phẩm" as U3
+  usecase "Xóa sản phẩm" as U4
+  usecase "Quản lý phiên bản\n(giá, tồn kho, ảnh)" as U5
+  usecase "Tải ảnh sản phẩm" as U6
+  usecase "Kiểm tra slug\nduy nhất" as U7
+  usecase "Xóa bộ nhớ đệm\nliên quan" as U8
+  usecase "Ghi nhật ký\nkiểm toán" as U9
+}
+
+A --> U1
+A --> U2
+A --> U3
+A --> U4
+A --> U5
+SA --> U2
+SA --> U4
+
+U2 ..> U7 : <<include>>
+U3 ..> U7 : <<include>>
+U5 ..> U6 : <<include>>
+U2 ..> U8 : <<include>>
+U3 ..> U8 : <<include>>
+U4 ..> U8 : <<include>>
+U2 ..> U9 : <<include>>
+U3 ..> U9 : <<include>>
+U4 ..> U9 : <<include>>
+@enduml

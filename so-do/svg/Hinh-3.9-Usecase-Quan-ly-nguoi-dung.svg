@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentScriptType="application/ecmascript" contentStyleType="text/css" height="735px" preserveAspectRatio="none" style="width:1141px;height:735px;" version="1.1" viewBox="0 0 1141 735" width="1141.6667px" zoomAndPan="magnify"><defs/><g><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="481.6667" x="349.1667" y="20.1115">Biểu đồ phân rã use case Quản lý người dùng</text><!--cluster Quản lý tài khoản quản trị--><rect fill="#FFFDF9" height="651.6667" rx="6.6667" ry="6.6667" style="stroke: #A98867; stroke-width: 2.5;" width="896.6667" x="226.6667" y="65.2214"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="320" x="515" y="88.6662">Quản lý tài khoản quản trị</text><ellipse cx="387.6937" cy="161.5356" fill="#FBF3E7" rx="134.3604" ry="39.6475" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="165" x="305.1937" y="154.2366">Xem danh sách</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="188.3333" x="293.5271" y="179.458">tài khoản quản trị</text><ellipse cx="387.3541" cy="288.8588" fill="#FBF3E7" rx="119.0207" ry="27.8041" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="190" x="292.3541" y="295.6362">Tạo tài khoản mới</text><ellipse cx="909.7179" cy="354.8316" fill="#FBF3E7" rx="186.3846" ry="41.2769" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="126.6667" x="846.3846" y="340.2259">Phân vai trò</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="323.3333" x="748.0513" y="365.4473">(super_admin / admin / editor)</text><ellipse cx="387.5853" cy="411.9871" fill="#FBF3E7" rx="134.252" ry="37.5991" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="105" x="335.0853" y="401.5864">Chỉnh sửa</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="200" x="287.5853" y="426.8077">thông tin tài khoản</text><ellipse cx="387.8396" cy="545.6119" fill="#FBF3E7" rx="113.6729" ry="37.8905" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="166.6667" x="304.5062" y="543.889">Khóa / mở khóa</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="98.3333" x="338.6729" y="569.1104">tài khoản</text><ellipse cx="387.7499" cy="665.2713" fill="#FBF3E7" rx="101.0832" ry="24.2166" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="145" x="315.2499" y="672.0487">Xóa tài khoản</text><ellipse cx="909.9385" cy="545.1558" fill="#FBF3E7" rx="100.7718" ry="39.1011" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="141.6667" x="839.1051" y="541.5924">Thu hồi phiên</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="113.3333" x="853.2718" y="566.8137">đăng nhập</text><!--entity SA--><ellipse cx="79.1667" cy="363.5547" fill="#F3E7D8" rx="13.3333" ry="13.3333" style="stroke: #7A5C43; stroke-width: 3.3333333333333335;"/><path d="M79.1667,376.888 L79.1667,421.888 M57.5,390.2214 L100.8333,390.2214 M79.1667,421.888 L57.5,446.888 M79.1667,421.888 L100.8333,446.888 " fill="none" style="stroke: #7A5C43; stroke-width: 3.3333333333333335;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="138.3333" x="10" y="471.9995">Super Admin</text><!--link SA to U1--><path d="M116.5833,346.5047 C139.9667,308.788 173.5167,262.8547 213.3333,231.888 C233.85,215.938 258.5,203.1047 282.65,192.988 " fill="none" id="SA-U1" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="290.8167,189.6714,274.4105,189.1392,283.0959,192.8072,279.4279,201.4925,290.8167,189.6714" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><!--link SA to U2--><path d="M148.7,375.3047 C169.1833,364.938 191.9167,354.0714 213.3333,345.2214 C242.5,333.1714 275.2167,321.888 304.2667,312.6047 " fill="none" id="SA-U2" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="312.35,310.038,296.0361,308.2211,304.4071,312.5588,300.0694,320.9298,312.35,310.038" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><!--link SA to U4--><path d="M148.5167,411.888 C177,411.888 211.25,411.888 244.7667,411.888 " fill="none" id="SA-U4" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="253.2833,411.888,238.2833,405.2214,244.95,411.888,238.2833,418.5547,253.2833,411.888" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><!--link SA to U5--><path d="M149,447.7714 C169.4833,458.1214 192.15,469.1547 213.3333,478.5547 C241.9,491.2214 273.6833,503.9047 302.1167,514.738 " fill="none" id="SA-U5" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="310.0333,517.7547,298.3717,506.2026,302.2414,514.8,293.6441,518.6697,310.0333,517.7547" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><!--link SA to U6--><path d="M109.5333,477.288 C131.9167,521.2047 167,577.188 213.3333,611.888 C236.9833,629.6047 266.6,641.488 294.5833,649.4547 " fill="none" id="SA-U6" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="303.2,651.8047,290.4775,641.4325,295.1592,649.6161,286.9757,654.2978,303.2,651.8047" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><!--link U2 to U3--><path d="M492.35,301.8047 C562.8333,310.8547 657.8167,323.0547 739.2333,333.5047 " fill="none" id="U2-U3" style="stroke: #7A5C43; stroke-width: 1.6666666666666667; stroke-dasharray: 7.0,7.0;"/><polygon fill="#7A5C43" points="747.5833,334.5714,733.5653,326.031,739.3192,333.4996,731.8505,339.2536,747.5833,334.5714" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="98.3333" x="573.3333" y="308.7858">«include»</text><!--link U4 to U3--><path d="M520.2667,406.1047 C568.4833,403.2714 623.4833,399.2214 673.3333,393.5547 C699.7667,390.5547 727.75,386.638 754.85,382.4547 " fill="none" id="U4-U3" style="stroke: #7A5C43; stroke-width: 1.6666666666666667; stroke-dasharray: 7.0,7.0;"/><polygon fill="#7A5C43" points="763.2167,381.1547,747.3681,376.8808,754.983,382.4397,749.4241,390.0547,763.2167,381.1547" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="95" x="575" y="388.7858">«extend»</text><!--link U5 to U7--><path d="M501.1833,545.2214 C589.8333,545.2214 712.8667,545.2214 800.4333,545.2214 " fill="none" id="U5-U7" style="stroke: #7A5C43; stroke-width: 1.6666666666666667; stroke-dasharray: 7.0,7.0;"/><polygon fill="#7A5C43" points="808.8,545.2214,793.8,538.5547,800.4667,545.2214,793.8,551.888,808.8,545.2214" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="98.3333" x="573.3333" y="540.4525">«include»</text><!--
+@startuml
+skinparam dpi 160
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam ArrowColor #7A5C43
+skinparam ArrowFontSize 12
+skinparam actorStyle awesome
+skinparam actor {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam usecase {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  FontSize 13
+}
+skinparam rectangle {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam component {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam database {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam queue {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam cloud {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam participant {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam sequence {
+  LifeLineBorderColor #A98867
+  LifeLineBackgroundColor #F3E7D8
+  ArrowColor #7A5C43
+  DividerBackgroundColor #EFE2D0
+  BoxBackgroundColor #FAF5EE
+  BoxBorderColor #C9B197
+  GroupBackgroundColor #EFE2D0
+  GroupBorderColor #A98867
+}
+skinparam note {
+  BorderColor #C9A227
+  BackgroundColor #FFF9E8
+}
+skinparam class {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  HeaderBackgroundColor #E8D7C3
+}
+title Biểu đồ phân rã use case Quản lý người dùng
+left to right direction
+actor "Super Admin" as SA
+
+rectangle "Quản lý tài khoản quản trị" {
+  usecase "Xem danh sách\ntài khoản quản trị" as U1
+  usecase "Tạo tài khoản mới" as U2
+  usecase "Phân vai trò\n(super_admin / admin / editor)" as U3
+  usecase "Chỉnh sửa\nthông tin tài khoản" as U4
+  usecase "Khóa / mở khóa\ntài khoản" as U5
+  usecase "Xóa tài khoản" as U6
+  usecase "Thu hồi phiên\nđăng nhập" as U7
+}
+
+SA - -> U1
+SA - -> U2
+SA - -> U4
+SA - -> U5
+SA - -> U6
+
+U2 ..> U3 : <<include>>
+U4 ..> U3 : <<extend>>
+U5 ..> U7 : <<include>>
+@enduml
+
+PlantUML version 1.2019.06(Sat May 25 00:10:25 ICT 2019)
+(GPL source distribution)
+Java Runtime: OpenJDK Runtime Environment
+JVM: OpenJDK 64-Bit Server VM
+Java Version: 11.0.31+11-post-1ubuntu1-22.04.2-Ubuntu
+Operating System: Linux
+OS Version: 6.8.0-124-generic
+Default Encoding: UTF-8
+Language: en
+Country: null
+--></g></svg>

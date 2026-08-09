@@ -1,0 +1,99 @@
+@startuml
+skinparam dpi 160
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam ArrowColor #7A5C43
+skinparam ArrowFontSize 12
+skinparam actorStyle awesome
+skinparam actor {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam usecase {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  FontSize 13
+}
+skinparam rectangle {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam component {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam database {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam queue {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam cloud {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam participant {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam sequence {
+  LifeLineBorderColor #A98867
+  LifeLineBackgroundColor #F3E7D8
+  ArrowColor #7A5C43
+  DividerBackgroundColor #EFE2D0
+  BoxBackgroundColor #FAF5EE
+  BoxBorderColor #C9B197
+  GroupBackgroundColor #EFE2D0
+  GroupBorderColor #A98867
+}
+skinparam note {
+  BorderColor #C9A227
+  BackgroundColor #FFF9E8
+}
+skinparam class {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  HeaderBackgroundColor #E8D7C3
+}
+autonumber
+
+title Biểu đồ tuần tự chức năng Thêm mới sản phẩm
+
+actor "Quản trị viên" as A
+participant "Giao diện Admin" as FE
+participant "adminProtect" as AP
+participant "requireRole" as RR
+participant "validate" as VAL
+participant "ProductService" as S
+database "PostgreSQL" as DB
+participant "auditAdminWrites" as AU
+database "Redis" as RD
+
+A -> FE : Nhập thông tin sản phẩm và nhấn Lưu
+FE -> AP : POST /api/admin/products
+AP -> AP : Xác thực JWT quản trị (khóa riêng)
+AP -> RR : next()
+RR -> RR : Kiểm tra vai trò admin / super_admin
+alt Không đủ quyền
+  RR --> FE : 403 Forbidden
+else Đủ quyền
+  RR -> VAL : next()
+  VAL -> S : create(data)
+  S -> DB : SELECT products WHERE slug = ?
+  alt Slug đã tồn tại
+    S --> FE : AppError 400 "Slug bị trùng"
+  else Slug hợp lệ
+    S -> DB : INSERT products
+    S -> DB : INSERT product_tags
+    S -> RD : Xóa khóa cache danh sách sản phẩm
+    S --> AU : Kết quả
+    AU -> DB : INSERT audit_log
+    AU --> FE : sendSuccess(201)
+    FE --> A : Chuyển sang tab quản lý phiên bản
+  end
+end
+@enduml
