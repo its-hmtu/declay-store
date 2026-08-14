@@ -9,6 +9,8 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
   loading?: boolean;
+  /** Fully-rounded Nike-style CTA pill instead of the default soft-rounded corners. Opt-in, default false. */
+  pill?: boolean;
 }
 
 const variantClass: Record<Variant, string> = {
@@ -29,6 +31,7 @@ export default function Button({
   variant = 'primary',
   size = 'md',
   loading = false,
+  pill = false,
   disabled,
   className = '',
   children,
@@ -38,7 +41,7 @@ export default function Button({
     <button
       disabled={disabled || loading}
       className={`
-        inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors
+        inline-flex items-center justify-center gap-2 ${pill ? 'rounded-full' : 'rounded-lg'} font-medium transition-colors
         focus-visible:outline-2 focus-visible:outline-brand
         disabled:opacity-50 disabled:cursor-not-allowed
         ${variantClass[variant]} ${sizeClass[size]} ${className}

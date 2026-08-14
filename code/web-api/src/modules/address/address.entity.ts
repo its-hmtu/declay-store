@@ -9,7 +9,7 @@ import { sequelize } from '@/config/sequelize';
 
 class Address extends Model<InferAttributes<Address>, InferCreationAttributes<Address>> {
   declare id: CreationOptional<number>;
-  declare userId: number;
+  declare userId: CreationOptional<number | null>;
   declare receiverName: string;
   declare receiverPhone: string;
   declare addressLine: string;
@@ -17,6 +17,10 @@ class Address extends Model<InferAttributes<Address>, InferCreationAttributes<Ad
   declare ward: string;
   declare district: string;
   declare city: string;
+  // M-13: mã địa giới GHN. Cột text ở trên chỉ để hiển thị và in vận đơn.
+  declare ghnProvinceId: CreationOptional<number | null>;
+  declare ghnDistrictId: CreationOptional<number | null>;
+  declare ghnWardCode: CreationOptional<string | null>;
   declare country: CreationOptional<string>;
   declare postalCode: CreationOptional<string | null>;
   declare isDefault: CreationOptional<boolean>;
@@ -26,7 +30,7 @@ class Address extends Model<InferAttributes<Address>, InferCreationAttributes<Ad
 
   toJSON(): {
     id: number;
-    userId: number;
+    userId: number | null;
     receiverName: string;
     receiverPhone: string;
     addressLine: string;
@@ -38,6 +42,10 @@ class Address extends Model<InferAttributes<Address>, InferCreationAttributes<Ad
     postalCode: string | null;
     isDefault: boolean;
     addressType: 'home' | 'work' | 'other';
+    // M-13: mã địa giới GHN — thiếu ba trường này khiến checkout không tính được phí.
+    ghnProvinceId: number | null;
+    ghnDistrictId: number | null;
+    ghnWardCode: string | null;
     createdAt: Date;
     updatedAt: Date;
   } {
@@ -55,6 +63,9 @@ class Address extends Model<InferAttributes<Address>, InferCreationAttributes<Ad
       postalCode: this.postalCode,
       isDefault: this.isDefault,
       addressType: this.addressType,
+      ghnProvinceId: this.ghnProvinceId,
+      ghnDistrictId: this.ghnDistrictId,
+      ghnWardCode: this.ghnWardCode,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     }
@@ -70,7 +81,7 @@ Address.init(
     },
     userId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       field: 'user_id',
       references: {
         model: 'users',
@@ -110,6 +121,9 @@ Address.init(
       type: DataTypes.STRING(100),
       allowNull: true,
     },
+    ghnProvinceId: { type: DataTypes.INTEGER, allowNull: true, field: 'ghn_province_id' },
+    ghnDistrictId: { type: DataTypes.INTEGER, allowNull: true, field: 'ghn_district_id' },
+    ghnWardCode:   { type: DataTypes.STRING(20), allowNull: true, field: 'ghn_ward_code' },
     country: {
       type: DataTypes.STRING(100),
       allowNull: false,

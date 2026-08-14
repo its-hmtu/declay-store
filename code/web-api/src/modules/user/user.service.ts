@@ -15,6 +15,7 @@ export default class UserService implements IUserService {
     username?: string;
     fullName?: string;
     phoneNumber?: string;
+    dateOfBirth?: string | null;
   }): Promise<User> {
     const user = await User.findByPk(userId);
     if (!user) {
@@ -35,6 +36,7 @@ export default class UserService implements IUserService {
     if (updateData.username !== undefined) user.username = updateData.username;
     if (updateData.fullName !== undefined) user.fullName = updateData.fullName;
     if (updateData.phoneNumber !== undefined) user.phoneNumber = updateData.phoneNumber;
+    if (updateData.dateOfBirth !== undefined) user.dateOfBirth = updateData.dateOfBirth;
 
     await user.save();
     return user;

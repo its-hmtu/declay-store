@@ -7,6 +7,7 @@ export interface IUserService {
     username?: string;
     fullName?: string;
     phoneNumber?: string;
+    dateOfBirth?: string | null;
   }): Promise<User>;
   changePassword(userId: number, currentPassword: string, newPassword: string): Promise<void>;
 }

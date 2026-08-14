@@ -1,4 +1,5 @@
 import type { RequestHandler } from 'express';
+import type { CartOwner } from './cart.owner';
 
 export interface ICartItem {
   id: number;
@@ -17,16 +18,17 @@ export interface ICartItem {
 
 export interface ICart {
   id: number;
-  userId: number;
+  userId: number | null;
+  sessionId?: string | null;
   items: ICartItem[];
 }
 
 export interface ICartService {
-  getCart(userId: number): Promise<ICart>;
-  addItem(userId: number, variantId: number, quantity: number): Promise<ICart>;
-  updateItem(userId: number, itemId: number, quantity: number): Promise<ICart>;
-  removeItem(userId: number, itemId: number): Promise<ICart>;
-  clearCart(userId: number): Promise<void>;
+  getCart(owner: CartOwner): Promise<ICart>;
+  addItem(owner: CartOwner, variantId: number, quantity: number): Promise<ICart>;
+  updateItem(owner: CartOwner, itemId: number, quantity: number): Promise<ICart>;
+  removeItem(owner: CartOwner, itemId: number): Promise<ICart>;
+  clearCart(owner: CartOwner): Promise<void>;
 }
 
 export interface ICartController {

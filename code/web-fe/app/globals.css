@@ -1,44 +1,220 @@
 @import "tailwindcss";
 
 @theme inline {
-  /* Artisan warm palette */
-  --color-brand:          #6B3F1A;
-  --color-brand-light:    #A0522D;
-  --color-brand-lighter:  #C27B4D;
-  --color-brand-faint:    #F5EFE0;
+  /* ── Aetherfield palette ───────────────────────────────── */
+  /* Ink (primary action == near-black, matching the template's black buttons) */
+  --color-brand:          #0A0A0A;
+  --color-brand-light:    #262626;
+  --color-brand-lighter:  #A1A1AA;
+  --color-brand-faint:    #EAF1FF;
 
-  --color-surface:        #FDFAF5;
-  --color-surface-alt:    #F5EFE0;
-  --color-border:         #DDD0BB;
-  --color-border-strong:  #C4AE90;
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #F4F5F7;
+  --color-border:         #E5E5EA;
+  --color-border-strong:  #D4D4D8;
 
-  --color-text:           #2C1810;
-  --color-text-muted:     #7A5C44;
-  --color-text-faint:     #A89280;
+  --color-text:           #0A0A0A;
+  --color-text-muted:     #595963;
+  --color-text-faint:     #9A9AA3;
 
-  --color-success:        #5C8A5F;
-  --color-warning:        #C5920A;
-  --color-error:          #B35050;
-  --color-info:           #4A7FA5;
+  /* Accents */
+  --color-accent:         #2D6BFF;   /* azure blue */
+  --color-accent-soft:    #CFE0FF;   /* pale hero blue */
+  --color-highlight:      #ECE94B;   /* vivid yellow */
+  --color-olive:          #54521A;   /* footer wordmark on yellow */
+  --color-cream:          #F6F2E9;   /* textured warm section */
 
-  /* Typography */
-  --font-serif:  var(--font-source-serif-4), "Georgia", serif;
-  --font-sans:   var(--font-radio-canada-big), system-ui, sans-serif;
-  --font-mono:   var(--font-geist-mono), monospace;
+  --color-success:        #2E7D52;
+  --color-warning:        #B5870A;
+  --color-error:          #C0392B;
+  --color-info:           #2D6BFF;
+
+  /* ── Typography (Nike-inspired: single bold grotesque sans) ── */
+  --font-display: var(--font-archivo), system-ui, sans-serif;  /* big, bold, uppercase-friendly headlines */
+  --font-serif:   var(--font-archivo), system-ui, sans-serif;  /* body copy — kept as sans, no serif anywhere */
+  --font-sans:    var(--font-archivo), system-ui, sans-serif;  /* heavy grotesque display + UI */
+  --font-mono:    var(--font-geist-mono), monospace;           /* eyebrows, meta, buttons, nav */
+
+  /* ── Radius ────────────────────────────────────────────── */
+  --radius-pill:  9999px; /* fully-rounded CTA buttons, Nike-style */
 }
 
 :root {
-  --background: #FDFAF5;
-  --foreground: #2C1810;
+  --background: #FFFFFF;
+  --foreground: #0A0A0A;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans);
+  font-family: var(--font-serif);
 }
 
-/* Heading style — all headings use the serif font */
+/* Headings default to the editorial display serif */
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+/* ── Reusable template primitives ──────────────────────── */
+
+/* Monospace eyebrow / meta label */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-text-muted);
+}
+
+/* Black mono button with the leading bullet, sharp corners */
+.btn-ink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--color-brand);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  padding: 0.7rem 1.1rem;
+  transition: background 0.15s ease;
+}
+.btn-ink::before {
+  content: "•";
+  font-size: 0.9em;
+  line-height: 1;
+}
+.btn-ink:hover {
+  background: var(--color-brand-light);
+}
+
+/* Outline variant of the mono button */
+.btn-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--color-brand);
+  color: var(--color-brand);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  padding: 0.7rem 1.1rem;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.btn-line:hover {
+  background: var(--color-brand);
+  color: #fff;
+}
+
+/* Pale sky-blue → cream gradient used on hero/feature bands */
+.bg-sky-gradient {
+  background: linear-gradient(180deg, var(--color-accent-soft) 0%, #E7EEFB 45%, var(--color-cream) 100%);
+}
+
+/* Soft white card with thin border */
+.card-soft {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+}
+
+/* M-30: dòng thời gian đơn hàng — icon tick "bung" ra khi một mốc hoàn thành. */
+@keyframes tl-tick-pop {
+  0%   { transform: scale(0.5); opacity: 0; }
+  55%  { transform: scale(1.18); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-tick { animation: tl-tick-pop 0.45s ease-out both; }
+
+/* ── Nike-inspired storefront primitives ─────────────────── */
+
+/* Fully-rounded CTA pill — dark fill, used on light backgrounds */
+.btn-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background: var(--color-brand);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 0.95rem;
+  line-height: 1;
+  border-radius: var(--radius-pill);
+  padding: 0.85rem 1.5rem;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.btn-pill:hover {
+  background: var(--color-brand-light);
+}
+
+/* Fully-rounded CTA pill — light fill, used on dark/photo backgrounds */
+.btn-pill-light {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background: #fff;
+  color: var(--color-brand);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 0.95rem;
+  line-height: 1;
+  border-radius: var(--radius-pill);
+  padding: 0.85rem 1.5rem;
+  transition: background 0.15s ease;
+}
+.btn-pill-light:hover {
+  background: var(--color-surface-alt);
+}
+
+/* Outline pill variant */
+.btn-pill-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background: transparent;
+  color: var(--color-brand);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 0.95rem;
+  line-height: 1;
+  border: 1px solid var(--color-brand);
+  border-radius: var(--radius-pill);
+  padding: 0.8rem 1.45rem;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.btn-pill-outline:hover {
+  background: var(--color-brand);
+  color: #fff;
+}
+
+/* Flat product card — no border, no shadow, image does the work */
+.card-flat {
+  background: var(--color-surface);
+  border-radius: 0;
+}
+
+/* Status label on product cards (Bestseller, New, Sold Out) — text only, no chip */
+.badge-status {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--color-error);
+}
+
+/* Discount percentage — success green, next to the struck-through price */
+.price-discount {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  color: var(--color-success);
+}
+
+/* Original price, struck through, muted */
+.price-original {
+  font-family: var(--font-sans);
+  color: var(--color-text-faint);
+  text-decoration: line-through;
 }

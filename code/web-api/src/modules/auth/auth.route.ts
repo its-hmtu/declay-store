@@ -3,6 +3,7 @@ import { Router } from "express";
 import { validate } from "@/middlewares/validate";
 import { routeProtect } from "@/middlewares/auth.middleware";
 import { cache } from "@/middlewares/cache.middleware";
+import { authLimiter } from "@/middlewares/rate-limit.middleware";
 import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, verifyEmailSchema } from "./auth.validate";
 import { IAuthService } from "./auth.interface";
 import AuthService from "./auth.service";
@@ -15,8 +16,8 @@ export function createAuthRouter(): Router {
   const authController = new AuthController(authService);
 
   // Public routes
-  router.post('/register', validate(registerSchema), authController.register);
-  router.post('/login', validate(loginSchema), authController.login);
+  router.post('/register', authLimiter, validate(registerSchema), authController.register);
+  router.post('/login', authLimiter, validate(loginSchema), authController.login);
   router.post('/refresh', authController.refreshToken);
 
   // Google OAuth routes
@@ -43,8 +44,8 @@ export function createAuthRouter(): Router {
     authController.getUserInfo
   );
 
-  router.post('/forgot-password', validate(forgotPasswordSchema), authController.forgotPassword);
-  router.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword);
+  router.post('/forgot-password', authLimiter, validate(forgotPasswordSchema), authController.forgotPassword);
+  router.post('/reset-password', authLimiter, validate(resetPasswordSchema), authController.resetPassword);
   router.post('/verify-email', validate(verifyEmailSchema), authController.verifyEmail);
 
   return router;

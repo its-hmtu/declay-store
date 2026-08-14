@@ -1,5 +1,10 @@
 import type { RequestHandler } from 'express';
 
+export interface IRatingSummary {
+  average: number;
+  count: number;
+}
+
 export interface IProduct {
   id: number;
   categoryId: number;
@@ -7,9 +12,34 @@ export interface IProduct {
   slug: string;
   description: string | null;
   isActive: boolean;
+  views: number;
   createdAt: Date;
   updatedAt: Date;
+  rating?: IRatingSummary;
+  /** Total units sold across completed orders. */
+  salesCount?: number;
+  /** Deepest active campaign discount % applied to this product, if any. */
+  campaignDiscountPercent?: number | null;
+  /**
+   * M-44: identity of that campaign, so the storefront can say "Tet Sale −30%"
+   * instead of a bare "−30%". A named reason to buy converts; a number does not.
+   */
+  campaignId?: number | null;
+  campaignName?: string | null;
+  campaignEndsAt?: Date | string | null;
 }
+
+export const PRODUCT_SORTS = [
+  'newest',
+  'oldest',
+  'price-asc',
+  'price-desc',
+  'best-sellers',
+  'top-rated',
+  'trending',
+] as const;
+
+export type ProductSort = (typeof PRODUCT_SORTS)[number];
 
 export interface IProductVariantSummary {
   id: number;
@@ -28,6 +58,7 @@ export interface ICreateProductData {
   name: string;
   slug: string;
   description?: string | null;
+  tagIds?: number[];
 }
 
 export interface IUpdateProductData {
@@ -36,18 +67,31 @@ export interface IUpdateProductData {
   slug?: string;
   description?: string | null;
   isActive?: boolean;
+  tagIds?: number[];
 }
 
 export interface IProductListQuery {
   categoryId?: number;
+  collectionId?: number;
+  /**
+   * M-44: restrict to products in an active campaign. Campaigns deliberately have
+   * no page of their own — they are a filter over the shop, exactly like a
+   * collection, so every banner and badge can link to `/products?campaignId=N`.
+   */
+  campaignId?: number;
+  minPrice?: number;
+  maxPrice?: number;
   page?: number;
   limit?: number;
   search?: string;
+  sort?: ProductSort;
+  /** Admin-only: include inactive (hidden) products in the result. */
+  includeInactive?: boolean;
 }
 
 export interface IProductService {
   list(query: IProductListQuery): Promise<{ rows: IProduct[]; count: number }>;
-  findById(id: number): Promise<IProductWithVariants>;
+  findById(id: number, viewerRole?: string | null): Promise<IProductWithVariants>;
   findBySlug(slug: string): Promise<IProductWithVariants>;
   create(data: ICreateProductData): Promise<IProduct>;
   update(id: number, data: IUpdateProductData): Promise<IProduct>;
@@ -56,6 +100,7 @@ export interface IProductService {
 
 export interface IProductController {
   list: RequestHandler;
+  adminList: RequestHandler;
   findById: RequestHandler;
   findBySlug: RequestHandler;
   create: RequestHandler;

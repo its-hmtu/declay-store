@@ -1,0 +1,92 @@
+@startuml
+skinparam dpi 160
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam ArrowColor #7A5C43
+skinparam ArrowFontSize 12
+skinparam actorStyle awesome
+skinparam actor {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam usecase {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  FontSize 13
+}
+skinparam rectangle {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam component {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam database {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam queue {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam cloud {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam participant {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam sequence {
+  LifeLineBorderColor #A98867
+  LifeLineBackgroundColor #F3E7D8
+  ArrowColor #7A5C43
+  DividerBackgroundColor #EFE2D0
+  BoxBackgroundColor #FAF5EE
+  BoxBorderColor #C9B197
+  GroupBackgroundColor #EFE2D0
+  GroupBorderColor #A98867
+}
+skinparam note {
+  BorderColor #C9A227
+  BackgroundColor #FFF9E8
+}
+skinparam class {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  HeaderBackgroundColor #E8D7C3
+}
+autonumber
+
+title Biểu đồ tuần tự chức năng Xem chi tiết sản phẩm
+
+actor "Người dùng" as U
+participant "Giao diện" as FE
+participant "ProductService" as PS
+participant "RecommendationService" as RS
+participant "ReviewService" as VS
+database "PostgreSQL" as DB
+
+U -> FE : Chọn một sản phẩm
+FE -> PS : GET /api/products/:slug
+PS -> DB : SELECT product + variants (isActive)
+DB --> PS : Sản phẩm và các phiên bản
+PS -> DB : UPDATE products SET views = views + 1
+PS -> DB : INSERT product_view_events
+PS -> PS : Tính giá hiệu lực từng phiên bản
+PS --> FE : Thông tin sản phẩm
+
+FE -> RS : GET /api/products/recommendations?context=detail
+RS -> DB : Truy vấn product_cooccurrence
+DB --> RS : Danh sách sản phẩm mua chung
+RS -> RS : Lọc anchor / giỏ / đã mua / hết hàng
+RS --> FE : Danh sách gợi ý
+
+FE -> VS : GET /api/products/:id/reviews
+VS -> DB : SELECT product_reviews
+VS --> FE : Danh sách đánh giá
+FE --> U : Hiển thị trang chi tiết đầy đủ
+@enduml

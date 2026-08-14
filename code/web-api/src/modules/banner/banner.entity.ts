@@ -14,6 +14,8 @@ class Banner extends Model<InferAttributes<Banner>, InferCreationAttributes<Bann
   declare subtitle: CreationOptional<string | null>;
   declare imageUrl: string;
   declare linkUrl: CreationOptional<string | null>;
+  /** M-44: when set, the banner only shows while that campaign is running. */
+  declare campaignId: CreationOptional<number | null>;
   declare position: CreationOptional<number>;
   declare isActive: CreationOptional<boolean>;
   declare startsAt: CreationOptional<Date | null>;
@@ -30,6 +32,13 @@ Banner.init(
     subtitle: { type: DataTypes.STRING(255), allowNull: true },
     imageUrl: { type: DataTypes.TEXT, allowNull: false, field: 'image_url' },
     linkUrl: { type: DataTypes.TEXT, allowNull: true, field: 'link_url' },
+    campaignId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'campaign_id',
+      references: { model: 'campaigns', key: 'id' },
+      onDelete: 'SET NULL',
+    },
     position: {
       type: DataTypes.INTEGER,
       allowNull: false,

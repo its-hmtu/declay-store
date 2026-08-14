@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentScriptType="application/ecmascript" contentStyleType="text/css" height="1036.6667px" preserveAspectRatio="none" style="width:2031px;height:1036px;" version="1.1" viewBox="0 0 2031 1036" width="2031.6667px" zoomAndPan="magnify"><defs/><g><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="510" x="761.6667" y="36.7782">Biểu đồ tuần tự chức năng Xóa sản phẩm</text><rect fill="#FFFFFF" height="514.0234" rx="6.6667" ry="6.6667" style="stroke: #A98867; stroke-width: 3.3333333333333335;" width="1990" x="21.6667" y="351.9531"/><rect fill="#FFFFFF" height="438.6328" style="stroke: none; stroke-width: 1.6666666666666667;" width="1990" x="21.6667" y="427.3438"/><line style="stroke: #A98867; stroke-width: 1.6666666666666667; stroke-dasharray: 5.0,5.0;" x1="111.6667" x2="111.6667" y1="183.776" y2="894.3099"/><line style="stroke: #A98867; stroke-width: 1.6666666666666667; stroke-dasharray: 5.0,5.0;" x1="567.5" x2="567.5" y1="183.776" y2="894.3099"/><line style="stroke: #A98867; stroke-width: 1.6666666666666667; stroke-dasharray: 5.0,5.0;" x1="951.6667" x2="951.6667" y1="183.776" y2="894.3099"/><line style="stroke: #A98867; stroke-width: 1.6666666666666667; stroke-dasharray: 5.0,5.0;" x1="1387.5" x2="1387.5" y1="183.776" y2="894.3099"/><line style="stroke: #A98867; stroke-width: 1.6666666666666667; stroke-dasharray: 5.0,5.0;" x1="1806.6667" x2="1806.6667" y1="183.776" y2="894.3099"/><line style="stroke: #A98867; stroke-width: 1.6666666666666667; stroke-dasharray: 5.0,5.0;" x1="1961.6667" x2="1961.6667" y1="183.776" y2="894.3099"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="136.6667" x="38.3333" y="178.6662">Quản trị viên</text><ellipse cx="111.6667" cy="70.2214" fill="#F3E7D8" rx="13.3333" ry="13.3333" style="stroke: #7A5C43; stroke-width: 3.3333333333333335;"/><path d="M111.6667,83.5547 L111.6667,128.5547 M90,96.888 L133.3333,96.888 M111.6667,128.5547 L90,153.5547 M111.6667,128.5547 L133.3333,153.5547 " fill="none" style="stroke: #7A5C43; stroke-width: 3.3333333333333335;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="136.6667" x="38.3333" y="912.7547">Quản trị viên</text><ellipse cx="111.6667" cy="934.5313" fill="#F3E7D8" rx="13.3333" ry="13.3333" style="stroke: #7A5C43; stroke-width: 3.3333333333333335;"/><path d="M111.6667,947.8646 L111.6667,992.8646 M90,961.1979 L133.3333,961.1979 M111.6667,992.8646 L90,1017.8646 M111.6667,992.8646 L133.3333,1017.8646 " fill="none" style="stroke: #7A5C43; stroke-width: 3.3333333333333335;"/><rect fill="#FBF3E7" height="48.5547" rx="6.6667" ry="6.6667" style="stroke: #7A5C43; stroke-width: 2.5;" width="198.3333" x="469.1667" y="133.5547"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="175" x="480.8333" y="165.3328">Giao diện Admin</text><rect fill="#FBF3E7" height="48.5547" rx="6.6667" ry="6.6667" style="stroke: #7A5C43; stroke-width: 2.5;" width="198.3333" x="469.1667" y="892.6432"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="175" x="480.8333" y="924.4214">Giao diện Admin</text><rect fill="#FBF3E7" height="48.5547" rx="6.6667" ry="6.6667" style="stroke: #7A5C43; stroke-width: 2.5;" width="183.3333" x="860" y="133.5547"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="160" x="871.6667" y="165.3328">ProductService</text><rect fill="#FBF3E7" height="48.5547" rx="6.6667" ry="6.6667" style="stroke: #7A5C43; stroke-width: 2.5;" width="183.3333" x="860" y="892.6432"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="160" x="871.6667" y="924.4214">ProductService</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="125" x="1320.8333" y="178.6662">PostgreSQL</text><path d="M1358.3333,98.5547 C1358.3333,81.888 1388.3333,81.888 1388.3333,81.888 C1388.3333,81.888 1418.3333,81.888 1418.3333,98.5547 L1418.3333,141.888 C1418.3333,158.5547 1388.3333,158.5547 1388.3333,158.5547 C1388.3333,158.5547 1358.3333,158.5547 1358.3333,141.888 L1358.3333,98.5547 " fill="#F3E7D8" style="stroke: #7A5C43; stroke-width: 2.5;"/><path d="M1358.3333,98.5547 C1358.3333,115.2214 1388.3333,115.2214 1388.3333,115.2214 C1388.3333,115.2214 1418.3333,115.2214 1418.3333,98.5547 " fill="none" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="125" x="1320.8333" y="912.7547">PostgreSQL</text><path d="M1358.3333,934.5313 C1358.3333,917.8646 1388.3333,917.8646 1388.3333,917.8646 C1388.3333,917.8646 1418.3333,917.8646 1418.3333,934.5313 L1418.3333,977.8646 C1418.3333,994.5313 1388.3333,994.5313 1388.3333,994.5313 C1388.3333,994.5313 1358.3333,994.5313 1358.3333,977.8646 L1358.3333,934.5313 " fill="#F3E7D8" style="stroke: #7A5C43; stroke-width: 2.5;"/><path d="M1358.3333,934.5313 C1358.3333,951.1979 1388.3333,951.1979 1388.3333,951.1979 C1388.3333,951.1979 1418.3333,951.1979 1418.3333,934.5313 " fill="none" style="stroke: #7A5C43; stroke-width: 2.5;"/><rect fill="#FBF3E7" height="48.5547" rx="6.6667" ry="6.6667" style="stroke: #7A5C43; stroke-width: 2.5;" width="210" x="1701.6667" y="133.5547"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="186.6667" x="1713.3333" y="165.3328">auditAdminWrites</text><rect fill="#FBF3E7" height="48.5547" rx="6.6667" ry="6.6667" style="stroke: #7A5C43; stroke-width: 2.5;" width="210" x="1701.6667" y="892.6432"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="186.6667" x="1713.3333" y="924.4214">auditAdminWrites</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="56.6667" x="1928.3333" y="178.6662">Redis</text><path d="M1931.6667,98.5547 C1931.6667,81.888 1961.6667,81.888 1961.6667,81.888 C1961.6667,81.888 1991.6667,81.888 1991.6667,98.5547 L1991.6667,141.888 C1991.6667,158.5547 1961.6667,158.5547 1961.6667,158.5547 C1961.6667,158.5547 1931.6667,158.5547 1931.6667,141.888 L1931.6667,98.5547 " fill="#F3E7D8" style="stroke: #7A5C43; stroke-width: 2.5;"/><path d="M1931.6667,98.5547 C1931.6667,115.2214 1961.6667,115.2214 1961.6667,115.2214 C1961.6667,115.2214 1991.6667,115.2214 1991.6667,98.5547 " fill="none" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="56.6667" x="1928.3333" y="912.7547">Redis</text><path d="M1931.6667,934.5313 C1931.6667,917.8646 1961.6667,917.8646 1961.6667,917.8646 C1961.6667,917.8646 1991.6667,917.8646 1991.6667,934.5313 L1991.6667,977.8646 C1991.6667,994.5313 1961.6667,994.5313 1961.6667,994.5313 C1961.6667,994.5313 1931.6667,994.5313 1931.6667,977.8646 L1931.6667,934.5313 " fill="#F3E7D8" style="stroke: #7A5C43; stroke-width: 2.5;"/><path d="M1931.6667,934.5313 C1931.6667,951.1979 1961.6667,951.1979 1961.6667,951.1979 C1961.6667,951.1979 1991.6667,951.1979 1991.6667,934.5313 " fill="none" style="stroke: #7A5C43; stroke-width: 2.5;"/><polygon fill="#7A5C43" points="548.3333,227.0573,565,233.724,548.3333,240.3906,555,233.724" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><line style="stroke: #7A5C43; stroke-width: 1.6666666666666667;" x1="111.6667" x2="558.3333" y1="233.724" y2="233.724"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="13.3333" x="123.3333" y="225.6738">1</text><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="396.6667" x="143.3333" y="225.6738">Chọn Xóa và xác nhận trong hộp thoại</text><polygon fill="#7A5C43" points="931.6667,273.6719,948.3333,280.3385,931.6667,287.0052,938.3333,280.3385" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><line style="stroke: #7A5C43; stroke-width: 1.6666666666666667;" x1="568.3333" x2="941.6667" y1="280.3385" y2="280.3385"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="13.3333" x="580" y="272.2884">2</text><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="323.3333" x="600" y="272.2884">DELETE /api/admin/products/:id</text><polygon fill="#7A5C43" points="1368.3333,320.2865,1385,326.9531,1368.3333,333.6198,1375,326.9531" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><line style="stroke: #7A5C43; stroke-width: 1.6666666666666667;" x1="951.6667" x2="1378.3333" y1="326.9531" y2="326.9531"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="13.3333" x="963.3333" y="318.903">3</text><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="320" x="983.3333" y="318.903">SELECT products WHERE id = ?</text><path d="M28.3333,351.9531 L128.3333,351.9531 L128.3333,363.6198 L111.6667,380.2865 L21.6667,380.2865 L21.6667,358.6198 " fill="#EFE2D0" style="stroke: #A98867; stroke-width: 1.6666666666666667;"/><rect fill="none" height="514.0234" rx="6.6667" ry="6.6667" style="stroke: #A98867; stroke-width: 3.3333333333333335;" width="1990" x="21.6667" y="351.9531"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="31.6667" x="46.6667" y="373.7313">alt</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="186.6667" x="153.3333" y="375.3979">[Không tồn tại]</text><polygon fill="#7A5C43" points="586.6667,407.3438,570,414.0104,586.6667,420.6771,580,414.0104" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><line style="stroke: #7A5C43; stroke-width: 1.6666666666666667; stroke-dasharray: 2.0,2.0;" x1="576.6667" x2="950" y1="414.0104" y2="414.0104"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="13.3333" x="596.6667" y="405.9603">4</text><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="138.3333" x="616.6667" y="405.9603">AppError 404</text><line style="stroke: #A98867; stroke-width: 1.6666666666666667; stroke-dasharray: 2.0,2.0;" x1="21.6667" x2="2011.6667" y1="429.0104" y2="429.0104"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="103.3333" x="30" y="449.1219">[Tồn tại]</text><polygon fill="#7A5C43" points="1368.3333,482.513,1385,489.1797,1368.3333,495.8464,1375,489.1797" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><line style="stroke: #7A5C43; stroke-width: 1.6666666666666667;" x1="951.6667" x2="1378.3333" y1="489.1797" y2="489.1797"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="13.3333" x="963.3333" y="481.1296">5</text><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="376.6667" x="983.3333" y="481.1296">DELETE product_variants (CASCADE)</text><polygon fill="#7A5C43" points="1368.3333,529.1276,1385,535.7943,1368.3333,542.4609,1375,535.7943" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><line style="stroke: #7A5C43; stroke-width: 1.6666666666666667;" x1="951.6667" x2="1378.3333" y1="535.7943" y2="535.7943"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="13.3333" x="963.3333" y="527.7441">6</text><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="176.6667" x="983.3333" y="527.7441">DELETE products</text><path d="M1396.6667,564.1276 L1396.6667,617.4609 A6.6667,6.6667 0 0 0 1403.3333,624.1276 L1956.6667,624.1276 A6.6667,6.6667 0 0 0 1963.3333,617.4609 L1963.3333,574.1276 L1946.6667,557.4609 L1403.3333,557.4609 A6.6667,6.6667 0 0 0 1396.6667,564.1276 " fill="#FFF9E8" style="stroke: #C9A227; stroke-width: 1.6666666666666667;"/><path d="M1946.6667,557.4609 L1946.6667,570.7943 A3.3333,3.3333 0 0 0 1950,574.1276 L1963.3333,574.1276 L1946.6667,557.4609 " fill="#FFF9E8" style="stroke: #C9A227; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="403.3333" x="1406.6667" y="585.9058">order_items giữ nguyên nhờ bản chụp</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="531.6667" x="1406.6667" y="611.1271">product_name_at_purchase và price_at_purchase</text><polygon fill="#7A5C43" points="1941.6667,659.5182,1958.3333,666.1849,1941.6667,672.8516,1948.3333,666.1849" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><line style="stroke: #7A5C43; stroke-width: 1.6666666666666667;" x1="951.6667" x2="1951.6667" y1="666.1849" y2="666.1849"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="13.3333" x="963.3333" y="658.1348">7</text><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="211.6667" x="983.3333" y="658.1348">Xóa cache liên quan</text><polygon fill="#7A5C43" points="1786.6667,706.1328,1803.3333,712.7995,1786.6667,719.4661,1793.3333,712.7995" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><line style="stroke: #7A5C43; stroke-width: 1.6666666666666667; stroke-dasharray: 2.0,2.0;" x1="951.6667" x2="1796.6667" y1="712.7995" y2="712.7995"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="13.3333" x="963.3333" y="704.7493">8</text><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="78.3333" x="983.3333" y="704.7493">Kết quả</text><polygon fill="#7A5C43" points="1406.6667,752.7474,1390,759.4141,1406.6667,766.0807,1400,759.4141" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><line style="stroke: #7A5C43; stroke-width: 1.6666666666666667;" x1="1396.6667" x2="1805" y1="759.4141" y2="759.4141"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="13.3333" x="1416.6667" y="751.3639">9</text><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="358.3333" x="1436.6667" y="751.3639">INSERT audit_log (action = delete)</text><polygon fill="#7A5C43" points="586.6667,799.362,570,806.0286,586.6667,812.6953,580,806.0286" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><line style="stroke: #7A5C43; stroke-width: 1.6666666666666667; stroke-dasharray: 2.0,2.0;" x1="576.6667" x2="1805" y1="806.0286" y2="806.0286"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="26.6667" x="596.6667" y="797.9785">10</text><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="195" x="630" y="797.9785">sendSuccess(200)</text><polygon fill="#7A5C43" points="130,845.9766,113.3333,852.6432,130,859.3099,123.3333,852.6432" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><line style="stroke: #7A5C43; stroke-width: 1.6666666666666667; stroke-dasharray: 2.0,2.0;" x1="120" x2="566.6667" y1="852.6432" y2="852.6432"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="26.6667" x="140" y="844.5931">11</text><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="350" x="173.3333" y="844.5931">Cập nhật lại danh sách sản phẩm</text><!--
+@startuml
+skinparam dpi 160
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam ArrowColor #7A5C43
+skinparam ArrowFontSize 12
+skinparam actorStyle awesome
+skinparam actor {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam usecase {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  FontSize 13
+}
+skinparam rectangle {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam component {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam database {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam queue {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam cloud {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam participant {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam sequence {
+  LifeLineBorderColor #A98867
+  LifeLineBackgroundColor #F3E7D8
+  ArrowColor #7A5C43
+  DividerBackgroundColor #EFE2D0
+  BoxBackgroundColor #FAF5EE
+  BoxBorderColor #C9B197
+  GroupBackgroundColor #EFE2D0
+  GroupBorderColor #A98867
+}
+skinparam note {
+  BorderColor #C9A227
+  BackgroundColor #FFF9E8
+}
+skinparam class {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  HeaderBackgroundColor #E8D7C3
+}
+autonumber
+
+title Biểu đồ tuần tự chức năng Xóa sản phẩm
+
+actor "Quản trị viên" as A
+participant "Giao diện Admin" as FE
+participant "ProductService" as S
+database "PostgreSQL" as DB
+participant "auditAdminWrites" as AU
+database "Redis" as RD
+
+A -> FE : Chọn Xóa và xác nhận trong hộp thoại
+FE -> S : DELETE /api/admin/products/:id
+S -> DB : SELECT products WHERE id = ?
+alt Không tồn tại
+  S - -> FE : AppError 404
+else Tồn tại
+  S -> DB : DELETE product_variants (CASCADE)
+  S -> DB : DELETE products
+  note right of DB
+    order_items giữ nguyên nhờ bản chụp
+    product_name_at_purchase và price_at_purchase
+  end note
+  S -> RD : Xóa cache liên quan
+  S - -> AU : Kết quả
+  AU -> DB : INSERT audit_log (action = delete)
+  AU - -> FE : sendSuccess(200)
+  FE - -> A : Cập nhật lại danh sách sản phẩm
+end
+@enduml
+
+PlantUML version 1.2019.06(Sat May 25 00:10:25 ICT 2019)
+(GPL source distribution)
+Java Runtime: OpenJDK Runtime Environment
+JVM: OpenJDK 64-Bit Server VM
+Java Version: 11.0.31+11-post-1ubuntu1-22.04.2-Ubuntu
+Operating System: Linux
+OS Version: 6.8.0-124-generic
+Default Encoding: UTF-8
+Language: en
+Country: null
+--></g></svg>

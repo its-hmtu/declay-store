@@ -1,0 +1,296 @@
+@startuml
+skinparam dpi 160
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam ArrowColor #7A5C43
+skinparam ArrowFontSize 12
+skinparam actorStyle awesome
+skinparam actor {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam usecase {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  FontSize 13
+}
+skinparam rectangle {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam component {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam database {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam queue {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam cloud {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam participant {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam sequence {
+  LifeLineBorderColor #A98867
+  LifeLineBackgroundColor #F3E7D8
+  ArrowColor #7A5C43
+  DividerBackgroundColor #EFE2D0
+  BoxBackgroundColor #FAF5EE
+  BoxBorderColor #C9B197
+  GroupBackgroundColor #EFE2D0
+  GroupBorderColor #A98867
+}
+skinparam note {
+  BorderColor #C9A227
+  BackgroundColor #FFF9E8
+}
+skinparam class {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  HeaderBackgroundColor #E8D7C3
+}
+title Lược đồ quan hệ giữa các bảng chính — Declay Store
+hide circle
+skinparam linetype ortho
+
+entity "users" as users {
+  * id : INTEGER <<PK>>
+  --
+  email : VARCHAR(255) <<U>>
+  password : VARCHAR(255)
+  full_name : VARCHAR(255)
+  google_id : VARCHAR(255) <<U>>
+  auth_provider : ENUM
+  is_email_verified : BOOLEAN
+}
+
+entity "addresses" as addr {
+  * id : INTEGER <<PK>>
+  --
+  user_id : INTEGER <<FK>>
+  receiver_name : VARCHAR(255)
+  receiver_phone : VARCHAR(20)
+  ward / district / city
+  ghn_district_id : INTEGER
+  is_default : BOOLEAN
+}
+
+entity "categories" as cat {
+  * id : INTEGER <<PK>>
+  --
+  name : VARCHAR(100)
+  slug : VARCHAR(120) <<U>>
+  parent_id : INTEGER <<FK>>
+  is_active : BOOLEAN
+}
+
+entity "products" as prod {
+  * id : INTEGER <<PK>>
+  --
+  category_id : INTEGER <<FK>>
+  name : VARCHAR(255)
+  slug : VARCHAR(280) <<U>>
+  is_active : BOOLEAN
+  views : INTEGER
+}
+
+entity "product_variants" as var {
+  * id : INTEGER <<PK>>
+  --
+  product_id : INTEGER <<FK>>
+  name : VARCHAR(100)
+  price : DECIMAL(10,2)
+  special_price : DECIMAL(10,2)
+  stock : INTEGER
+  images : TEXT[]
+  weight_gram : INTEGER
+}
+
+entity "carts" as cart {
+  * id : INTEGER <<PK>>
+  --
+  user_id : INTEGER <<FK,U>>
+  session_id : VARCHAR(64)
+}
+
+entity "cart_items" as citem {
+  * id : INTEGER <<PK>>
+  --
+  cart_id : INTEGER <<FK>>
+  variant_id : INTEGER <<FK>>
+  quantity : INTEGER
+}
+
+entity "orders" as ord {
+  * id : INTEGER <<PK>>
+  --
+  order_code : VARCHAR(20)
+  user_id : INTEGER <<FK>>
+  guest_token : VARCHAR(64)
+  status : ENUM
+  subtotal / discount_amount
+  shipping_fee / total_amount
+  shipping_address_id : <<FK>>
+  discount_code_id : <<FK>>
+  paid_at / delivered_at
+}
+
+entity "order_items" as oitem {
+  * id : INTEGER <<PK>>
+  --
+  order_id : INTEGER <<FK>>
+  variant_id : INTEGER <<FK>>
+  quantity : INTEGER
+  price_at_purchase : DECIMAL
+  product_name_at_purchase
+  campaign_id : INTEGER <<FK>>
+}
+
+entity "order_shipments" as ship {
+  * id : INTEGER <<PK>>
+  --
+  order_id : INTEGER <<FK,U>>
+  provider / carrier
+  tracking_number
+  status / last_event
+}
+
+entity "payments" as pay {
+  * id : BIGINT <<PK>>
+  --
+  order_id : INTEGER <<FK>>
+  method / provider
+  amount : DECIMAL(10,2)
+  status : VARCHAR(20)
+  reconciled_at / reconciled_amount
+}
+
+entity "refunds" as ref {
+  * id : BIGINT <<PK>>
+  --
+  order_id : INTEGER <<FK>>
+  payment_id : BIGINT <<FK>>
+  amount : DECIMAL(10,2)
+  type : VARCHAR(20)
+  cancellation_request_id <<FK>>
+  return_request_id <<FK>>
+}
+
+entity "cancellation_requests" as creq {
+  * id : BIGINT <<PK>>
+  --
+  order_id : INTEGER <<FK>>
+  reason / status
+  resolved_by : INTEGER <<FK>>
+}
+
+entity "return_requests" as rreq {
+  * id : BIGINT <<PK>>
+  --
+  order_id : INTEGER <<FK>>
+  type / status
+  return_tracking_number
+}
+
+entity "return_request_items" as ritem {
+  * id : BIGINT <<PK>>
+  --
+  return_request_id : BIGINT <<FK>>
+  order_item_id : BIGINT <<FK>>
+  quantity : INTEGER
+  photo_urls : TEXT[]
+  refund_amount : DECIMAL
+}
+
+entity "discount_codes" as disc {
+  * id : INTEGER <<PK>>
+  --
+  code : VARCHAR(50) <<U>>
+  type : ENUM
+  value / min_order_amount
+  max_uses / used_count
+  expires_at
+}
+
+entity "campaigns" as camp {
+  * id : INTEGER <<PK>>
+  --
+  name : VARCHAR(150)
+  discount_percent : DECIMAL
+  starts_at / ends_at
+  is_active : BOOLEAN
+}
+
+entity "product_reviews" as rev {
+  * id : INTEGER <<PK>>
+  --
+  user_id : INTEGER <<FK>>
+  product_id : INTEGER <<FK>>
+  rating : INTEGER
+  is_verified_purchase : BOOLEAN
+}
+
+entity "shipping_methods" as sm {
+  * id : INTEGER <<PK>>
+  --
+  name / zone
+  fee / free_over
+  estimated_days
+}
+
+entity "admin_users" as adm {
+  * id : INTEGER <<PK>>
+  --
+  email : VARCHAR(255) <<U>>
+  password : VARCHAR(255)
+  role : ENUM
+  is_active : BOOLEAN
+}
+
+entity "audit_log" as aud {
+  * id : BIGINT <<PK>>
+  --
+  actor_type / actor_id
+  action / entity / entity_id
+  source : VARCHAR(20)
+  metadata : JSONB
+}
+
+users ||--o{ addr
+users ||--o| cart
+users ||--o{ ord
+users ||--o{ rev
+cat ||--o{ prod
+cat ||--o{ cat
+prod ||--|{ var
+prod ||--o{ rev
+cart ||--o{ citem
+var ||--o{ citem
+ord ||--|{ oitem
+var ||--o{ oitem
+ord ||--o| ship
+ord ||--o{ pay
+ord ||--o{ ref
+pay ||--o{ ref
+ord ||--o{ creq
+ord ||--o{ rreq
+rreq ||--|{ ritem
+oitem ||--o{ ritem
+creq ||--o| ref
+rreq ||--o| ref
+disc ||--o{ ord
+sm ||--o{ ord
+addr ||--o{ ord
+camp ||--o{ oitem
+adm ||--o{ aud
+@enduml

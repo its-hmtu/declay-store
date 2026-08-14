@@ -1,54 +1,95 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
+import { Star } from 'lucide-react';
 import type { Product } from '@/lib/types';
+import { useT } from '@/lib/i18n/LocaleProvider';
+import { formatPrice, pricingOf } from '@/lib/utils';
+import { badgeFor } from '@/lib/campaign-display';
 
 export default function ProductCard({ product }: { product: Product }) {
+  const { t } = useT();
   const variant   = product.variants?.[0];
   const image     = variant?.images?.[0];
-  const price     = variant ? parseFloat(variant.price) : null;
+  // M-40: the server decided this price. We only render it.
+  const pricing   = variant ? pricingOf(variant, product.campaignDiscountPercent) : null;
+  const base      = pricing?.basePrice ?? null;
+  const price     = pricing?.effectivePrice ?? null;
+  const onSale    = pricing?.onSale ?? false;
+  const percentOff = pricing?.discountPercent ?? 0;
+  // M-44: name the campaign when it is what set the price. `source` comes from
+  // the server — the card must not guess why a price is reduced.
+  const badge     = badgeFor(pricing?.source, percentOff, product.campaignName);
   const inStock   = product.variants?.some((v) => v.isActive && v.stock > 0);
+  const rating    = product.rating;
+  const sold      = product.salesCount ?? 0;
 
   return (
-    <Link
-      href={`/products/${product.slug}`}
-      className="group block rounded-xl overflow-hidden border border-border bg-surface hover:border-brand-lighter transition-colors"
-    >
-      <div className="aspect-square bg-surface-alt overflow-hidden">
+    <Link href={`/products/${product.slug}`} className="group block">
+      <div className="aspect-square card-flat bg-surface-alt overflow-hidden">
         {image ? (
           <Image
             src={image}
             alt={product.name}
-            width={400}
-            height={400}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            width={500}
+            height={500}
+            className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-text-faint text-sm">
+          <div className="w-full h-full flex items-center justify-center font-sans text-xs text-text-faint">
             No image
           </div>
         )}
       </div>
-      <div className="p-4">
-        {product.category && (
-          <p className="text-xs text-text-muted uppercase tracking-wider mb-1">
-            {product.category.name}
-          </p>
-        )}
-        <h3 className="font-serif font-semibold text-text group-hover:text-brand transition-colors line-clamp-2">
+
+      <div className="pt-3">
+        {!inStock ? (
+          <p className="badge-status mb-1">{t('product.soldOut')}</p>
+        ) : sold > 0 ? (
+          <p className="badge-status mb-1">{t('product.bestseller')}</p>
+        ) : null}
+        <h3 className="font-sans font-medium text-text leading-snug group-hover:underline decoration-1 underline-offset-2 line-clamp-2">
           {product.name}
         </h3>
-        <div className="mt-2 flex items-center justify-between">
+        {product.category && (
+          <p className="font-sans text-sm text-text-muted mt-0.5">{product.category.name}</p>
+        )}
+        <div className="mt-1.5 flex items-center justify-between">
           {price !== null ? (
-            <p className="font-medium text-brand">
-              ${price.toFixed(2)}
-            </p>
+            onSale ? (
+              <p className="font-sans text-sm flex items-baseline gap-1.5">
+                <span className="text-text font-medium">{formatPrice(price)}</span>
+                <span className="price-original">{formatPrice((base as number))}</span>
+                {badge && (
+                  <span className={badge.kind === 'campaign' ? 'price-discount font-semibold' : 'price-discount'}>
+                    {badge.text}
+                  </span>
+                )}
+              </p>
+            ) : (
+              <p className="font-sans text-sm text-text">{formatPrice(price)}</p>
+            )
           ) : (
-            <p className="text-sm text-text-muted">—</p>
-          )}
-          {!inStock && (
-            <span className="text-xs text-error font-medium">Sold out</span>
+            <p className="font-sans text-sm text-text-faint">&mdash;</p>
           )}
         </div>
+
+        {/* Evaluation metrics: rating + units sold */}
+        {(rating && rating.count > 0) || sold > 0 ? (
+          <div className="mt-1 flex items-center gap-2.5 font-sans text-xs text-text-muted">
+            {rating && rating.count > 0 && (
+              <span className="flex items-center gap-1">
+                <Star size={12} className="fill-accent text-accent" />
+                {rating.average.toFixed(1)}
+                {/* <span className="text-text-faint">({rating.count})</span> */}
+              </span>
+            )}
+            {/* {sold > 0 && (
+              <span className="text-text-faint">{t('product.sold', { count: sold })}</span>
+            )} */}
+          </div>
+        ) : null}
       </div>
     </Link>
   );

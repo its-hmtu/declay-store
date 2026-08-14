@@ -13,6 +13,13 @@ class ProductVariant extends Model<InferAttributes<ProductVariant>, InferCreatio
   declare productId: number;
   declare name: string;
   declare price: number;
+  declare specialPrice: CreationOptional<number | null>;
+  /** M-03: admin-only — never exposed to staff or storefront (BR-09). */
+  declare costPrice: CreationOptional<number | null>;
+  declare weightGram: CreationOptional<number | null>;
+  declare lengthCm: CreationOptional<number | null>;
+  declare widthCm: CreationOptional<number | null>;
+  declare heightCm: CreationOptional<number | null>;
   declare stock: CreationOptional<number>;
   declare images: CreationOptional<string[]>;
   declare isActive: CreationOptional<boolean>;
@@ -42,6 +49,16 @@ ProductVariant.init(
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
     },
+    specialPrice: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      field: 'special_price',
+    },
+    costPrice: { type: DataTypes.DECIMAL(10, 2), allowNull: true, field: 'cost_price' },
+    weightGram: { type: DataTypes.INTEGER, allowNull: true, field: 'weight_gram' },
+    lengthCm: { type: DataTypes.INTEGER, allowNull: true, field: 'length_cm' },
+    widthCm: { type: DataTypes.INTEGER, allowNull: true, field: 'width_cm' },
+    heightCm: { type: DataTypes.INTEGER, allowNull: true, field: 'height_cm' },
     stock: {
       type: DataTypes.INTEGER,
       allowNull: false,

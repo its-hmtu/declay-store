@@ -81,7 +81,35 @@ function generateDefaultKey(req: Request): string {
     throw httpError(401, 'User ID is required for caching');
   }
 
-  return `cache:${method}:${path}:${userId}`;
+  // The query string is part of what identifies a response. Leaving it out means
+  // `?limit=3` and `?limit=20` share an entry and whichever ran first wins.
+  const query = new URLSearchParams(req.query as Record<string, string>).toString();
+  return `cache:${method}:${path}:${userId}${query ? `:${query}` : ''}`;
+}
+
+/**
+ * Build a cache key that varies by the query parameters a route actually reads.
+ *
+ * Why this exists: several routes passed `keyGenerator: () => SOME_CONSTANT`,
+ * which silently ignores the query string. `GET /collections` and
+ * `GET /collections?withProducts=8` return genuinely different payloads but
+ * collided on one entry — so the collections page rendered nothing, because it
+ * received the variant that carries no products. Same latent bug on articles,
+ * where `?limit=3` and `?limit=20` shared a slot.
+ *
+ * Listing the params explicitly (rather than hashing the whole query) keeps
+ * unrelated junk like tracking parameters from fragmenting the cache.
+ */
+export function keyWithQuery(base: string, params: string[]) {
+  return (req: Request): string => {
+    const parts = params
+      .map((name) => {
+        const value = req.query[name];
+        return typeof value === 'string' && value !== '' ? `${name}=${value}` : null;
+      })
+      .filter(Boolean);
+    return parts.length ? `${base}:${parts.join('&')}` : base;
+  };
 }
 
 /**

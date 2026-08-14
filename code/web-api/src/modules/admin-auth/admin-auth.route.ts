@@ -10,6 +10,7 @@ export function createAdminAuthRouter(): Router {
   const controller = new AdminAuthController(new AdminAuthService());
 
   router.post('/login', validate(adminLoginSchema), controller.login);
+  router.post('/refresh', controller.refresh);
   router.get('/me', adminProtect, controller.getAdminInfo);
 
   return router;

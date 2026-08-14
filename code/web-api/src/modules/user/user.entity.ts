@@ -18,6 +18,7 @@ class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   declare username: CreationOptional<string | null>;
   declare fullName: CreationOptional<string | null>;
   declare phoneNumber: CreationOptional<string | null>;
+  declare dateOfBirth: CreationOptional<string | null>;
   declare password: CreationOptional<string>;
   declare isActive: CreationOptional<boolean>;
   declare isEmailVerified: CreationOptional<boolean>;
@@ -36,6 +37,7 @@ class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
     username: string | null;
     fullName: string | null;
     phoneNumber: string | null;
+    dateOfBirth: string | null;
     isActive: boolean;
     isEmailVerified: boolean;
     authProvider: 'local' | 'google' | null;
@@ -48,6 +50,7 @@ class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
       username: this.username,
       fullName: this.fullName,
       phoneNumber: this.phoneNumber,
+      dateOfBirth: this.dateOfBirth,
       isActive: this.isActive,
       isEmailVerified: this.isEmailVerified,
       authProvider: this.authProvider,
@@ -95,6 +98,11 @@ User.init(
       type: DataTypes.STRING(20),
       allowNull: true,
       field: 'phone_number',
+    },
+    dateOfBirth: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+      field: 'date_of_birth',
     },
     googleId: {
       type: DataTypes.STRING(255),

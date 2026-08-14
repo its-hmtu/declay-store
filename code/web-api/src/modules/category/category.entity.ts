@@ -14,6 +14,8 @@ class Category extends Model<InferAttributes<Category>, InferCreationAttributes<
   declare description: CreationOptional<string | null>;
   declare parentId: CreationOptional<number | null>;
   declare isActive: CreationOptional<boolean>;
+  /** M-47: admin picks which categories get a product row on the home page. */
+  declare showOnHome: CreationOptional<boolean>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 }
@@ -50,6 +52,12 @@ Category.init(
       allowNull: false,
       defaultValue: true,
       field: 'is_active',
+    },
+    showOnHome: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'show_on_home',
     },
     createdAt: {
       type: DataTypes.DATE,

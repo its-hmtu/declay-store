@@ -1,0 +1,97 @@
+@startuml
+skinparam dpi 160
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam ArrowColor #7A5C43
+skinparam ArrowFontSize 12
+skinparam actorStyle awesome
+skinparam actor {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam usecase {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  FontSize 13
+}
+skinparam rectangle {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam component {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam database {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam queue {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam cloud {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam participant {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam sequence {
+  LifeLineBorderColor #A98867
+  LifeLineBackgroundColor #F3E7D8
+  ArrowColor #7A5C43
+  DividerBackgroundColor #EFE2D0
+  BoxBackgroundColor #FAF5EE
+  BoxBorderColor #C9B197
+  GroupBackgroundColor #EFE2D0
+  GroupBorderColor #A98867
+}
+skinparam note {
+  BorderColor #C9A227
+  BackgroundColor #FFF9E8
+}
+skinparam class {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  HeaderBackgroundColor #E8D7C3
+}
+title Biểu đồ phân rã use case Quản lý đơn hàng
+left to right direction
+actor Admin as A
+actor "Super Admin" as SA
+actor "Hệ thống\nvận chuyển" as SHIP
+
+rectangle "Quản lý đơn hàng" {
+  usecase "Xem danh sách đơn\n(lọc, phân trang)" as U1
+  usecase "Xem chi tiết đơn" as U2
+  usecase "Cập nhật\ntrạng thái đơn" as U3
+  usecase "Kiểm tra quy tắc\nchuyển trạng thái" as U4
+  usecase "Tạo vận đơn GHN" as U5
+  usecase "Đồng bộ trạng thái\nvận đơn" as U6
+  usecase "Duyệt / từ chối\nyêu cầu hủy" as U7
+  usecase "Duyệt / từ chối\nyêu cầu trả hàng" as U8
+  usecase "Thực hiện\nhoàn tiền" as U9
+  usecase "Gửi email\nthông báo khách" as U10
+}
+
+A --> U1
+A --> U2
+A --> U3
+A --> U5
+A --> U6
+A --> U7
+A --> U8
+SA --> U1
+SA --> U3
+
+U3 ..> U4 : <<include>>
+U3 ..> U10 : <<include>>
+U5 <-- SHIP
+U6 <-- SHIP
+U7 ..> U9 : <<extend>>
+U8 ..> U9 : <<include>>
+@enduml

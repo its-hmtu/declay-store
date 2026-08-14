@@ -3,6 +3,10 @@ import { createApp } from './app';
 import { initializeDatabase, disconnectDatabase } from './lib/database';
 import { connectRedis, disconnectRedis } from './lib/redis';
 import { startEmailWorker, closeEmailWorker } from './lib/email-queue';
+import { startReservationWorker, closeReservationWorker, reconcileReservations } from './lib/reservation-queue';
+import { startGhnSyncWorker, closeGhnSyncWorker } from './lib/ghn-sync-queue';
+import { startReturnExpiryWorker, closeReturnExpiryWorker } from './lib/return-expiry-queue';
+import { startRecommendationWorker, closeRecommendationWorker } from './lib/recommendation-queue';
 
 const port = Number(process.env.PORT ?? 3000);
 const app = createApp();
@@ -15,6 +19,11 @@ async function start(): Promise<void> {
     ]);
 
     startEmailWorker();
+    startReservationWorker();
+    await reconcileReservations();
+    await startGhnSyncWorker();
+    await startReturnExpiryWorker();
+    await startRecommendationWorker();
 
     app.listen(port, '0.0.0.0', () => {
       console.log(`✅ Server running on http://localhost:${port}`);
@@ -31,6 +40,10 @@ async function shutdown(signal: string, error?: unknown, exitCode?: number): Pro
     disconnectDatabase(),
     disconnectRedis(),
     closeEmailWorker(),
+    closeReservationWorker(),
+    closeGhnSyncWorker(),
+    closeReturnExpiryWorker(),
+    closeRecommendationWorker(),
   ]);
   process.exit(exitCode || 0);
 }

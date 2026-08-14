@@ -1,22 +1,38 @@
+import { Op, Transaction } from "sequelize";
+import { sequelize } from "@/config/sequelize";
 import Address from "./address.entity";
 import { IAddress, IAddressService } from "./address.interface";
 
 class AddressService implements IAddressService {
+  // A partial unique index allows only one default address per user, so clear any
+  // existing default before promoting another — otherwise the insert/update collides.
+  private async clearDefault(userId: number, exceptId: number | null, t: Transaction): Promise<void> {
+    const where: Record<string, unknown> = { userId, isDefault: true };
+    if (exceptId !== null) where.id = { [Op.ne]: exceptId };
+    await Address.update({ isDefault: false }, { where, transaction: t });
+  }
+
   async createAddress(userId: number, addressData: Omit<IAddress, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<IAddress> {
-    // Implementation for creating a new address
-    const { receiverName, receiverPhone, addressLine, addressLine2, ward, district, city, country, postalCode, isDefault, addressType } = addressData;
-    const newAddress = await Address.create({ ...addressData, userId });
-    return newAddress;
+    return sequelize.transaction(async (t) => {
+      if (addressData.isDefault) {
+        await this.clearDefault(userId, null, t);
+      }
+      return Address.create({ ...addressData, userId }, { transaction: t });
+    });
   }
 
   async updateAddress(addressId: number, userId: number, addressData: Partial<Omit<IAddress, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>): Promise<IAddress | null> {
-    // Implementation for updating an existing address
-    const address = await Address.findOne({ where: { id: addressId, userId } });
-    if (!address) {
-      return null;
-    }
-    await address.update(addressData);
-    return address;
+    return sequelize.transaction(async (t) => {
+      const address = await Address.findOne({ where: { id: addressId, userId }, transaction: t });
+      if (!address) {
+        return null;
+      }
+      if (addressData.isDefault) {
+        await this.clearDefault(userId, addressId, t);
+      }
+      await address.update(addressData, { transaction: t });
+      return address;
+    });
   }
 
   async deleteAddress(addressId: number, userId: number): Promise<null | boolean> {

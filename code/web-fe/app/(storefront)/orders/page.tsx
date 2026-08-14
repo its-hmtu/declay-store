@@ -1,8 +1,7 @@
-import type { Metadata } from 'next';
-import OrdersClient from './OrdersClient';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = { title: 'My Orders' };
-
+// M-31: Đơn hàng giờ là một mục trong trang Profile. Giữ route cũ để mọi liên
+// kết cũ (email, thông báo) vẫn hoạt động — chuyển hướng vào mục Đơn hàng.
 export default function OrdersPage() {
-  return <OrdersClient />;
+  redirect('/account/orders');
 }

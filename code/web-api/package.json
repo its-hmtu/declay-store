@@ -6,22 +6,41 @@
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js",
+    "start": "node -r ./register-paths.js dist/server.js",
     "dev": "nodemon",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "migrate": "node scripts/migrate.js up",
+    "migrate:down": "node scripts/migrate.js down",
+    "migrate:status": "node scripts/migrate.js status",
+    "seed": "node seeders/seed.js",
+    "predev": "node scripts/migrate.js up",
+    "prestart": "node scripts/migrate.js up",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "ghn:sync": "npm run build && node scripts/ghn-sync.js",
+    "vnpay:diagnose": "node scripts/vnpay-diagnose.js",
+    "ghn:check": "node scripts/ghn-check.js",
+    "address:check": "node scripts/address-check.js",
+    "ghn:probe": "node scripts/ghn-fee-probe.js",
+    "ghn:webhook-test": "node scripts/ghn-webhook-test.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.105.0",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.78.0",
+    "cloudinary": "^2.10.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.22.1",
     "express-async-handler": "^1.2.0",
+    "express-rate-limit": "^7.5.1",
     "express-session": "^1.17.3",
     "helmet": "^8.1.0",
     "ioredis": "^5.10.1",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "multer": "^2.2.0",
     "nodemailer": "^8.0.10",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
@@ -29,6 +48,7 @@
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.7",
     "stripe": "^22.1.1",
+    "tsconfig-paths": "^4.2.0",
     "zod": "^4.4.2"
   },
   "devDependencies": {
@@ -38,15 +58,22 @@
     "@types/express-session": "^1.17.11",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.9",
+    "@types/multer": "^2.1.0",
     "@types/node": "^20.17.50",
     "@types/nodemailer": "^8.0.0",
     "@types/passport": "^1.0.16",
     "@types/passport-google-oauth20": "^2.0.17",
+    "@types/supertest": "^7.2.0",
+    "@vitest/ui": "^4.1.10",
     "nodemon": "^3.1.9",
     "redis": "^4.7.0",
     "sequelize-cli": "^6.6.5",
+    "supertest": "^7.2.2",
     "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

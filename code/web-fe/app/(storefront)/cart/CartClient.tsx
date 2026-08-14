@@ -1,90 +1,95 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Cart } from '@/lib/types';
-import { cartApi } from '@/lib/api';
+import { effectivePrice, formatPrice } from '@/lib/utils';
 import { auth } from '@/lib/auth';
+import { useT } from '@/lib/i18n/LocaleProvider';
 import Button from '@/components/ui/Button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useCart } from '@/lib/cart/CartProvider';
+import RecommendedProducts from '@/components/storefront/RecommendedProducts';
+import RecentlyViewed from '@/components/storefront/RecentlyViewed';
 
 export default function CartClient() {
-  const [cart,    setCart]    = useState<Cart | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchCart = useCallback(async () => {
-    const token = auth.getToken();
-    if (!token) { setLoading(false); return; }
-    try {
-      const res = await cartApi.get(token);
-      setCart(res.data);
-    } catch {
-      toast.error('Could not load cart.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchCart(); }, [fetchCart]);
+  const { t } = useT();
+  // M-20: đọc từ trạng thái giỏ hàng dùng chung. Trước đây trang này giữ bản
+  // sao riêng, nên sửa số lượng ở đây thì badge trên Header vẫn hiện số cũ.
+  const { cart, loading, updateItem, removeItem: removeCartItem } = useCart();
 
   async function updateQty(itemId: number, qty: number) {
-    const token = auth.getToken();
-    if (!token) return;
     try {
-      const res = await cartApi.update(token, itemId, qty);
-      setCart(res.data);
+      await updateItem(itemId, qty);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Update failed.');
     }
   }
 
   async function removeItem(itemId: number) {
-    const token = auth.getToken();
-    if (!token) return;
     try {
-      const res = await cartApi.remove(token, itemId);
-      setCart(res.data);
-      toast.success('Item removed.');
+      await removeCartItem(itemId);
+      toast.success(t('cart.removed'));
     } catch {
       toast.error('Remove failed.');
     }
   }
 
   if (loading) return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-20 text-center text-text-muted">Loading cart…</div>
-  );
-
-  if (!auth.isLoggedIn()) return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-20 text-center">
-      <h1 className="font-serif text-3xl font-bold text-text mb-4">Your Cart</h1>
-      <p className="text-text-muted mb-6">Please log in to view your cart.</p>
-      <Link href="/login" className="inline-flex items-center px-7 py-3 bg-brand text-white rounded-lg hover:bg-brand-light transition-colors font-medium">
-        Log in
-      </Link>
+      <Skeleton className="mx-auto h-6 w-48 mb-4" />
+      <div className="space-y-4">
+        <div className="flex gap-4 p-4 rounded-xl border border-border bg-surface">
+          <Skeleton className="h-20 w-20 rounded-lg" />
+          <div className="flex-1">
+            <Skeleton className="h-4 w-64 mb-2" />
+            <Skeleton className="h-3 w-40 mb-2" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+          <div className="w-36">
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+        <div className="flex gap-4 p-4 rounded-xl border border-border bg-surface">
+          <Skeleton className="h-20 w-20 rounded-lg" />
+          <div className="flex-1">
+            <Skeleton className="h-4 w-64 mb-2" />
+            <Skeleton className="h-3 w-40 mb-2" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+          <div className="w-36">
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+      </div>
     </div>
   );
 
+  // M-01: no login wall — an empty cart simply shows the empty state below.
+
   const items   = cart?.items ?? [];
   const subtotal = items.reduce((sum, item) => {
-    const price = parseFloat(item.variant?.price ?? '0');
+    const price = effectivePrice(item.variant, item.variant?.product?.campaignDiscountPercent);
     return sum + price * item.quantity;
   }, 0);
 
   if (items.length === 0) return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-20 text-center">
-      <h1 className="font-serif text-3xl font-bold text-text mb-4">Your Cart</h1>
-      <p className="text-text-muted mb-6">Your cart is empty.</p>
+      <h1 className="font-serif text-3xl font-bold text-text mb-4">{t('cart.title')}</h1>
+      <p className="text-text-muted mb-6">{t('cart.empty')}</p>
       <Link href="/products" className="inline-flex items-center px-7 py-3 bg-brand text-white rounded-lg hover:bg-brand-light transition-colors font-medium">
         Shop Now
       </Link>
+      <div className="text-left">
+        <RecommendedProducts />
+      </div>
     </div>
   );
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
-      <h1 className="font-serif text-3xl font-bold text-text mb-8">Your Cart</h1>
+      <h1 className="font-serif text-3xl font-bold text-text mb-8">{t('cart.title')}</h1>
 
       <div className="grid md:grid-cols-3 gap-8">
         {/* Items */}
@@ -93,7 +98,9 @@ export default function CartClient() {
             const variant = item.variant;
             const product = variant?.product;
             const image   = variant?.images?.[0];
-            const price   = parseFloat(variant?.price ?? '0');
+            const base    = parseFloat(variant?.price ?? '0');
+            const price   = effectivePrice(variant, product?.campaignDiscountPercent);
+            const onSale  = price < base;
 
             return (
               <div key={item.id} className="flex gap-4 p-4 rounded-xl border border-border bg-surface">
@@ -107,7 +114,9 @@ export default function CartClient() {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-text truncate">{product?.name}</p>
                   <p className="text-sm text-text-muted">{variant?.name}</p>
-                  <p className="mt-1 text-brand font-semibold">${price.toFixed(2)}</p>
+                  <p className="mt-1 font-semibold">
+                    {onSale ? (<><span className="text-error">{formatPrice(price)}</span> <span className="text-text-faint line-through text-sm">{formatPrice(base)}</span></>) : <span className="text-brand">{formatPrice(price)}</span>}
+                  </p>
                 </div>
                 <div className="flex flex-col items-end justify-between gap-2">
                   <button onClick={() => removeItem(item.id)} className="text-text-faint hover:text-error transition-colors">
@@ -118,7 +127,7 @@ export default function CartClient() {
                     <span className="w-8 text-center font-medium">{item.quantity}</span>
                     <button onClick={() => updateQty(item.id, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center text-text-muted hover:text-brand transition-colors">+</button>
                   </div>
-                  <p className="text-sm font-medium text-text">${(price * item.quantity).toFixed(2)}</p>
+                  <p className="text-sm font-medium text-text">{formatPrice((price * item.quantity))}</p>
                 </div>
               </div>
             );
@@ -131,8 +140,8 @@ export default function CartClient() {
             <h2 className="font-serif text-lg font-semibold text-text mb-4">Order Summary</h2>
             <div className="space-y-2 text-sm text-text-muted">
               <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span className="text-text font-medium">${subtotal.toFixed(2)}</span>
+                <span>{t('cart.subtotal')}</span>
+                <span className="text-text font-medium">{formatPrice(subtotal)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Shipping</span>
@@ -141,7 +150,7 @@ export default function CartClient() {
             </div>
             <div className="mt-4 pt-4 border-t border-border flex justify-between font-semibold text-text">
               <span>Total</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>{formatPrice(subtotal)}</span>
             </div>
             <Link href="/checkout">
               <Button className="w-full mt-6">Proceed to Checkout</Button>
@@ -149,6 +158,14 @@ export default function CartClient() {
           </div>
         </div>
       </div>
+
+      <RecommendedProducts
+        context="cart"
+        productIds={items.map((i) => i.variant?.product?.id).filter((x): x is number => typeof x === 'number')}
+      />
+      <RecentlyViewed
+        excludeIds={items.map((i) => i.variant?.product?.id).filter((x): x is number => typeof x === 'number')}
+      />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { Wishlist, WishlistItem } from './wishlist.entity';
+import { PUBLIC_VARIANT_ATTRIBUTES } from '@/modules/product-variant/variant.fields';
 import ProductVariant from '@/modules/product-variant/product-variant.entity';
 import Product from '@/modules/product/product.entity';
 import { httpError } from '@/utils/http-error';
@@ -21,6 +22,7 @@ export default class WishlistService implements IWishlistService {
           include: [
             {
               model: ProductVariant,
+              attributes: PUBLIC_VARIANT_ATTRIBUTES,
               as: 'variant',
               include: [{ model: Product, as: 'product', attributes: ['id', 'name', 'slug'] }],
             },

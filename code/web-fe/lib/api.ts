@@ -1,4 +1,5 @@
 import type { ApiResponse, ApiError } from './types';
+import { notifyAdminSessionExpired } from './session-expiry';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -35,6 +36,9 @@ async function request<T>(
     'Content-Type': 'application/json',
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
+  // M-01: identify the guest cart/checkout session when the visitor is not signed in.
+  const guestId = readCookie('declay_guest');
+  if (guestId) headers['X-Guest-Session'] = guestId;
 
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
@@ -48,23 +52,57 @@ async function request<T>(
 
   if (!res.ok) {
     if (res.status === 401 && !options._retry) {
-      const refreshToken = readCookie('declay_refresh');
-      if (refreshToken) {
-        try {
-          const refreshRes = await fetch(`${BASE_URL}/auth/refresh`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken }),
-          });
-          if (refreshRes.ok) {
-            const refreshJson = await refreshRes.json();
-            const newToken = (refreshJson as ApiResponse<{ accessToken: string }>).data.accessToken;
-            writeCookie('declay_token', newToken, 3600);
-            return request(path, { ...options, token: newToken, _retry: true });
-          }
-        } catch {}
-        deleteCookie('declay_token');
-        deleteCookie('declay_refresh');
+      if (path.startsWith('/admin') && path !== '/admin/auth/refresh' && path !== '/admin/auth/login') {
+        // M-25: access token admin hết hạn -> thử GIA HẠN bằng refresh token
+        // trước khi đăng xuất. Trước đây xoá token ngay -> admin bị đá ra giữa
+        // chừng. KHÔNG áp cho chính /admin/auth/refresh để tránh lặp vô hạn.
+        const adminRefresh = readCookie('declay_admin_refresh');
+        if (adminRefresh) {
+          try {
+            const refreshRes = await fetch(`${BASE_URL}/admin/auth/refresh`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refreshToken: adminRefresh }),
+            });
+            if (refreshRes.ok) {
+              const refreshJson = await refreshRes.json();
+              const data = (refreshJson as ApiResponse<{ accessToken: string; refreshToken: string }>).data;
+              writeCookie('declay_admin_token', data.accessToken, 8 * 3600);
+              writeCookie('declay_admin_refresh', data.refreshToken, 30 * 24 * 3600);
+              return request(path, { ...options, token: data.accessToken, _retry: true });
+            }
+          } catch {}
+        }
+        // Refresh thất bại/không có -> xoá cả hai, layout admin sẽ đá về login.
+        deleteCookie('declay_admin_token');
+        deleteCookie('declay_admin_refresh');
+        // M-48: only HERE is the session really over. The silent-refresh path
+        // above returns before this line, so a routine 8-hour expiry never
+        // reaches the admin as a popup.
+        notifyAdminSessionExpired();
+      } else if (path.startsWith('/admin')) {
+        // /admin/auth/* : không tự refresh, chỉ để lỗi nổi lên.
+        deleteCookie('declay_admin_token');
+        deleteCookie('declay_admin_refresh');
+      } else {
+        const refreshToken = readCookie('declay_refresh');
+        if (refreshToken) {
+          try {
+            const refreshRes = await fetch(`${BASE_URL}/auth/refresh`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refreshToken }),
+            });
+            if (refreshRes.ok) {
+              const refreshJson = await refreshRes.json();
+              const newToken = (refreshJson as ApiResponse<{ accessToken: string }>).data.accessToken;
+              writeCookie('declay_token', newToken, 3600);
+              return request(path, { ...options, token: newToken, _retry: true });
+            }
+          } catch {}
+          deleteCookie('declay_token');
+          deleteCookie('declay_refresh');
+        }
       }
     }
     const err = json as ApiError;
@@ -106,16 +144,52 @@ export const api = {
 
 /* ── Domain helpers (server-side, pass token from cookies) ─ */
 export const productsApi = {
-  list: (params?: { page?: number; limit?: number; categoryId?: number; search?: string }) => {
+  list: (params?: { page?: number; limit?: number; categoryId?: number; collectionId?: number; campaignId?: number; search?: string; sort?: string; minPrice?: number; maxPrice?: number }) => {
     const qs = new URLSearchParams();
     if (params?.page)       qs.set('page',       String(params.page));
     if (params?.limit)      qs.set('limit',      String(params.limit));
     if (params?.categoryId) qs.set('categoryId', String(params.categoryId));
+    if (params?.collectionId) qs.set('collectionId', String(params.collectionId));
+    // M-44: campaign is a filter over the shop, not a page of its own.
+    if (params?.campaignId) qs.set('campaignId', String(params.campaignId));
+    if (params?.minPrice != null) qs.set('minPrice', String(params.minPrice));
+    if (params?.maxPrice != null) qs.set('maxPrice', String(params.maxPrice));
     if (params?.search)     qs.set('search',     params.search);
+    if (params?.sort)       qs.set('sort',       params.sort);
     return api.get<import('./types').Product[]>(`/products?${qs}`, { next: { revalidate: 60 } });
   },
   detail: (slug: string) =>
     api.get<import('./types').Product>(`/products/slug/${slug}`, { next: { revalidate: 60 } }),
+};
+
+/** Ngữ cảnh gợi ý dùng chung cho FE (khớp RecoContext ở BE). */
+export type RecoContext = 'cart' | 'detail' | 'post_purchase' | 'home' | 'account';
+
+/** M-35: gợi ý sản phẩm theo ngữ cảnh + ghi sự kiện xem/click (đo lường CTR). */
+export const recommendationsApi = {
+  get: (params: { context: RecoContext; productIds?: number[]; limit?: number }, token?: string) => {
+    const qs = new URLSearchParams();
+    qs.set('context', params.context);
+    if (params.productIds && params.productIds.length) qs.set('productIds', params.productIds.join(','));
+    if (params.limit) qs.set('limit', String(params.limit));
+    return api.get<import('./types').Product[]>(`/products/recommendations?${qs}`, { token });
+  },
+  recordView: (productId: number, token?: string) =>
+    api.post<null>('/products/view', { productId }, { token }),
+  recordClick: (productId: number, context: RecoContext, token?: string) =>
+    api.post<null>('/products/reco-click', { productId, context }, { token }),
+  recentlyViewed: (params: { limit?: number; excludeIds?: number[] } = {}, token?: string) => {
+    const qs = new URLSearchParams();
+    if (params.limit) qs.set('limit', String(params.limit));
+    if (params.excludeIds && params.excludeIds.length) qs.set('excludeIds', params.excludeIds.join(','));
+    return api.get<import('./types').Product[]>(`/products/recently-viewed?${qs}`, { token });
+  },
+};
+
+/** M-47: only the categories an admin flagged for the home page. */
+export const homeCategoriesApi = {
+  list: () =>
+    api.get<import('./types').Category[]>('/categories?homeOnly=1', { next: { revalidate: 300 } }),
 };
 
 export const categoriesApi = {
@@ -139,42 +213,476 @@ export const jobsApi = {
   detail: (id: number) => api.get<import('./types').Job>(`/jobs/${id}`),
 };
 
+// M-01: token is optional — guests are identified by the X-Guest-Session header.
 export const cartApi = {
-  get:    (token: string) => api.get<import('./types').Cart>('/cart', { token }),
-  add:    (token: string, variantId: number, quantity: number) =>
+  get:    (token?: string) => api.get<import('./types').Cart>('/cart', { token }),
+  add:    (token: string | undefined, variantId: number, quantity: number) =>
     api.post<import('./types').Cart>('/cart/items', { variantId, quantity }, { token }),
-  update: (token: string, itemId: number, quantity: number) =>
+  update: (token: string | undefined, itemId: number, quantity: number) =>
     api.put<import('./types').Cart>(`/cart/items/${itemId}`, { quantity }, { token }),
-  remove: (token: string, itemId: number) =>
+  remove: (token: string | undefined, itemId: number) =>
     api.delete<import('./types').Cart>(`/cart/items/${itemId}`, { token }),
-  clear:  (token: string) => api.delete<void>('/cart', { token }),
+  clear:  (token?: string) => api.delete<void>('/cart', { token }),
 };
 
 export const ordersApi = {
   list:     (token: string) => api.get<import('./types').Order[]>('/orders', { token }),
   detail:   (token: string, id: number) => api.get<import('./types').Order>(`/orders/${id}`, { token }),
-  checkout: (token: string, addressId: number) =>
-    api.post<import('./types').CheckoutResult>('/orders/checkout', { addressId }, { token }),
+  checkout: (token: string | undefined, payload: {
+    shippingAddressId?: number;
+    shippingAddress?: {
+      // Recipient defaults to the buyer's own name/phone (see guest below).
+      receiverName?: string; receiverPhone?: string; addressLine: string;
+      ward: string; district: string; city: string; country?: string; postalCode?: string;
+    };
+    guest?: { name: string; email: string; phone: string };
+    discountCode?: string;
+    shippingMethodId?: number;
+    paymentMethod?: 'cod' | 'stripe' | 'vnpay';
+  }) => api.post<import('./types').CheckoutResult>('/orders/checkout', payload, { token }),
+  /** M-12: confirm a VNPay return before showing the buyer a success page. */
+  verifyVnpayReturn: (query: string) =>
+    api.get<{
+      valid: boolean; orderId: number | null; orderCode: string | null; paid: boolean;
+      orderStatus: string | null; responseCode: string | null;
+      /**
+       * M-17/M-19: nội dung đơn để trang cảm ơn hiển thị đầy đủ (chỉ có khi đã
+       * thanh toán). Dùng CHUNG một kiểu với luồng COD để hai trang cảm ơn
+       * không bao giờ lệch nhau về dữ liệu.
+       */
+      summary: import('@/components/storefront/OrderThankYou').ThankYouSummary | null;
+    }>(
+      `/webhooks/vnpay/verify-return${query}`,
+    ),
+  /** M-19: tóm tắt đơn cho trang cảm ơn của khách vãng lai. */
+  guestSummary: (token: string) =>
+    api.get<import('@/components/storefront/OrderThankYou').ThankYouSummary>(
+      `/orders/summary?token=${encodeURIComponent(token)}`,
+    ),
+  lookupGuest: (token: string) =>
+    api.get<import('./types').Order>(`/orders/lookup?token=${encodeURIComponent(token)}`),
+  /**
+   * M-29d: khách huỷ đơn. Kết quả có thể là huỷ ngay ('cancelled') hoặc — khi
+   * đơn đã có vận đơn GHN — một yêu cầu huỷ chờ duyệt ('cancel_requested').
+   */
+  cancel: (token: string, id: number) =>
+    api.post<{ outcome: 'cancelled' | 'cancel_requested'; order: import('./types').Order }>(
+      `/orders/${id}/cancel`, {}, { token },
+    ),
+  /** M-29e: khách gửi yêu cầu trả hàng lỗi theo món. */
+  createReturn: (token: string, id: number, payload: {
+    type?: 'defective' | 'wrong_item';
+    items: { orderItemId: number; quantity: number; reason?: string; photoUrls: string[] }[];
+  }) => api.post<{ id: number; status: string }>(`/orders/${id}/returns`, payload, { token }),
+};
+
+/** M-29d: yêu cầu huỷ đơn (admin duyệt). */
+export interface AdminCancellationRequest {
+  id: number;
+  orderId: number;
+  reason: string | null;
+  status: string;
+  createdAt: string;
+  order?: { orderCode: string; status: string; totalAmount: string };
+}
+export const adminCancellationApi = {
+  list: (token: string) =>
+    api.get<AdminCancellationRequest[]>('/admin/orders/cancellations', { token }),
+  approve: (token: string, id: number) =>
+    api.post<{ status: string; refundId: number | null }>(`/admin/orders/cancellations/${id}/approve`, {}, { token }),
+  reject: (token: string, id: number, reason?: string) =>
+    api.post<null>(`/admin/orders/cancellations/${id}/reject`, { reason }, { token }),
+};
+
+/** M-29e: yêu cầu trả hàng (admin xử lý). */
+export interface AdminReturnRequest {
+  id: number;
+  orderId: number;
+  type: string;
+  status: string;
+  returnTrackingNumber: string | null;
+  createdAt: string;
+  order?: { orderCode: string; status: string; totalAmount: string };
+  items?: { id: number; orderItemId: number; quantity: number; reason: string | null; photoUrls: string[] }[];
+}
+export const adminReturnApi = {
+  list: (token: string) =>
+    api.get<AdminReturnRequest[]>('/admin/orders/returns', { token }),
+  approve: (token: string, id: number, returnTrackingNumber?: string) =>
+    api.post<null>(`/admin/orders/returns/${id}/approve`, { returnTrackingNumber }, { token }),
+  reject: (token: string, id: number, reason?: string) =>
+    api.post<null>(`/admin/orders/returns/${id}/reject`, { reason }, { token }),
+  receive: (token: string, id: number) =>
+    api.post<{ refundId: number | null; wholeOrder: boolean }>(`/admin/orders/returns/${id}/receive`, {}, { token }),
+};
+
+/* ── Wishlist (customer) ───────────────────────────────── */
+/* ── GHN: địa giới + báo phí (M-13) ────────────────────── */
+export const ghnApi = {
+  provinces: () =>
+    api.get<{ provinceId: number; name: string }[]>('/shipping/ghn/provinces', { next: { revalidate: 86400 } }),
+  districts: (provinceId: number) =>
+    api.get<{ districtId: number; name: string; canDeliver: boolean }[]>(
+      `/shipping/ghn/districts?provinceId=${provinceId}`, { next: { revalidate: 86400 } },
+    ),
+  wards: (districtId: number) =>
+    api.get<{ wardCode: string; name: string; canDeliver: boolean }[]>(
+      `/shipping/ghn/wards?districtId=${districtId}`, { next: { revalidate: 86400 } },
+    ),
+  /** Phí tính từ giỏ hàng phía server — client không gửi cân nặng. */
+  quote: (payload: { districtId: number | null; wardCode: string | null }) =>
+    api.post<{
+      available: boolean;
+      reason: 'missing_destination' | 'district_not_served' | 'parcel_too_heavy'
+        | 'no_pickup' | 'route_not_found' | 'carrier_unavailable' | null;
+      debugMessage?: string;
+      feeVnd: number; carrierFeeVnd: number; freeShipping: boolean;
+      weightGram: number; usedDefaultWeight: boolean; carrier: string;
+    }>('/shipping/ghn/quote', payload),
+  /** M-22: các phương thức GHN (nhanh/chuẩn/tiết kiệm) cho giỏ hiện tại. */
+  quoteOptions: (payload: { districtId: number | null; wardCode: string | null }) =>
+    api.post<{
+      available: boolean;
+      reason: 'missing_destination' | 'district_not_served' | 'parcel_too_heavy'
+        | 'no_pickup' | 'route_not_found' | 'carrier_unavailable' | null;
+      debugMessage?: string;
+      weightGram: number; usedDefaultWeight: boolean;
+      options: {
+        serviceId: number; serviceTypeId: number;
+        name: string; description: string;
+        feeVnd: number; freeShipping: boolean;
+        leadtimeAt: number | null; leadtimeDays: number | null;
+      }[];
+    }>('/shipping/ghn/quote-options', payload),
+};
+
+export const shippingMethodsApi = {
+  list: () => api.get<import('./types').ShippingMethod[]>('/shipping-methods', { next: { revalidate: 300 } }),
+};
+
+export const notificationsApi = {
+  list:        (token: string) => api.get<import('./types').NotificationList>('/notifications', { token }),
+  markRead:    (token: string, id: number) => api.patch<void>(`/notifications/${id}/read`, {}, { token }),
+  markAllRead: (token: string) => api.post<void>('/notifications/read-all', {}, { token }),
+};
+
+export const tagsApi = {
+  list: () => api.get<import('./types').Tag[]>('/tags', { next: { revalidate: 300 } }),
+};
+
+export const wishlistApi = {
+  get:    (token: string) => api.get<import('./types').Wishlist>('/wishlist', { token }),
+  add:    (token: string, variantId: number) =>
+    api.post<import('./types').Wishlist>('/wishlist/items', { variantId }, { token }),
+  remove: (token: string, itemId: number) =>
+    api.delete<import('./types').Wishlist>(`/wishlist/items/${itemId}`, { token }),
+  clear:  (token: string) => api.delete<import('./types').Wishlist>('/wishlist', { token }),
+};
+
+/* ── Product reviews (public read, customer write) ─────── */
+export const reviewsApi = {
+  // M-10: ask the API whether this visitor may review before showing the form.
+  eligibility: (productId: number, token?: string) =>
+    api.get<{ canReview: boolean; reason: string | null }>(`/products/${productId}/reviews/eligibility`, { token }),
+  list:   (productId: number) =>
+    api.get<import('./types').ProductReview[]>(`/products/${productId}/reviews`),
+  create: (token: string, productId: number, data: { rating: number; title?: string; body?: string }) =>
+    api.post<import('./types').ProductReview>(`/products/${productId}/reviews`, data, { token }),
+  remove: (token: string, productId: number, reviewId: number) =>
+    api.delete<void>(`/products/${productId}/reviews/${reviewId}`, { token }),
+};
+
+/* ── Discount (customer preview against cart) ──────────── */
+export const discountsApi = {
+  validate: (token: string, code: string) =>
+    api.post<import('./types').DiscountPreview>('/discounts/validate', { code }, { token }),
+};
+
+/* ── Banners / Settings (public) ───────────────────────── */
+export const bannersApi = {
+  list: () => api.get<import('./types').Banner[]>('/banners', { next: { revalidate: 120 } }),
+};
+
+/** M-44: active campaigns for the announcement bar. Public, no auth. */
+export const campaignsApi = {
+  listActive: () =>
+    api.get<import('./types').Campaign[]>('/campaigns', { next: { revalidate: 60 } }),
+};
+
+export const pagesApi = {
+  getBySlug: (slug: string) =>
+    api.get<import('./types').Page>(`/pages/${slug}`, { next: { revalidate: 300 } }),
+};
+
+export const settingsApi = {
+  getPublic: () => api.get<Record<string, string>>('/settings', { next: { revalidate: 300 } }),
+};
+
+/* ── Admin: discounts / banners / settings / users / reviews / shipment ── */
+export const adminDiscountsApi = {
+  list:   (token: string) => api.get<import('./types').DiscountCode[]>('/admin/discounts?limit=100', { token }),
+  detail: (token: string, id: number) => api.get<import('./types').DiscountCode>(`/admin/discounts/${id}`, { token }),
+  create: (token: string, data: unknown) => api.post<import('./types').DiscountCode>('/admin/discounts', data, { token }),
+  update: (token: string, id: number, data: unknown) => api.put<import('./types').DiscountCode>(`/admin/discounts/${id}`, data, { token }),
+  remove: (token: string, id: number) => api.delete<void>(`/admin/discounts/${id}`, { token }),
+};
+
+export const adminPagesApi = {
+  list:     (token: string) => api.get<import('./types').Page[]>('/admin/pages', { token }),
+  detail:   (token: string, id: number) => api.get<import('./types').Page>(`/admin/pages/${id}`, { token }),
+  versions: (token: string, id: number) => api.get<import('./types').PageVersion[]>(`/admin/pages/${id}/versions`, { token }),
+  create:   (token: string, data: unknown) => api.post<import('./types').Page>('/admin/pages', data, { token }),
+  update:   (token: string, id: number, data: unknown) => api.put<import('./types').Page>(`/admin/pages/${id}`, data, { token }),
+  remove:   (token: string, id: number) => api.delete<void>(`/admin/pages/${id}`, { token }),
+};
+
+export const adminBannersApi = {
+  list:   (token: string) => api.get<import('./types').Banner[]>('/admin/banners?limit=100', { token }),
+  detail: (token: string, id: number) => api.get<import('./types').Banner>(`/admin/banners/${id}`, { token }),
+  create: (token: string, data: unknown) => api.post<import('./types').Banner>('/admin/banners', data, { token }),
+  update: (token: string, id: number, data: unknown) => api.put<import('./types').Banner>(`/admin/banners/${id}`, data, { token }),
+  remove: (token: string, id: number) => api.delete<void>(`/admin/banners/${id}`, { token }),
+};
+
+export const adminSettingsApi = {
+  list: (token: string) => api.get<import('./types').SiteSetting[]>('/admin/settings', { token }),
+  save: (token: string, settings: Record<string, string | null>) =>
+    api.put<import('./types').SiteSetting[]>('/admin/settings', { settings }, { token }),
+};
+
+export const adminShippingMethodsApi = {
+  list:   (token: string) => api.get<import('./types').ShippingMethod[]>('/admin/shipping-methods', { token }),
+  create: (token: string, data: unknown) => api.post<import('./types').ShippingMethod>('/admin/shipping-methods', data, { token }),
+  update: (token: string, id: number, data: unknown) => api.put<import('./types').ShippingMethod>(`/admin/shipping-methods/${id}`, data, { token }),
+  remove: (token: string, id: number) => api.delete<void>(`/admin/shipping-methods/${id}`, { token }),
+};
+
+export const adminNotificationsApi = {
+  list:        (token: string) => api.get<import('./types').NotificationList>('/admin/notifications', { token }),
+  markRead:    (token: string, id: number) => api.patch<void>(`/admin/notifications/${id}/read`, {}, { token }),
+  markAllRead: (token: string) => api.post<void>('/admin/notifications/read-all', {}, { token }),
+};
+
+export const adminTagsApi = {
+  list:   (token: string) => api.get<import('./types').Tag[]>('/admin/tags', { token }),
+  create: (token: string, data: unknown) => api.post<import('./types').Tag>('/admin/tags', data, { token }),
+  update: (token: string, id: number, data: unknown) => api.put<import('./types').Tag>(`/admin/tags/${id}`, data, { token }),
+  remove: (token: string, id: number) => api.delete<void>(`/admin/tags/${id}`, { token }),
+};
+
+export const collectionsApi = {
+  list:   () => api.get<import('./types').Collection[]>('/collections', { next: { revalidate: 0 } }),
+  /**
+   * M-46: collections with a product preview for the storefront carousels.
+   * Empty collections are dropped server-side, so the caller can render directly.
+   */
+  listWithProducts: (perCollection = 8) =>
+    api.get<import('./types').Collection[]>(
+      `/collections?withProducts=${perCollection}`,
+      { next: { revalidate: 120 } },
+    ),
+  detail: (slug: string) => api.get<import('./types').Collection>(`/collections/${slug}`, { next: { revalidate: 120 } }),
+};
+
+export const adminCollectionsApi = {
+  list:   (token: string) => api.get<import('./types').Collection[]>('/admin/collections', { token }),
+  detail: (token: string, id: number) => api.get<import('./types').Collection>(`/admin/collections/${id}`, { token }),
+  create: (token: string, data: unknown) => api.post<import('./types').Collection>('/admin/collections', data, { token }),
+  update: (token: string, id: number, data: unknown) => api.put<import('./types').Collection>(`/admin/collections/${id}`, data, { token }),
+  remove: (token: string, id: number) => api.delete<void>(`/admin/collections/${id}`, { token }),
+};
+
+export const adminCodApi = {
+  pending: (token: string) => api.get<import('./types').CodPendingRow[]>('/admin/cod/pending', { token }),
+  reconcile: (token: string, paymentId: number, collectedAmount: number, note?: string) =>
+    api.post<{ outcome: 'matched' | 'short' | 'over'; difference: number }>(
+      `/admin/cod/${paymentId}/reconcile`, { collectedAmount, ...(note ? { note } : {}) }, { token },
+    ),
+};
+
+export const adminReportsApi = {
+  topSkus: (token: string, period = '30d', limit = 20) =>
+    api.get<import('./types').TopSkuReport>(`/admin/reports/top-skus?period=${period}&limit=${limit}`, { token }),
+  productViews: (token: string, limit = 20) =>
+    api.get<import('./types').ProductViewRow[]>(`/admin/reports/product-views?limit=${limit}`, { token }),
+};
+
+export const adminCampaignsApi = {
+  list:   (token: string) => api.get<import('./types').Campaign[]>('/admin/campaigns', { token }),
+  detail: (token: string, id: number) => api.get<import('./types').Campaign>(`/admin/campaigns/${id}`, { token }),
+  create: (token: string, data: unknown) => api.post<import('./types').Campaign>('/admin/campaigns', data, { token }),
+  update: (token: string, id: number, data: unknown) => api.put<import('./types').Campaign>(`/admin/campaigns/${id}`, data, { token }),
+  remove: (token: string, id: number) => api.delete<void>(`/admin/campaigns/${id}`, { token }),
+  /** M-41: dry-run margin + overlap impact before saving. Read-only. */
+  previewImpact: (token: string, data: unknown) =>
+    api.post<import('./types').CampaignImpact>('/admin/campaigns/preview-impact', data, { token }),
+};
+
+/** M-42: customer side of live chat. Works signed-in or as a guest. */
+export const liveChatApi = {
+  transcript: (sessionId: number, token?: string) =>
+    api.get<import('./types').LiveChatTranscript>(`/chat/live/${sessionId}`, { token }),
+  requestHandoff: (sessionId: number, data: { reason?: string | null; name?: string | null; email?: string | null }, token?: string) =>
+    api.post<{ mode: string; acknowledgement: string; staffOnline: boolean }>(`/chat/live/${sessionId}/handoff`, data, { token }),
+  send: (sessionId: number, message: string, token?: string) =>
+    api.post<import('./types').LiveChatMessage>(`/chat/live/${sessionId}/messages`, { message }, { token }),
+};
+
+/** M-42: staff inbox. adminProtect only — no role gate. */
+export const adminInboxApi = {
+  queue: (token: string) => api.get<import('./types').InboxItem[]>('/admin/inbox/queue', { token }),
+  transcript: (token: string, sessionId: number) =>
+    api.get<import('./types').StaffTranscript>(`/admin/inbox/${sessionId}`, { token }),
+  claim: (token: string, sessionId: number) =>
+    api.post<{ mode: string }>(`/admin/inbox/${sessionId}/claim`, {}, { token }),
+  send: (token: string, sessionId: number, message: string) =>
+    api.post<import('./types').LiveChatMessage>(`/admin/inbox/${sessionId}/messages`, { message }, { token }),
+  close: (token: string, sessionId: number) =>
+    api.post<{ mode: string }>(`/admin/inbox/${sessionId}/close`, {}, { token }),
+  markRead: (token: string, sessionId: number) =>
+    api.post<null>(`/admin/inbox/${sessionId}/read`, {}, { token }),
+  heartbeat: (token: string) =>
+    api.post<Array<{ adminId: number; name: string }>>('/admin/inbox/heartbeat', {}, { token }),
+  offline: (token: string) => api.post<null>('/admin/inbox/offline', {}, { token }),
+};
+
+/** M-48: admin product + variant writes, used by the tabbed product form. */
+export const adminProductsApi = {
+  detail: (token: string, id: number) =>
+    api.get<import('./types').Product>(`/admin/products/${id}`, { token }),
+  create: (token: string, data: unknown) =>
+    api.post<import('./types').Product>('/admin/products', data, { token }),
+  update: (token: string, id: number, data: unknown) =>
+    api.put<import('./types').Product>(`/admin/products/${id}`, data, { token }),
+  remove: (token: string, id: number) => api.delete<void>(`/admin/products/${id}`, { token }),
+
+  listVariants: (token: string, productId: number) =>
+    api.get<import('./types').ProductVariant[]>(`/admin/products/${productId}/variants`, { token }),
+  createVariant: (token: string, productId: number, data: unknown) =>
+    api.post<import('./types').ProductVariant>(`/admin/products/${productId}/variants`, data, { token }),
+  updateVariant: (token: string, productId: number, variantId: number, data: unknown) =>
+    api.put<import('./types').ProductVariant>(`/admin/products/${productId}/variants/${variantId}`, data, { token }),
+  removeVariant: (token: string, productId: number, variantId: number) =>
+    api.delete<void>(`/admin/products/${productId}/variants/${variantId}`, { token }),
+};
+
+export const adminUsersApi = {
+  list:   (token: string) => api.get<import('./types').AdminUser[]>('/admin/users?limit=100', { token }),
+  create: (token: string, data: unknown) => api.post<import('./types').AdminUser>('/admin/users', data, { token }),
+  update: (token: string, id: number, data: unknown) => api.put<import('./types').AdminUser>(`/admin/users/${id}`, data, { token }),
+  remove: (token: string, id: number) => api.delete<void>(`/admin/users/${id}`, { token }),
+};
+
+export const adminReviewsApi = {
+  list:   (token: string, params?: { page?: number; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.page)  qs.set('page',  String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return api.get<import('./types').ProductReview[]>(`/admin/reviews?${qs}`, { token });
+  },
+  remove: (token: string, reviewId: number) => api.delete<void>(`/admin/reviews/${reviewId}`, { token }),
+};
+
+/* ── Shipment (customer read) ──────────────────────────── */
+export const shipmentApi = {
+  getMine: (token: string, orderId: number) =>
+    api.get<import('./types').Shipment>(`/orders/${orderId}/shipment`, { token }),
+};
+
+export const adminShipmentApi = {
+  get:    (token: string, orderId: number) => api.get<import('./types').Shipment>(`/admin/orders/${orderId}/shipment`, { token }),
+  create: (token: string, orderId: number, data: unknown) => api.post<import('./types').Shipment>(`/admin/orders/${orderId}/shipment`, data, { token }),
+  update: (token: string, orderId: number, data: unknown) => api.put<import('./types').Shipment>(`/admin/orders/${orderId}/shipment`, data, { token }),
+  createViaProvider: (token: string, orderId: number) => api.post<import('./types').Shipment>(`/admin/orders/${orderId}/shipment/provider`, {}, { token }),
+  createGhn: (token: string, orderId: number) => api.post<import('./types').Shipment>(`/admin/orders/${orderId}/shipment/ghn`, {}, { token }),
+  syncGhn: (token: string, orderId: number) => api.post<{ synced: boolean; ghnStatus: string | null }>(`/admin/orders/${orderId}/shipment/ghn/sync`, {}, { token }),
+  simulate: (token: string, orderId: number, status: string) => api.post<import('./types').Shipment>(`/admin/orders/${orderId}/shipment/simulate`, { status }, { token }),
+  remove: (token: string, orderId: number) => api.delete<void>(`/admin/orders/${orderId}/shipment`, { token }),
 };
 
 export const authApi = {
   login:    (email: string, password: string) =>
     api.post<import('./types').AuthTokens>('/auth/login', { email, password }),
-  register: (data: { email: string; password: string; fullName: string }) =>
+  register: (data: { email: string; password: string; fullName: string; phoneNumber?: string; dateOfBirth?: string }) =>
     api.post<import('./types').AuthTokens>('/auth/register', data),
   refresh: (refreshToken: string) =>
     api.post<{ accessToken: string }>('/auth/refresh', { refreshToken }),
   logout: (token: string) => api.post<void>('/auth/logout', {}, { token }),
   me:     (token: string) => api.get<import('./types').User>('/auth/me', { token }),
+  forgotPassword: (email: string) => api.post<void>('/auth/forgot-password', { email }),
+  resetPassword:  (token: string, newPassword: string) => api.post<void>('/auth/reset-password', { token, newPassword }),
+  verifyEmail:    (token: string) => api.post<void>('/auth/verify-email', { token }),
 };
 
 export const adminAuthApi = {
   login: (email: string, password: string) =>
-    api.post<{ accessToken: string }>('/admin/auth/login', { email, password }),
+    api.post<{ accessToken: string; refreshToken: string }>('/admin/auth/login', { email, password }),
+  refresh: (refreshToken: string) =>
+    api.post<{ accessToken: string; refreshToken: string }>('/admin/auth/refresh', { refreshToken }),
 };
+
+/* Multipart image upload — bypasses the JSON `request()` helper. Returns the URL. */
+export async function uploadImage(file: File, token: string): Promise<string> {
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch(`${BASE_URL}/admin/upload`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` }, // no Content-Type — browser sets the boundary
+    body: fd,
+  });
+  const json = await res.json();
+  if (!res.ok) {
+    const err = json as ApiError;
+    throw new ApiRequestError(err.message || 'Upload failed', res.status, err.errorCode);
+  }
+  return (json as ApiResponse<{ url: string }>).data.url;
+}
+
+/* M-29e: khách đăng nhập tải ảnh bằng chứng trả hàng. Returns the URL. */
+export async function uploadReturnPhoto(file: File, token: string): Promise<string> {
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch(`${BASE_URL}/returns/upload`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  const json = await res.json();
+  if (!res.ok) {
+    const err = json as ApiError;
+    throw new ApiRequestError(err.message || 'Upload failed', res.status, err.errorCode);
+  }
+  return (json as ApiResponse<{ url: string }>).data.url;
+}
+
+/* Public multipart CV upload for job applicants. Returns the URL. */
+export async function uploadCv(file: File): Promise<string> {
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch(`${BASE_URL}/careers/cv`, { method: 'POST', body: fd });
+  const json = await res.json();
+  if (!res.ok) {
+    const err = json as ApiError;
+    throw new ApiRequestError(err.message || 'Upload failed', res.status, err.errorCode);
+  }
+  return (json as ApiResponse<{ url: string }>).data.url;
+}
 
 export const addressApi = {
   list:   (token: string) => api.get<import('./types').Address[]>('/addresses', { token }),
   create: (token: string, data: Partial<import('./types').Address>) =>
     api.post<import('./types').Address>('/addresses', data, { token }),
+  update: (token: string, id: number, data: Partial<import('./types').Address>) =>
+    api.put<import('./types').Address>(`/addresses/${id}`, data, { token }),
+  remove: (token: string, id: number) =>
+    api.delete<void>(`/addresses/${id}`, { token }),
+};
+
+/* ── User profile (customer) ───────────────────────────── */
+export const userApi = {
+  getInfo:    (token: string) => api.get<import('./types').User>('/users/info', { token }),
+  updateInfo: (token: string, data: Partial<import('./types').User>) =>
+    api.put<import('./types').User>('/users/info', data, { token }),
+  changePassword: (token: string, data: { currentPassword: string; newPassword: string; confirmPassword: string }) =>
+    api.post<void>('/users/change-password', data, { token }),
 };

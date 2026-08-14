@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { validate } from '@/middlewares/validate';
-import { adminProtect } from '@/middlewares/admin.middleware';
+import { adminProtect, requireRole } from '@/middlewares/admin.middleware';
 import { cache } from '@/middlewares/cache.middleware';
 import { redisConfigKeys, cacheKey } from '@/config/redis';
 import JobService from './job.service';
@@ -32,7 +32,7 @@ export function createAdminJobRouter(): Router {
   const router = Router();
   const controller = new JobController(new JobService());
 
-  router.use(adminProtect);
+  router.use(adminProtect, requireRole('admin', 'super_admin'));
 
   router.get('/', controller.listAll);
   router.get('/:id', validate(jobIdSchema, 'params'), controller.findById);

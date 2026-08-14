@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { dateOfBirthField } from '@/modules/auth/auth.validate';
 
 // Update user request validation
 export const updateUserSchema = z.object({
@@ -6,6 +7,7 @@ export const updateUserSchema = z.object({
   username: z.string().min(3).max(100).optional(),
   fullName: z.string().max(255).optional().nullable(),
   phoneNumber: z.string().max(20).optional().nullable(),
+  dateOfBirth: dateOfBirthField.optional().nullable(),
   isActive: z.boolean().optional(),
 });
 

@@ -1,0 +1,143 @@
+@startuml
+skinparam dpi 160
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam ArrowColor #7A5C43
+skinparam ArrowFontSize 12
+skinparam actorStyle awesome
+skinparam actor {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam usecase {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  FontSize 13
+}
+skinparam rectangle {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam component {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam database {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam queue {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam cloud {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam participant {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam sequence {
+  LifeLineBorderColor #A98867
+  LifeLineBackgroundColor #F3E7D8
+  ArrowColor #7A5C43
+  DividerBackgroundColor #EFE2D0
+  BoxBackgroundColor #FAF5EE
+  BoxBorderColor #C9B197
+  GroupBackgroundColor #EFE2D0
+  GroupBorderColor #A98867
+}
+skinparam note {
+  BorderColor #C9A227
+  BackgroundColor #FFF9E8
+}
+skinparam class {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  HeaderBackgroundColor #E8D7C3
+}
+title Biểu đồ use case tổng quát — Hệ thống Declay Store
+left to right direction
+skinparam packageStyle rectangle
+skinparam nodesep 12
+skinparam ranksep 70
+
+actor Guest as G
+actor "Member\n(Khách hàng)" as M
+actor Editor as E
+actor Admin as A
+actor "Super Admin" as SA
+
+rectangle "HỆ THỐNG DECLAY STORE" {
+  package "Phân hệ cửa hàng (Storefront)" as RS {
+    usecase "Đăng ký / Đăng nhập" as U1
+    usecase "Tìm kiếm và duyệt sản phẩm" as U2
+    usecase "Quản lý giỏ hàng và\ndanh sách yêu thích" as U3
+    usecase "Đặt hàng và thanh toán" as U4
+    usecase "Theo dõi đơn hàng" as U5
+    usecase "Hủy đơn và trả hàng" as U6
+    usecase "Đánh giá sản phẩm" as U7
+    usecase "Quản lý tài khoản và địa chỉ" as U8
+    usecase "Ứng tuyển việc làm" as U9
+    usecase "Trò chuyện hỗ trợ" as U10
+  }
+  package "Phân hệ quản trị (Admin Dashboard)" as RA {
+    usecase "Quản lý sản phẩm,\ndanh mục, bộ sưu tập" as A1
+    usecase "Quản lý đơn hàng và vận chuyển" as A2
+    usecase "Xử lý hủy đơn, trả hàng,\nhoàn tiền và đối soát" as A3
+    usecase "Quản lý khuyến mãi" as A4
+    usecase "Quản lý nội dung và tuyển dụng" as A5
+    usecase "Kiểm duyệt đánh giá" as A6
+    usecase "Hộp thư hỗ trợ khách hàng" as A7
+    usecase "Báo cáo thống kê" as A8
+    usecase "Trợ lý AI quản trị" as A9
+    usecase "Quản lý tài khoản quản trị" as A10
+  }
+}
+
+G -- U1
+G -- U2
+G -- U3
+G -- U4
+G -- U5
+G -- U9
+G -- U10
+
+M -- U2
+M -- U3
+M -- U4
+M -- U5
+M -- U6
+M -- U7
+M -- U8
+M -- U10
+
+A1 -- E
+A3 -- E
+A7 -- E
+
+A1 -- A
+A2 -- A
+A3 -- A
+A4 -- A
+A5 -- A
+A6 -- A
+A7 -- A
+A8 -- A
+A9 -- A
+
+A1 -- SA
+A2 -- SA
+A10 -- SA
+
+note bottom of RA
+  Các tác nhân hệ thống bên ngoài — Stripe, VNPay, GHN,
+  Google OAuth, SMTP và Claude API — tham gia vào các use case
+  Đặt hàng và thanh toán, Hủy đơn và trả hàng, Quản lý đơn hàng
+  và vận chuyển, Trò chuyện hỗ trợ, Trợ lý AI quản trị.
+  Chi tiết được thể hiện trong các biểu đồ tuần tự ở Chương 4.
+end note
+@enduml

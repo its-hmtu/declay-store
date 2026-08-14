@@ -30,6 +30,10 @@ export const createAddressSchema = z.object({
     .string('City is required')
     .min(2, 'City must be at least 2 characters')
     .max(100, 'City must be less than 100 characters'),
+  // M-13: mã địa giới GHN từ dropdown địa chỉ.
+  ghnProvinceId: z.number().int().positive().nullable().optional(),
+  ghnDistrictId: z.number().int().positive().nullable().optional(),
+  ghnWardCode: z.string().max(20).nullable().optional(),
   country: z
     .string('Country is required')
     .min(2, 'Country must be at least 2 characters')
@@ -84,6 +88,9 @@ export const updateAddressSchema = z.object({
     .min(2, 'City must be at least 2 characters')
     .max(100, 'City must be less than 100 characters')
     .optional(),
+  ghnProvinceId: z.number().int().positive().nullable().optional(),
+  ghnDistrictId: z.number().int().positive().nullable().optional(),
+  ghnWardCode: z.string().max(20).nullable().optional(),
   country: z
     .string()
     .min(2, 'Country must be at least 2 characters')

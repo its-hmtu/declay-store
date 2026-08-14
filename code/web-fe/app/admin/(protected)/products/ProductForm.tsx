@@ -7,6 +7,11 @@ import type { Category, Product } from '@/lib/types';
 import { api } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Button from '@/components/ui/Button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { NativeSelect } from '@/components/ui/native-select';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Props {
   product?: Product;
@@ -68,42 +73,40 @@ export default function ProductForm({ product }: Props) {
       setLoading(false);
     }
   }
-
-  const inputCls = 'w-full px-4 py-2.5 border border-border rounded-lg bg-surface focus:outline-none focus:border-brand text-text placeholder:text-text-faint';
-  const labelCls = 'block text-sm font-medium text-text mb-1.5';
+  const labelCls = 'mb-1.5 block';
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-2xl space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div className="grid sm:grid-cols-2 gap-5">
         <div>
-          <label className={labelCls} htmlFor="name">Name *</label>
-          <input id="name" name="name" required value={form.name} onChange={handleChange} onBlur={autoSlug} className={inputCls} placeholder="Tiny Dragon" />
+          <Label className={labelCls} htmlFor="name">Name *</Label>
+          <Input id="name" name="name" required value={form.name} onChange={handleChange} onBlur={autoSlug} placeholder="Tiny Dragon" />
         </div>
         <div>
-          <label className={labelCls} htmlFor="slug">Slug *</label>
-          <input id="slug" name="slug" required value={form.slug} onChange={handleChange} className={inputCls} placeholder="tiny-dragon" />
+          <Label className={labelCls} htmlFor="slug">Slug *</Label>
+          <Input id="slug" name="slug" required value={form.slug} onChange={handleChange} placeholder="tiny-dragon" />
         </div>
       </div>
 
       <div>
-        <label className={labelCls} htmlFor="categoryId">Category</label>
-        <select id="categoryId" name="categoryId" value={form.categoryId} onChange={handleChange} className={inputCls}>
+        <Label className={labelCls} htmlFor="categoryId">Category</Label>
+        <NativeSelect id="categoryId" name="categoryId" value={form.categoryId} onChange={handleChange}>
           <option value="">No category</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
-        </select>
+        </NativeSelect>
       </div>
 
       <div>
-        <label className={labelCls} htmlFor="description">Description</label>
-        <textarea id="description" name="description" rows={5} value={form.description} onChange={handleChange} className={`${inputCls} resize-none`} placeholder="Describe the product…" />
+        <Label className={labelCls} htmlFor="description">Description</Label>
+        <Textarea id="description" name="description" rows={10} value={form.description} onChange={handleChange} placeholder="Describe the product…"  className="resize-none" />
       </div>
 
-      <label className="flex items-center gap-3 cursor-pointer">
-        <input type="checkbox" name="isActive" checked={form.isActive} onChange={handleChange} className="w-4 h-4 accent-brand" />
-        <span className="text-sm font-medium text-text">Published (visible in storefront)</span>
-      </label>
+      <div className="flex items-center gap-3">
+        <Checkbox id="cb-isactive" checked={form.isActive} onCheckedChange={(v) => setForm((f) => ({ ...f, isActive: v === true }))} />
+        <Label htmlFor="cb-isactive" className="text-sm font-medium text-text cursor-pointer font-normal">Published (visible in storefront)</Label>
+      </div>
 
       <div className="flex gap-3 pt-2">
         <Button type="submit" loading={loading}>{isEdit ? 'Save Changes' : 'Create Product'}</Button>

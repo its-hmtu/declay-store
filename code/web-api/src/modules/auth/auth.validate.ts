@@ -1,5 +1,19 @@
 import { z } from 'zod';
 
+// YYYY-MM-DD, must be a real calendar date in the past (not before 1900)
+export const dateOfBirthField = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date of birth must be in YYYY-MM-DD format')
+  .refine((val) => {
+    const date = new Date(`${val}T00:00:00Z`);
+    return (
+      !Number.isNaN(date.getTime()) &&
+      date.toISOString().slice(0, 10) === val && // rejects impossible dates like 2026-02-30
+      date.getTime() < Date.now() &&
+      date.getUTCFullYear() >= 1900
+    );
+  }, 'Date of birth must be a valid past date');
+
 // Register request validation
 export const registerSchema = z.object({
   email: z.email('Invalid email address'),
@@ -10,6 +24,7 @@ export const registerSchema = z.object({
     .min(8, 'Password must be at least 8 characters')
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
     .regex(/[0-9]/, 'Password must contain at least one number'),
+  dateOfBirth: dateOfBirthField.optional().nullable(),
 });
 
 // Login request validation

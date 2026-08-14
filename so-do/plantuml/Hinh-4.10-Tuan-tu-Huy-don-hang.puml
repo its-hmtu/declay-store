@@ -1,0 +1,101 @@
+@startuml
+skinparam dpi 160
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam ArrowColor #7A5C43
+skinparam ArrowFontSize 12
+skinparam actorStyle awesome
+skinparam actor {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam usecase {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  FontSize 13
+}
+skinparam rectangle {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam component {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam database {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam queue {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam cloud {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam participant {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam sequence {
+  LifeLineBorderColor #A98867
+  LifeLineBackgroundColor #F3E7D8
+  ArrowColor #7A5C43
+  DividerBackgroundColor #EFE2D0
+  BoxBackgroundColor #FAF5EE
+  BoxBorderColor #C9B197
+  GroupBackgroundColor #EFE2D0
+  GroupBorderColor #A98867
+}
+skinparam note {
+  BorderColor #C9A227
+  BackgroundColor #FFF9E8
+}
+skinparam class {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  HeaderBackgroundColor #E8D7C3
+}
+autonumber
+
+title Biểu đồ tuần tự chức năng Hủy đơn hàng
+
+actor "Khách hàng" as U
+participant "Giao diện" as FE
+participant "OrderService" as OS
+database "PostgreSQL" as DB
+actor "Quản trị viên" as A
+participant "GhnService" as GS
+participant "RefundService" as RS
+queue "emailQueue" as Q
+
+U -> FE : Chọn "Hủy đơn"
+FE -> OS : POST /api/orders/:id/cancel
+OS -> DB : SELECT orders WHERE id = ? AND user_id = ?
+OS -> OS : cancelRoute(status, hasWaybill)
+alt Trạng thái không cho phép hủy
+  OS --> FE : AppError 400 "Không thể hủy đơn"
+else Chưa có vận đơn — hủy ngay
+  group Giao dịch có khóa dòng
+    OS -> DB : SELECT orders ... FOR UPDATE
+    OS -> DB : UPDATE orders SET status = 'cancelled'
+    OS -> DB : UPDATE product_variants SET stock = stock + qty
+  end
+  OS -> RS : Nếu có payment succeeded thì hoàn tiền
+  RS -> DB : INSERT refunds
+  OS -> Q : Email thông báo hủy đơn
+  OS --> FE : Hủy thành công
+else Đã có vận đơn — cần duyệt
+  OS -> DB : INSERT cancellation_requests (pending)
+  OS --> FE : "Yêu cầu hủy đang chờ duyệt"
+  A -> OS : POST /api/admin/orders/cancellations/:id/approve
+  OS -> GS : Hủy vận đơn GHN
+  GS --> OS : Kết quả hủy (ghnCancelResult)
+  OS -> DB : UPDATE orders + hoàn trả tồn kho
+  OS -> RS : Khởi tạo hoàn tiền
+  OS -> Q : Email thông báo cho khách
+end
+@enduml

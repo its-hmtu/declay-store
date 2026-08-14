@@ -1,0 +1,146 @@
+Summary,Issue Type,Priority,Epic Name,Epic Link,Story Points,Labels,Description
+Commerce Hardening,Epic,Highest,Commerce Hardening,,,declay-store,"Make the live-money path correct and safe: atomic stock, idempotent webhooks, abandoned-order cleanup, order emails."
+Account Completion,Epic,Highest,Account Completion,,,declay-store,"Finish customer account flows: email verification, password reset, address management UI."
+Promotions,Epic,High,Promotions,,,declay-store,Discount codes: admin management and checkout application.
+Fulfillment & Shipping,Epic,High,Fulfillment & Shipping,,,declay-store,Shipment tracking and shipping-cost model.
+Catalogue Media & Merchandising,Epic,High,Catalogue Media & Merchandising,,,declay-store,"Image/file uploads, homepage banners, product/article tags."
+Reviews & Social Proof,Epic,High,Reviews & Social Proof,,,declay-store,"Reviews on product pages, verified-purchase, moderation, wishlist UI."
+AI Features,Epic,High,AI Features,,,declay-store,"The differentiator: read-only storefront chatbot and write-enabled admin assistant via Claude tool-use, with chat persistence."
+Admin & Operations,Epic,High,Admin & Operations,,,declay-store,"Analytics dashboard, admin-user & role management, site settings, audit log."
+"Quality, Security & Ops",Epic,Highest,"Quality, Security & Ops",,,declay-store,"Cross-cutting: tests, security baseline, observability, migration hygiene, CI/CD."
+A1: Atomic stock decrement on payment,Story,Highest,,Commerce Hardening,5,declay-store M-size,"As a customer, I want my purchase to decrement stock atomically so the store never oversells.
+
+Acceptance criteria:
+- Stock decrement happens within the markAsPaid DB transaction.
+- Concurrent checkouts cannot drive variant stock negative (conditional UPDATE ... WHERE stock >= qty or row lock).
+- Covered by automated tests simulating concurrency."
+A2: Stripe webhook idempotency & failure handling,Story,Highest,,Commerce Hardening,2,declay-store S-size,"As the business, I want webhooks processed idempotently and failures handled so order state always matches Stripe.
+
+Acceptance criteria:
+- Duplicate payment_intent.succeeded events are no-ops (processed-event guard).
+- payment_intent.payment_failed / canceled updates or cancels the order.
+- Signature verification preserved (raw body)."
+A3: Expire abandoned pending_payment orders,Story,Highest,,Commerce Hardening,2,declay-store S-size,"As the business, I want stale pending_payment orders auto-expired so they don't accumulate or lock stock.
+
+Acceptance criteria:
+- Scheduled job cancels/expires orders older than N minutes.
+- Any reserved stock is released."
+A4: Order-confirmation email,Story,Highest,,Commerce Hardening,5,declay-store M-size,"As a customer, I want an order-confirmation email so I have proof of purchase.
+
+Acceptance criteria:
+- Email sent when order transitions to paid.
+- Includes order id, items, totals; uses EMAIL_FROM; failures retried via queue."
+B1: Email verification flow,Story,Highest,,Account Completion,5,declay-store M-size,"As a new user, I want to verify my email so my account is trusted.
+
+Acceptance criteria:
+- Tokenized link emailed on registration (email_verification_tokens).
+- Verifying sets is_email_verified=true and used_at; expired/used tokens rejected."
+B2: Password reset flow,Story,High,,Account Completion,5,declay-store M-size,"As a user, I want to reset a forgotten password securely.
+
+Acceptance criteria:
+- Tokenized reset link emailed (password_reset_tokens).
+- New password set; token single-use and expiring."
+B3: Address management UI,Story,High,,Account Completion,2,declay-store S-size,"As a customer, I want to manage my addresses in the UI.
+
+Acceptance criteria:
+- List/add/edit/delete addresses; set default (one default enforced)."
+C1: Admin discount-code management,Story,High,,Promotions,5,declay-store M-size,"As an admin, I want to create/manage discount codes (percent/fixed, min order, usage limits, expiry).
+
+Acceptance criteria:
+- CRUD on discount_codes; validation of type/value/limits/expiry."
+C2: Apply discount code at checkout,Story,High,,Promotions,5,declay-store M-size,"As a customer, I want to apply a discount code at checkout and see the adjusted total.
+
+Acceptance criteria:
+- Validates active/expiry/min-order/usage; updates discount_amount and used_count; recomputes PaymentIntent."
+D1: Record carrier & tracking on shipment,Story,High,,Fulfillment & Shipping,5,declay-store M-size,"As an admin, I want to record carrier + tracking number when shipping.
+
+Acceptance criteria:
+- Creates order_shipments row on ship; sets order status=shipped; captures estimated delivery."
+D2: Customer shipment tracking view,Story,High,,Fulfillment & Shipping,2,declay-store S-size,"As a customer, I want to see shipment status and tracking on my order.
+
+Acceptance criteria:
+- Order detail shows carrier, tracking number, estimated/actual delivery."
+D3: Shipping-cost model at checkout,Story,Medium,,Fulfillment & Shipping,2,declay-store S-size,"As the business, I want a shipping-cost model (flat/threshold/weight) applied at checkout.
+
+Acceptance criteria:
+- Configurable rule; cost added to order total and PaymentIntent."
+E1: Image upload pipeline to managed storage,Story,High,,Catalogue Media & Merchandising,8,declay-store L-size,"As an admin, I want to upload product/variant images to managed storage.
+
+Acceptance criteria:
+- Storage backend selected (S3-compatible/Cloudinary); upload endpoint; URLs stored in variant images[]; validation of type/size."
+E2: Homepage banner management,Story,High,,Catalogue Media & Merchandising,2,declay-store S-size,"As an admin, I want to manage homepage banners (schedule, position, link).
+
+Acceptance criteria:
+- CRUD on banners; public endpoint returns active scheduled banners ordered by position."
+E3: Product & article tagging,Story,Medium,,Catalogue Media & Merchandising,2,declay-store S-size,"As an admin, I want to tag products/articles so the storefront offers tag-based discovery.
+
+Acceptance criteria:
+- Manage tags; associate via product_tags/article_tags; public tag filtering."
+F1: Reviews on product detail page,Story,High,,Reviews & Social Proof,2,declay-store S-size,"As a customer, I want to see ratings/reviews on product pages.
+
+Acceptance criteria:
+- PDP shows aggregate rating and review list; submit review when eligible."
+F2: Verified-purchase flagging,Story,High,,Reviews & Social Proof,2,declay-store S-size,"As the business, I want reviews marked verified purchase so reviews are trustworthy.
+
+Acceptance criteria:
+- is_verified_purchase set when reviewer has a delivered order for the product."
+F3: Review moderation,Story,Medium,,Reviews & Social Proof,2,declay-store S-size,"As an admin, I want to moderate/hide reviews.
+
+Acceptance criteria:
+- Admin can hide/unhide or delete a review; hidden reviews excluded from public view."
+F4: Wishlist page UI,Story,Medium,,Reviews & Social Proof,2,declay-store S-size,"As a customer, I want a wishlist page in the UI.
+
+Acceptance criteria:
+- View/add/remove wishlist items; move item to cart."
+G1: Storefront AI chatbot (read-only),Story,High,,AI Features,8,declay-store L-size,"As a customer, I want a read-only chatbot answering product/policy/order-status questions.
+
+Acceptance criteria:
+- POST /api/chat streams responses; read-only context (catalogue/policies/FAQ); prompt caching on system prompt; cannot mutate data; persists to chat tables."
+G2: Admin AI assistant (tool-use),Story,Medium,,AI Features,8,declay-store L-size,"As an admin, I want an AI assistant that performs store actions via tool-use with confirmation.
+
+Acceptance criteria:
+- POST /api/admin/assistant behind adminProtect; tools map to internal services; destructive actions require confirmation; actions audited."
+G3: Chat history persistence,Story,Medium,,AI Features,2,declay-store S-size,"As the business, I want chat history persisted so we can review and improve.
+
+Acceptance criteria:
+- chat_sessions/chat_messages populated including tool_calls JSONB."
+H1: Sales analytics dashboard,Story,High,,Admin & Operations,5,declay-store M-size,"As an admin, I want a dashboard with revenue, orders, top products, and conversion.
+
+Acceptance criteria:
+- Dashboard shows KPIs over selectable date ranges from order data."
+H2: Admin-user & role management,Story,High,,Admin & Operations,2,declay-store S-size,"As a super admin, I want to manage admin users and roles.
+
+Acceptance criteria:
+- CRUD admin_users; assign role; super_admin-only."
+H3: Site settings management,Story,Medium,,Admin & Operations,2,declay-store S-size,"As a super admin, I want to manage site settings (key/value).
+
+Acceptance criteria:
+- Read/update site_settings via admin UI."
+H4: Audit log of admin & AI actions,Story,High,,Admin & Operations,5,declay-store M-size,"As the business, I want an audit log of admin actions (incl. AI) for accountability.
+
+Acceptance criteria:
+- New audit table records actor/action/target/timestamp; AI tool actions logged."
+H5: Per-action role enforcement,Story,High,,Admin & Operations,2,declay-store S-size,"As an admin, I want role-based access enforced per action so editors can't perform admin-only operations.
+
+Acceptance criteria:
+- requireRole guard composed after adminProtect; editor restricted to content."
+I1: Test suite (Vitest + RTL),Story,Highest,,"Quality, Security & Ops",5,declay-store M-size,"As the team, I want automated tests starting with order/payment/webhook coverage.
+
+Acceptance criteria:
+- Vitest (backend) + React Testing Library (frontend) set up; first tests cover order.service and Stripe webhook; no Jest."
+I2: Security baseline,Story,Highest,,"Quality, Security & Ops",2,declay-store S-size,"As the business, I want a security baseline before launch.
+
+Acceptance criteria:
+- CORS restricted to known origins; rate limiting on auth/chat; Express sessions moved to Redis."
+I3: Observability,Story,High,,"Quality, Security & Ops",2,declay-store S-size,"As the team, I want logging, error tracking, and metrics.
+
+Acceptance criteria:
+- Structured logging; error tracking (e.g., Sentry); basic metrics."
+I4: Migration standardization,Story,High,,"Quality, Security & Ops",2,declay-store S-size,"As the team, I want a single source of truth for schema.
+
+Acceptance criteria:
+- Disable sequelize.sync() outside dev; remove stale config.json and legacy models/index.js; migrations tracked."
+I5: CI/CD pipeline,Story,High,,"Quality, Security & Ops",5,declay-store M-size,"As the team, I want CI/CD and environment config for staging/prod.
+
+Acceptance criteria:
+- Pipeline runs tests/lint/build; deploys to staging; prod config separated."

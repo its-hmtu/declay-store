@@ -21,7 +21,7 @@ export default function AdminLoginClient() {
     setLoading(true);
     try {
       const { data } = await adminAuthApi.login(form.email, form.password);
-      adminAuth.setToken(data.accessToken);
+      adminAuth.setTokens(data.accessToken, data.refreshToken);
       toast.success('Welcome back!');
       router.push('/admin/dashboard');
     } catch (err: unknown) {

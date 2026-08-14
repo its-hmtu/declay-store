@@ -6,6 +6,10 @@ import type { Order } from '@/lib/types';
 import { ordersApi } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import Badge from '@/components/ui/Badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { formatPrice } from '@/lib/utils';
+import { orderLabel } from '@/lib/utils';
+import TrackingCode from '@/components/storefront/TrackingCode';
 
 const STATUS_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'error' | 'info'> = {
   pending_payment: 'warning',
@@ -39,7 +43,19 @@ export default function OrdersClient() {
   }, []);
 
   if (loading) return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-20 text-center text-text-muted">Loading orders…</div>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-20 text-center">
+      <Skeleton className="mx-auto h-6 w-40 mb-4" />
+      <div className="space-y-4">
+        <div className="block p-5 rounded-xl border border-border bg-surface">
+          <Skeleton className="h-4 w-48 mb-2" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+        <div className="block p-5 rounded-xl border border-border bg-surface">
+          <Skeleton className="h-4 w-48 mb-2" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+      </div>
+    </div>
   );
 
   if (!auth.isLoggedIn()) return (
@@ -68,7 +84,16 @@ export default function OrdersClient() {
             >
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div>
-                  <p className="font-medium text-text">Order #{order.id}</p>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <p className="font-mono font-medium text-text">{orderLabel(order)}</p>
+                    {order.shipment?.trackingNumber && (
+                      <TrackingCode
+                        trackingNumber={order.shipment.trackingNumber}
+                        carrier={order.shipment.carrier}
+                        compact
+                      />
+                    )}
+                  </div>
                   <p className="text-sm text-text-muted mt-0.5">
                     {new Date(order.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                   </p>
@@ -77,7 +102,7 @@ export default function OrdersClient() {
                   <Badge variant={STATUS_VARIANT[order.status] ?? 'default'}>
                     {STATUS_LABEL[order.status] ?? order.status}
                   </Badge>
-                  <p className="font-semibold text-brand">${parseFloat(order.totalAmount).toFixed(2)}</p>
+                  <p className="font-semibold text-brand">{formatPrice(parseFloat(order.totalAmount))}</p>
                 </div>
               </div>
             </Link>

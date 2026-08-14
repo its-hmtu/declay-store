@@ -7,6 +7,9 @@ import type { Job, JobApplication, ApplicationStatus } from '@/lib/types';
 import { api } from '@/lib/api';
 import { adminAuth } from '@/lib/auth';
 import Badge from '@/components/ui/Badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card';
+import { NativeSelect } from '@/components/ui/native-select';
 
 const STATUS_VARIANT: Record<ApplicationStatus, 'default' | 'success' | 'warning' | 'error' | 'info'> = {
   received:  'default',
@@ -51,7 +54,15 @@ export default function JobApplicationsClient({ jobId }: { jobId: number }) {
     }
   }
 
-  if (loading) return <div className="text-text-muted">Loading…</div>;
+  if (loading) return (
+    <div>
+      <Skeleton className="h-8 w-48 mb-4" />
+      <Card className="py-16 text-center">
+        <Skeleton className="h-4 w-64 mx-auto mb-2" />
+        <Skeleton className="h-3 w-40 mx-auto" />
+      </Card>
+    </div>
+  );
 
   return (
     <div>
@@ -70,13 +81,13 @@ export default function JobApplicationsClient({ jobId }: { jobId: number }) {
       </div>
 
       {applications.length === 0 ? (
-        <div className="py-16 text-center rounded-xl border border-border bg-surface text-text-muted">
+        <Card className="py-16 text-center text-text-muted">
           No applications yet for this position.
-        </div>
+        </Card>
       ) : (
         <div className="space-y-4">
           {applications.map((app) => (
-            <div key={app.id} className="p-5 rounded-xl border border-border bg-surface">
+            <Card key={app.id} className="p-5 py-5">
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
                   <p className="font-medium text-text">{app.applicantName}</p>
@@ -87,13 +98,14 @@ export default function JobApplicationsClient({ jobId }: { jobId: number }) {
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge variant={STATUS_VARIANT[app.status]}>{app.status}</Badge>
-                  <select
+                  <NativeSelect
+                    aria-label="Application status"
                     value={app.status}
                     onChange={(e) => updateStatus(app.id, e.target.value as ApplicationStatus)}
-                    className="text-xs border border-border rounded-md px-2 py-1 bg-surface focus:outline-none focus:border-brand text-text"
+                    className="h-8 w-32 text-xs"
                   >
                     {STATUS_OPTS.map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                  </NativeSelect>
                 </div>
               </div>
               {app.coverLetter && (
@@ -105,7 +117,7 @@ export default function JobApplicationsClient({ jobId }: { jobId: number }) {
               <p className="text-xs text-text-faint mt-3">
                 {new Date(app.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
               </p>
-            </div>
+            </Card>
           ))}
         </div>
       )}

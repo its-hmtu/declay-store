@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentScriptType="application/ecmascript" contentStyleType="text/css" height="1538.3333px" preserveAspectRatio="none" style="width:1625px;height:1538px;" version="1.1" viewBox="0 0 1625 1538" width="1625px" zoomAndPan="magnify"><defs/><g><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="531.6667" x="551.6667" y="20.1115">Mô hình Client - Server của hệ thống Declay Store</text><!--cluster CLIENT--><rect fill="#FFFDF9" height="166.6667" rx="6.6667" ry="6.6667" style="stroke: #A98867; stroke-width: 2.5;" width="608.3333" x="348.3333" y="247.7214"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="260" x="522.5" y="271.1662">CLIENT — Trình duyệt</text><!--cluster SERVER--><rect fill="#FFFDF9" height="800.8333" rx="6.6667" ry="6.6667" style="stroke: #A98867; stroke-width: 2.5;" width="681.6667" x="50" y="529.388"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="655" x="63.3333" y="552.8328">SERVER — Web API (Node.js + Express + TypeScript)</text><!--entity FE1--><rect fill="#FBF3E7" height="83.776" rx="6.6667" ry="6.6667" style="stroke: #7A5C43; stroke-width: 2.5;" width="270" x="375" y="304.388"/><rect fill="#FBF3E7" height="8.3333" style="stroke: #7A5C43; stroke-width: 2.5;" width="16.6667" x="366.6667" y="312.7214"/><rect fill="#FBF3E7" height="8.3333" style="stroke: #7A5C43; stroke-width: 2.5;" width="16.6667" x="366.6667" y="371.4974"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="108.3333" x="391.6667" y="341.1662">Storefront</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="236.6667" x="391.6667" y="366.3875">(Next.js 16 / React 19)</text><!--entity FE2--><rect fill="#FBF3E7" height="83.776" rx="6.6667" ry="6.6667" style="stroke: #7A5C43; stroke-width: 2.5;" width="225" x="704.1667" y="304.388"/><rect fill="#FBF3E7" height="8.3333" style="stroke: #7A5C43; stroke-width: 2.5;" width="16.6667" x="695.8333" y="312.7214"/><rect fill="#FBF3E7" height="8.3333" style="stroke: #7A5C43; stroke-width: 2.5;" width="16.6667" x="695.8333" y="371.4974"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="191.6667" x="720.8333" y="341.1662">Admin Dashboard</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="123.3333" x="720.8333" y="366.3875">(Next.js 16)</text><!--entity MW--><rect fill="#FBF3E7" height="108.9974" rx="6.6667" ry="6.6667" style="stroke: #7A5C43; stroke-width: 2.5;" width="283.3333" x="376.6667" y="599.388"/><rect fill="#FBF3E7" height="8.3333" style="stroke: #7A5C43; stroke-width: 2.5;" width="16.6667" x="368.3333" y="607.7214"/><rect fill="#FBF3E7" height="8.3333" style="stroke: #7A5C43; stroke-width: 2.5;" width="16.6667" x="368.3333" y="691.7188"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="118.3333" x="393.3333" y="636.1662">Middleware</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="243.3333" x="393.3333" y="661.3875">(xác thực, phân quyền,</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="250" x="393.3333" y="686.6089">kiểm tra dữ liệu, cache)</text><!--entity CTRL--><rect fill="#FBF3E7" height="58.5547" rx="6.6667" ry="6.6667" style="stroke: #7A5C43; stroke-width: 2.5;" width="136.6667" x="473.3333" y="813.5547"/><rect fill="#FBF3E7" height="8.3333" style="stroke: #7A5C43; stroke-width: 2.5;" width="16.6667" x="465" y="821.888"/><rect fill="#FBF3E7" height="8.3333" style="stroke: #7A5C43; stroke-width: 2.5;" width="16.6667" x="465" y="855.4427"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="103.3333" x="490" y="850.3328">Controller</text><!--entity SVC--><rect fill="#FBF3E7" height="83.776" rx="6.6667" ry="6.6667" style="stroke: #7A5C43; stroke-width: 2.5;" width="208.3333" x="450.8333" y="977.7214"/><rect fill="#FBF3E7" height="8.3333" style="stroke: #7A5C43; stroke-width: 2.5;" width="16.6667" x="442.5" y="986.0547"/><rect fill="#FBF3E7" height="8.3333" style="stroke: #7A5C43; stroke-width: 2.5;" width="16.6667" x="442.5" y="1044.8307"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="78.3333" x="467.5" y="1014.4995">Service</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="175" x="467.5" y="1039.7209">(logic nghiệp vụ)</text><!--entity ORM--><rect fill="#FBF3E7" height="83.776" rx="6.6667" ry="6.6667" style="stroke: #7A5C43; stroke-width: 2.5;" width="161.6667" x="474.1667" y="1206.888"/><rect fill="#FBF3E7" height="8.3333" style="stroke: #7A5C43; stroke-width: 2.5;" width="16.6667" x="465.8333" y="1215.2214"/><rect fill="#FBF3E7" height="8.3333" style="stroke: #7A5C43; stroke-width: 2.5;" width="16.6667" x="465.8333" y="1273.9974"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="128.3333" x="490.8333" y="1243.6662">Entity / ORM</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="120" x="490.8333" y="1268.8875">(Sequelize)</text><!--entity KH--><ellipse cx="510" cy="56.0547" fill="#F3E7D8" rx="13.3333" ry="13.3333" style="stroke: #7A5C43; stroke-width: 3.3333333333333335;"/><path d="M510,69.388 L510,114.388 M488.3333,82.7214 L531.6667,82.7214 M510,114.388 L488.3333,139.388 M510,114.388 L531.6667,139.388 " fill="none" style="stroke: #7A5C43; stroke-width: 3.3333333333333335;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="125" x="447.5" y="164.4995">Khách hàng</text><!--entity QT--><ellipse cx="816.6667" cy="56.0547" fill="#F3E7D8" rx="13.3333" ry="13.3333" style="stroke: #7A5C43; stroke-width: 3.3333333333333335;"/><path d="M816.6667,69.388 L816.6667,114.388 M795,82.7214 L838.3333,82.7214 M816.6667,114.388 L795,139.388 M816.6667,114.388 L838.3333,139.388 " fill="none" style="stroke: #7A5C43; stroke-width: 3.3333333333333335;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="136.6667" x="748.3333" y="164.4995">Quản trị viên</text><!--entity PG--><path d="M459.1667,1461.888 C459.1667,1445.2214 555,1445.2214 555,1445.2214 C555,1445.2214 650.8333,1445.2214 650.8333,1461.888 L650.8333,1502.1094 C650.8333,1518.776 555,1518.776 555,1518.776 C555,1518.776 459.1667,1518.776 459.1667,1502.1094 L459.1667,1461.888 " fill="#F3E7D8" style="stroke: #7A5C43; stroke-width: 2.5;"/><path d="M459.1667,1461.888 C459.1667,1478.5547 555,1478.5547 555,1478.5547 C555,1478.5547 650.8333,1478.5547 650.8333,1461.888 " fill="none" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="158.3333" x="475.8333" y="1505.3328">PostgreSQL 15</text><!--entity RD--><path d="M1495,1228.5547 C1495,1211.888 1550,1211.888 1550,1211.888 C1550,1211.888 1605,1211.888 1605,1228.5547 L1605,1268.776 C1605,1285.4427 1550,1285.4427 1550,1285.4427 C1550,1285.4427 1495,1285.4427 1495,1268.776 L1495,1228.5547 " fill="#F3E7D8" style="stroke: #7A5C43; stroke-width: 2.5;"/><path d="M1495,1228.5547 C1495,1245.2214 1550,1245.2214 1550,1245.2214 C1550,1245.2214 1605,1245.2214 1605,1228.5547 " fill="none" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="76.6667" x="1511.6667" y="1271.9995">Redis 7</text><!--entity MQ--><path d="M780,1215.2214 L960,1215.2214 C968.3333,1215.2214 968.3333,1248.776 968.3333,1248.776 C968.3333,1248.776 968.3333,1282.3307 960,1282.3307 L780,1282.3307 C771.6667,1282.3307 771.6667,1248.776 771.6667,1248.776 C771.6667,1248.776 771.6667,1215.2214 780,1215.2214 " fill="#F3E7D8" style="stroke: #7A5C43; stroke-width: 2.5;"/><path d="M960,1215.2214 C951.6667,1215.2214 951.6667,1248.776 951.6667,1248.776 C951.6667,1282.3307 960,1282.3307 960,1282.3307 " fill="none" style="stroke: #7A5C43; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="73.3333" x="780" y="1243.6662">BullMQ</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="163.3333" x="780" y="1268.8875">(công việc nền)</text><!--entity EXT--><path d="M1043.4145,1201.4364 C1053.152,1187.7199 1063.9125,1190.5351 1071.4305,1203.7457 C1076.6168,1190.9011 1087.361,1189.9771 1095.8627,1200.2401 C1102.8238,1187.3719 1116.077,1185.5212 1122.9384,1200.3376 C1131.1099,1186.3555 1144.6516,1185.7775 1152.3095,1200.8567 C1160.2169,1188.6582 1171.5719,1187.7425 1179.287,1201.0601 C1189.3777,1187.9444 1198.6098,1189.3082 1207.7354,1202.1191 C1214.1486,1188.6077 1226.878,1185.8487 1236.5014,1198.6034 C1244.077,1186.7767 1254.9532,1188.4152 1260.0345,1201.0072 C1267.7346,1187.8745 1281.7168,1187.5811 1290.4197,1199.8056 C1300.5689,1189.2097 1309.5956,1188.3816 1317.676,1202.1226 C1326.6139,1188.1314 1337.5455,1187.4354 1345.8088,1202.7698 C1352.9286,1192.4798 1364.2609,1192.898 1370.3931,1203.9096 C1378.0769,1189.998 1388.6858,1187.9212 1398.5168,1201.7312 C1409.0173,1187.2804 1420.4146,1187.3617 1428.1877,1204.3086 C1454.5259,1216.9661 1456.4021,1233.2806 1434.8544,1252.555 C1458.305,1272.4274 1452.0885,1290.5591 1425.3731,1300.5139 C1420.3777,1313.9344 1408.0349,1314.9887 1400.4881,1303.014 C1393.803,1316.5052 1380.7463,1316.6644 1372.0131,1305.3666 C1363.9172,1318.8659 1354.9545,1318.3068 1345.9143,1306.3341 C1336.379,1322.8522 1327.2524,1320.2139 1316.5439,1307.5134 C1309.2796,1320.3404 1299.329,1319.39 1291.1515,1308.4907 C1281.3128,1320.4217 1269.73,1321.2317 1262.1376,1306.0839 C1254.1057,1322.4139 1244.7271,1322.2133 1233.1632,1309.6225 C1224.7202,1320.0561 1215.3966,1320.4269 1209.1768,1307.3539 C1198.4236,1318.6328 1190.1589,1317.5971 1181.9663,1304.4959 C1172.5952,1320.7163 1162.4889,1321.9134 1151.6961,1305.828 C1143.0784,1317.6139 1128.9786,1318.7923 1123.6088,1302.5708 C1117.0127,1314.7523 1103.7361,1316.7332 1095.6743,1304.2295 C1088.2693,1315.2262 1079.4377,1315.399 1072.5002,1303.7511 C1062.5076,1315.8062 1049.3625,1312.2613 1043.8334,1298.747 C1031.5674,1295.5438 1025.1035,1284.8539 1035.9506,1274.2219 C1021.5172,1272.0338 1017.2014,1260.5637 1028.0311,1250.0862 C1019.97,1237.8062 1023.1168,1231.2066 1036.9288,1227.5703 C1026.127,1215.7173 1026.9566,1206.5243 1043.4145,1201.4364 " fill="#FFFDF9" style="stroke: #A98867; stroke-width: 2.5;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="191.6667" x="1051.6667" y="1231.1662">Dịch vụ bên ngoài</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="223.3333" x="1051.6667" y="1256.3875">Stripe · VNPay · GHN</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="360" x="1051.6667" y="1281.6089">Google OAuth · SMTP · Claude API</text><path d="M772.5,816.0547 L772.5,869.8307 A6.6667,6.6667 0 0 0 779.1667,876.4974 L1267.5,876.4974 A6.6667,6.6667 0 0 0 1274.1667,869.8307 L1274.1667,826.0547 L1257.5,809.388 L779.1667,809.388 A6.6667,6.6667 0 0 0 772.5,816.0547 " fill="#FFF9E8" style="stroke: #C9A227; stroke-width: 1.6666666666666667;"/><path d="M1257.5,809.388 L1257.5,822.7214 A3.3333,3.3333 0 0 0 1260.8333,826.0547 L1274.1667,826.0547 L1257.5,809.388 " fill="#FFF9E8" style="stroke: #C9A227; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="466.6667" x="782.5" y="837.8328">Client không truy cập trực tiếp cơ sở dữ liệu.</text><text fill="#000000" font-family="DejaVu Sans" font-size="21.6667" lengthAdjust="spacingAndGlyphs" textLength="410" x="782.5" y="863.0542">Mọi thao tác dữ liệu đều đi qua Server.</text><!--link KH to FE1--><path d="M510,169.9214 C510,209.488 510,259.5214 510,295.8547 " fill="none" id="KH-FE1" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="510,304.3047,516.6667,289.3047,510,295.9714,503.3333,289.3047,510,304.3047" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><!--link QT to FE2--><path d="M816.6667,169.9214 C816.6667,209.488 816.6667,259.5214 816.6667,295.8547 " fill="none" id="QT-FE2" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="816.6667,304.3047,823.3333,289.3047,816.6667,295.9714,810,289.3047,816.6667,304.3047" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><!--link FE1 to MW--><path d="M374.3167,362.438 C324.7833,375.138 273.5667,398.4547 243.3333,441.0547 C194.9333,509.288 280.25,565.588 368.3,602.8047 " fill="none" id="FE1-MW" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="376.2667,606.1214,364.9977,594.1859,368.5779,602.9078,359.856,606.4879,376.2667,606.1214" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="200" x="245" y="461.2858">HTTP request / SSE</text><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="65" x="312.5" y="484.5671">(JSON)</text><!--link MW to FE1--><path d="M516.6167,599.2047 C515.6,567.4047 514.3333,526.0714 513.3333,489.388 C512.5,458.6714 511.6833,424.2214 511.0667,396.9714 " fill="none" id="MW-FE1" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="510.8667,388.0214,504.5455,403.1702,511.0576,396.3525,517.8753,402.8646,510.8667,388.0214" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="228.3333" x="515" y="472.9525">HTTP response (JSON)</text><!--link FE2 to MW--><path d="M809.1,387.8714 C800.7833,420.4547 784.0333,464.888 751.6667,489.388 C721.1833,512.4714 700.7333,485.338 666.6667,502.7214 C625.5333,523.7047 588.85,560.3547 562.25,592.0714 " fill="none" id="FE2-MW" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="556.4,599.1714,571.0923,591.8514,561.7067,592.7462,560.812,583.3606,556.4,599.1714" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="140" x="788.3333" y="461.2858">HTTP request</text><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="65" x="825.8333" y="484.5671">(JSON)</text><!--link MW to CTRL--><path d="M524.95,707.9714 C528.8333,738.8214 533.6167,776.988 537.0833,804.5214 " fill="none" id="MW-CTRL" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="538.2,813.438,542.9714,797.732,537.1752,805.1679,529.7393,799.3717,538.2,813.438" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><!--link CTRL to SVC--><path d="M543.8167,872.238 C545.8167,898.3047 548.85,937.8047 551.2667,969.088 " fill="none" id="CTRL-SVC" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="551.9167,977.6714,557.4065,962.2018,551.2739,969.3628,544.1129,963.2303,551.9167,977.6714" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><!--link SVC to ORM--><path d="M555,1061.4214 C555,1099.8047 555,1157.5714 555,1198.4214 " fill="none" id="SVC-ORM" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="555,1206.8714,561.6667,1191.8714,555,1198.538,548.3333,1191.8714,555,1206.8714" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><!--link ORM to PG--><path d="M555,1290.288 C555,1331.138 555,1394.338 555,1436.4714 " fill="none" id="ORM-PG" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="555,1445.138,561.6667,1430.138,555,1436.8047,548.3333,1430.138,555,1445.138" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="38.3333" x="556.6667" y="1390.4525">SQL</text><!--link SVC to RD--><path d="M659.1833,1029.1547 C792.9167,1040.8714 1031.6167,1066.188 1231.6667,1111.0547 C1338.65,1135.038 1368.9,1136.4214 1466.6667,1186.0547 C1477.95,1191.788 1489.3667,1198.988 1499.9667,1206.4214 " fill="none" id="SVC-RD" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="1507.1667,1211.588,1498.8732,1197.4225,1500.3985,1206.7264,1491.0946,1208.2516,1507.1667,1211.588" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="163.3333" x="1341.6667" y="1131.2858">cache / denylist</text><!--link SVC to MQ--><path d="M611.3167,1061.4214 C669.9167,1103.438 760.9167,1168.688 817.9,1209.538 " fill="none" id="SVC-MQ" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="825.3667,1214.888,817.0168,1200.7556,818.5791,1210.0534,809.2814,1211.6157,825.3667,1214.888" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="183.3333" x="713.3333" y="1131.2858">đẩy công việc nền</text><!--link SVC to EXT--><path d="M659.2333,1042.888 C731.0167,1059.0214 828.1333,1082.9714 911.6667,1111.0547 C971.9167,1131.3047 1036.75,1157.888 1092.2,1182.1547 " fill="none" id="SVC-EXT" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><polygon fill="#7A5C43" points="1100.3167,1185.7214,1089.2782,1173.5724,1092.6908,1182.3612,1083.902,1185.7738,1100.3167,1185.7214" style="stroke: #7A5C43; stroke-width: 1.6666666666666667;"/><text fill="#000000" font-family="DejaVu Sans" font-size="20" lengthAdjust="spacingAndGlyphs" textLength="241.6667" x="975" y="1131.2858">gọi API / nhận webhook</text><!--link SERVER to GMN28--><path d="M732.0986,663.6073 C733.6355,664.5436 735.2875,665.55 737.0476,666.6223 C740.5678,668.7669 744.5206,671.1751 748.85,673.8128 C766.1677,684.3635 789.5125,698.587 815.3125,714.3068 C866.9125,745.7464 928.3333,783.1714 971,809.1714 " fill="none" id="SERVER-GMN28" style="stroke: #7A5C43; stroke-width: 1.6666666666666667; stroke-dasharray: 7.0,7.0;"/><!--
+@startuml
+skinparam dpi 160
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam ArrowColor #7A5C43
+skinparam ArrowFontSize 12
+skinparam actorStyle awesome
+skinparam actor {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam usecase {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  FontSize 13
+}
+skinparam rectangle {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam component {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam database {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam queue {
+  BorderColor #7A5C43
+  BackgroundColor #F3E7D8
+}
+skinparam cloud {
+  BorderColor #A98867
+  BackgroundColor #FFFDF9
+}
+skinparam participant {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+}
+skinparam sequence {
+  LifeLineBorderColor #A98867
+  LifeLineBackgroundColor #F3E7D8
+  ArrowColor #7A5C43
+  DividerBackgroundColor #EFE2D0
+  BoxBackgroundColor #FAF5EE
+  BoxBorderColor #C9B197
+  GroupBackgroundColor #EFE2D0
+  GroupBorderColor #A98867
+}
+skinparam note {
+  BorderColor #C9A227
+  BackgroundColor #FFF9E8
+}
+skinparam class {
+  BorderColor #7A5C43
+  BackgroundColor #FBF3E7
+  HeaderBackgroundColor #E8D7C3
+}
+title Mô hình Client - Server của hệ thống Declay Store
+
+actor "Khách hàng" as KH
+actor "Quản trị viên" as QT
+
+rectangle "CLIENT — Trình duyệt" as CLIENT {
+  component "Storefront\n(Next.js 16 / React 19)" as FE1
+  component "Admin Dashboard\n(Next.js 16)" as FE2
+}
+
+rectangle "SERVER — Web API (Node.js + Express + TypeScript)" as SERVER {
+  component "Middleware\n(xác thực, phân quyền,\nkiểm tra dữ liệu, cache)" as MW
+  component "Controller" as CTRL
+  component "Service\n(logic nghiệp vụ)" as SVC
+  component "Entity / ORM\n(Sequelize)" as ORM
+}
+
+database "PostgreSQL 15" as PG
+database "Redis 7" as RD
+queue "BullMQ\n(công việc nền)" as MQ
+cloud "Dịch vụ bên ngoài\nStripe · VNPay · GHN\nGoogle OAuth · SMTP · Claude API" as EXT
+
+KH - -> FE1
+QT - -> FE2
+FE1 - -> MW : HTTP request / SSE\n(JSON)
+FE2 - -> MW : HTTP request\n(JSON)
+MW - -> CTRL
+CTRL - -> SVC
+SVC - -> ORM
+ORM - -> PG : SQL
+SVC - -> RD : cache / denylist
+SVC - -> MQ : đẩy công việc nền
+SVC - -> EXT : gọi API / nhận webhook
+MW - -> FE1 : HTTP response (JSON)
+
+note bottom of SERVER
+  Client không truy cập trực tiếp cơ sở dữ liệu.
+  Mọi thao tác dữ liệu đều đi qua Server.
+end note
+@enduml
+
+PlantUML version 1.2019.06(Sat May 25 00:10:25 ICT 2019)
+(GPL source distribution)
+Java Runtime: OpenJDK Runtime Environment
+JVM: OpenJDK 64-Bit Server VM
+Java Version: 11.0.31+11-post-1ubuntu1-22.04.2-Ubuntu
+Operating System: Linux
+OS Version: 6.8.0-124-generic
+Default Encoding: UTF-8
+Language: en
+Country: null
+--></g></svg>

@@ -2,7 +2,8 @@ import type { RequestHandler } from "express";
 
 export interface IAddress {
   id: number;
-  userId: number;
+  /** Null for guest checkout addresses (M-01). */
+  userId: number | null;
   receiverName: string;
   receiverPhone: string;
   addressLine: string;
@@ -10,6 +11,10 @@ export interface IAddress {
   ward: string;
   district: string;
   city: string;
+  // M-13: mã địa giới GHN — cần để tính phí và tạo vận đơn.
+  ghnProvinceId?: number | null;
+  ghnDistrictId?: number | null;
+  ghnWardCode?: string | null;
   country?: string;
   postalCode?: string | null;
   isDefault?: boolean;

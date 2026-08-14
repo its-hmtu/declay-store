@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { validate } from '@/middlewares/validate';
-import { adminProtect } from '@/middlewares/admin.middleware';
+import { adminProtect, requireRole } from '@/middlewares/admin.middleware';
 import ProductVariantService from './product-variant.service';
 import ProductVariantController from './product-variant.controller';
 import { createVariantSchema, updateVariantSchema, variantIdSchema } from './product-variant.validate';
@@ -19,7 +19,7 @@ export function createAdminVariantRouter(): Router {
   const router = Router({ mergeParams: true });
   const controller = new ProductVariantController(new ProductVariantService());
 
-  router.use(adminProtect);
+  router.use(adminProtect, requireRole('admin', 'super_admin'));
 
   router.post('/', validate(createVariantSchema), controller.create);
   router.put('/:variantId', validate(variantIdSchema, 'params'), validate(updateVariantSchema), controller.update);

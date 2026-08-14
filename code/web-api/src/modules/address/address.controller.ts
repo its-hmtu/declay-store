@@ -22,6 +22,9 @@ export default class AddressController implements IAddressController {
       postalCode,
       isDefault,
       addressType,
+      ghnProvinceId,
+      ghnDistrictId,
+      ghnWardCode,
     } = req.body;
     const result = await this.addressService.createAddress(userId, {
       receiverName,
@@ -35,6 +38,9 @@ export default class AddressController implements IAddressController {
       postalCode,
       isDefault,
       addressType,
+      ghnProvinceId,
+      ghnDistrictId,
+      ghnWardCode,
     });
     if (!result) {
       throw httpError(500, "Failed to create address");
@@ -64,6 +70,9 @@ export default class AddressController implements IAddressController {
       postalCode,
       isDefault,
       addressType,
+      ghnProvinceId,
+      ghnDistrictId,
+      ghnWardCode,
     } = req.body;
     const result = await this.addressService.updateAddress(addressId, userId, {
       receiverName,
@@ -77,6 +86,9 @@ export default class AddressController implements IAddressController {
       postalCode,
       isDefault,
       addressType,
+      ghnProvinceId,
+      ghnDistrictId,
+      ghnWardCode,
     });
     if (!result) {
       throw httpError(404, "Address not found");

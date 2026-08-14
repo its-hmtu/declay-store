@@ -6,6 +6,7 @@ import {
   Model,
 } from 'sequelize';
 import { sequelize } from '@/config/sequelize';
+import Category from '@/modules/category/category.entity';
 
 class Product extends Model<InferAttributes<Product>, InferCreationAttributes<Product>> {
   declare id: CreationOptional<number>;
@@ -14,6 +15,7 @@ class Product extends Model<InferAttributes<Product>, InferCreationAttributes<Pr
   declare slug: string;
   declare description: CreationOptional<string | null>;
   declare isActive: CreationOptional<boolean>;
+  declare views: CreationOptional<number>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 }
@@ -51,6 +53,11 @@ Product.init(
       defaultValue: true,
       field: 'is_active',
     },
+    views: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -72,5 +79,9 @@ Product.init(
     underscored: true,
   },
 );
+
+// Associations
+Category.hasMany(Product, { foreignKey: 'categoryId', as: 'products' });
+Product.belongsTo(Category, { foreignKey: 'categoryId', as: 'category' });
 
 export default Product;
